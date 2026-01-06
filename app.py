@@ -40,22 +40,13 @@ SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
 def send_otp_email(to, subject, text):
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as smtp:
-            smtp.ehlo()
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.starttls()
-            smtp.ehlo()
-
             smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
-
-            message = f"From: {SMTP_EMAIL}\nTo: {to}\nSubject: {subject}\n\n{text}"
+            message = f"Subject: {subject}\n\n{text}"
             smtp.sendmail(SMTP_EMAIL, to, message)
-
-            print(f"[SMTP] Mail sent to {to}")
-
     except Exception as e:
-        print("[SMTP ERROR]", type(e).__name__, e)
-        raise
-
+        print("SMTP ERROR:", e)
 
 
 def generate_otp():
