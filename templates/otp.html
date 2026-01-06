@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>OTP Verification — Secure Access</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial;}
+
+body{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:radial-gradient(circle at top,#020617,#000);
+  color:#e5e7eb;
+}
+
+/* ===== CARD WRAPPER (Glass Effect) ===== */
+.container{
+  width:430px;
+  background:linear-gradient(180deg,rgba(15,23,42,.95),rgba(2,6,23,.9));
+  border:1px solid rgba(148,163,184,.2);
+  border-radius:18px;
+  padding:22px;
+  box-shadow:
+    0 40px 80px rgba(0,0,0,.55),
+    inset 0 0 10px rgba(255,255,255,.05);
+  backdrop-filter:blur(10px);
+  animation:fadeIn .4s ease;
+}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+h2{text-align:center;margin-bottom:4px;font-weight:700;}
+
+.sub{
+  font-size:13px;
+  color:#9ca3af;
+  text-align:center;
+  margin-bottom:10px;
+}
+
+/* ===== ALERT BOX ===== */
+.msg{
+  margin-top:10px;
+  font-size:12px;
+  border-radius:10px;
+  padding:10px;
+  border:1px solid transparent;
+  animation:fadeIn .3s ease;
+}
+
+.success{background:#022c22;border-color:#22c55e;color:#bbf7d0;}
+.error{background:#2c0a0a;border-color:#ef4444;color:#fecaca;}
+
+/* ===== INPUT FIELD ===== */
+.field{margin-top:12px;}
+.field label{font-size:12px;color:#cbd5e1;}
+
+.otp-input{
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  border-radius:12px;
+  border:1px solid #334155;
+  background:#020617;
+  color:#e5e7eb;
+  font-size:15px;
+  letter-spacing:3px;
+  text-align:center;
+  transition:.2s;
+}
+
+.otp-input:focus{
+  outline:none;
+  border-color:#22c55e;
+  box-shadow:0 0 12px rgba(34,197,94,.45);
+}
+
+/* ===== BUTTON ===== */
+.btn{
+  width:100%;
+  padding:11px;
+  margin-top:14px;
+  border:none;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.primary{
+  background:#22c55e;
+  color:#022c22;
+}
+.primary:hover{
+  background:#16a34a;
+  transform:translateY(-1px);
+}
+
+.btn:disabled{
+  background:#4b5563;
+  cursor:not-allowed;
+}
+
+/* ===== FOOTER LINKS ===== */
+.link-text{
+  margin-top:12px;
+  font-size:12px;
+  color:#9ca3af;
+  text-align:center;
+}
+
+.link-text a{
+  color:#7dd3fc;
+  text-decoration:none;
+}
+.link-text a:hover{text-decoration:underline;}
+
+/* subtle divider */
+.divider{
+  height:1px;
+  margin:12px 0;
+  background:linear-gradient(90deg,#020617,#1f2937,#020617);
+}
+</style>
+</head>
+
+<body>
+
+{% set messages = get_flashed_messages(with_categories=True) %}
+
+<div class="container">
+
+  <h2>🔐 OTP Verification</h2>
+
+  {% if context == "admin" %}
+    <p class="sub">Enter the OTP sent to your admin registration email.</p>
+
+  {% elif context == "voter" %}
+    <p class="sub">Enter the OTP sent to your registered voter email.</p>
+
+  {% else %}
+    <p class="sub">Enter the verification code sent to your email.</p>
+  {% endif %}
+
+
+  <!-- FLASH MESSAGES -->
+  {% if messages %}
+    {% for cat,msg in messages %}
+      {% if cat == "otp_error" %}
+        <div class="msg error">{{ msg }}</div>
+
+      {% elif cat == "otp_success" %}
+        <div class="msg success">{{ msg }}</div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+
+  <!-- SESSION SAFETY -->
+  {% if context == "admin" and not session.get('pending_admin') %}
+    <div class="msg error">
+      Session expired — restart admin registration.
+    </div>
+
+    <p class="link-text">
+      Return to <a href="/?panel=register">Admin Registration</a>
+    </p>
+
+  {% else %}
+
+
+  <!-- OTP FORM -->
+  <form method="POST" id="otpForm">
+
+    {% if email %}<input type="hidden" name="email" value="{{ email }}">{% endif %}
+    {% if admin_code %}<input type="hidden" name="admin_code" value="{{ admin_code }}">{% endif %}
+
+    <div class="field">
+      <label>Enter 6-Digit OTP Code</label>
+      <input type="text"
+             name="otp"
+             maxlength="6"
+             class="otp-input"
+             inputmode="numeric"
+             pattern="[0-9]*"
+             required>
+    </div>
+
+    <button class="btn primary" id="verifyBtn">
+      Verify OTP
+    </button>
+  </form>
+
+
+  <div class="divider"></div>
+
+
+  <!-- CONTEXT-AWARE BACK LINKS -->
+  {% if session.get('otp_context') == "admin_register" %}
+    <p class="link-text">Go back to <a href="/?panel=register">Admin Registration</a></p>
+
+  {% elif session.get('otp_context') == "voter_public" %}
+    <p class="link-text">Back to <a href="/?panel=voter">Public Voter Login</a></p>
+
+  {% elif session.get('otp_context') == "voter_private" %}
+    <p class="link-text">Back to <a href="/?panel=voter">Private Voter Login</a></p>
+
+  {% else %}
+    <p class="link-text">Return to <a href="/">Login Page</a></p>
+  {% endif %}
+
+  {% endif %}
+</div>
+
+
+<script>
+// prevent double submission
+const form = document.getElementById("otpForm");
+const btn  = document.getElementById("verifyBtn");
+
+form.addEventListener("submit",()=>{
+  btn.disabled = true;
+  btn.innerText = "Verifying…";
+});
+</script>
+
+</body>
+</html>

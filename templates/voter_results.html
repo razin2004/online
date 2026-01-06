@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Voter — Election Results</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial;}
+
+body{
+  background:#020617;
+  color:#e5e7eb;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.container{
+  width:1150px;
+  max-width:95%;
+  margin-top:18px;
+}
+
+/* CARD */
+.card{
+  background:#0b1220;
+  border:1px solid #1f2937;
+  border-radius:16px;
+  padding:16px;
+  margin-top:12px;
+  box-shadow:0 18px 38px rgba(0,0,0,.45);
+}
+
+.section-title{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+
+.note{
+  color:#9ca3af;
+  font-size:12px;
+}
+
+/* FILTER BAR */
+.filter-bar{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr;
+  gap:10px;
+  margin-top:8px;
+}
+
+input, select{
+  padding:9px;
+  border-radius:10px;
+  border:1px solid #334155;
+  background:#020617;
+  color:#e5e7eb;
+}
+
+/* TABLE */
+.table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+  font-size:14px;
+}
+
+.table th,.table td{
+  border:1px solid #1f2937;
+  padding:10px;
+  text-align:center;
+}
+
+.table th{
+  background:#020617;
+}
+
+/* BADGES */
+.badge{
+  padding:6px 10px;
+  border-radius:10px;
+  font-size:12px;
+}
+
+.badge-public{background:#065f46;}
+.badge-private{background:#1e3a8a;}
+
+.ok{color:#22c55e;}
+.warn{color:#eab308;}
+.block{color:#ef4444;}
+
+/* BUTTONS */
+.btn{
+  padding:8px 12px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.btn-blue{background:#2563eb;}
+.btn-blue:hover{background:#1d4ed8;}
+
+.btn-gray{background:#6b7280;}
+.btn-gray:hover{background:#4b5563;}
+</style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+<!-- HEADER -->
+<div class="card">
+  <div class="section-title">Election Results</div>
+
+  <p class="note">
+    Elections appear here when:
+    <br>• Voting has ended
+    <br>• Admin enabled result visibility
+    <br>• You are allowed to view (private mode)
+  </p>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+
+    <input id="searchBox" placeholder="Search election name...">
+
+    <select id="filterType">
+      <option value="">All Types</option>
+      <option value="public">Public</option>
+      <option value="private">Private</option>
+    </select>
+
+    <select id="filterStatus">
+      <option value="">All Status</option>
+      <option value="upcoming">Not Started</option>
+      <option value="running">Running</option>
+      <option value="available">Result Available</option>
+      <option value="hidden">Hidden</option>
+      <option value="restricted">Restricted</option>
+    </select>
+
+  </div>
+</div>
+
+
+
+<!-- RESULTS TABLE -->
+<div class="card">
+
+<table class="table">
+
+<tr>
+  <th>Election</th>
+  <th>Type</th>
+  <th>Votes</th>
+  <th>Status</th>
+  <th>View</th>
+</tr>
+
+
+{% for e in elections %}
+
+<tr class="result-row"
+ data-name="{{ e.name | lower }}"
+ data-type="{{ e.type }}"
+ data-status="
+   {% if e.upcoming %}upcoming
+   {% elif e.running %}running
+   {% elif e.ended and e.can_view %}available
+   {% elif e.ended and not e.visible %}hidden
+   {% elif e.ended and not e.can_view %}restricted
+   {% endif %}
+ ">
+
+  <td>{{ e.name }}</td>
+
+  <td>
+    {% if e.type == "public" %}
+      <span class="badge badge-public">PUBLIC</span>
+    {% else %}
+      <span class="badge badge-private">PRIVATE</span>
+    {% endif %}
+  </td>
+
+  <td>{{ e.total_votes }}</td>
+
+
+  <td>
+
+    {% if e.upcoming %}
+      <span class="warn">Not Started</span>
+
+    {% elif e.running %}
+      <span class="warn">Running</span>
+
+    {% elif e.ended and not e.visible %}
+      <span class="block">Hidden by Admin</span>
+
+    {% elif e.ended and not e.can_view %}
+      <span class="block">Access Restricted</span>
+
+    {% elif e.ended and e.can_view %}
+      <span class="ok">Result Available</span>
+
+    {% endif %}
+
+  </td>
+
+
+  <td>
+
+    {% if not e.ended %}
+      <button class="btn btn-gray" disabled>
+        Not Available
+      </button>
+
+    {% elif e.ended and e.can_view %}
+      <a href="/voter/results/{{ e.id }}">
+        <button class="btn btn-blue">Open Result</button>
+      </a>
+
+    {% else %}
+      <button class="btn btn-gray" disabled>
+        Not Available
+      </button>
+    {% endif %}
+
+  </td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+
+
+<!-- NAV -->
+<div class="card">
+  <a href="/voter/dashboard">
+    <button class="btn-gray">Back to Dashboard</button>
+  </a>
+</div>
+
+
+</div>
+
+
+
+<script>
+/* LIVE SEARCH + FILTER */
+
+const searchBox   = document.getElementById("searchBox");
+const filterType  = document.getElementById("filterType");
+const filterStatus= document.getElementById("filterStatus");
+
+function applyFilters(){
+
+  const q = searchBox.value.toLowerCase();
+  const type = filterType.value;
+  const status = filterStatus.value;
+
+  document.querySelectorAll(".result-row").forEach(row=>{
+
+    const name   = row.dataset.name;
+    const t      = row.dataset.type;
+    const s      = row.dataset.status.trim();
+
+    let show = true;
+
+    if(q && !name.includes(q)) show = false;
+    if(type && t !== type) show = false;
+    if(status && s !== status) show = false;
+
+    row.style.display = show ? "" : "none";
+  });
+
+}
+
+searchBox.onkeyup = applyFilters;
+filterType.onchange = applyFilters;
+filterStatus.onchange = applyFilters;
+</script>
+
+</body>
+</html>

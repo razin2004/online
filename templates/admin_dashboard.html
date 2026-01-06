@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Admin Dashboard — Online Voting System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial;}
+
+body{
+  min-height:100vh;
+  background:#020617;
+  color:#e5e7eb;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* HEADER */
+.topbar{
+  width:100%;
+  padding:18px 26px;
+  background:#020617;
+  border-bottom:1px solid #1f2937;
+}
+
+.container{
+  width:1250px;
+  max-width:95%;
+  margin-top:18px;
+}
+
+/* CARDS */
+.card{
+  background:rgba(15,23,42,.88);
+  border:1px solid #1f2937;
+  border-radius:16px;
+  padding:18px;
+  margin-top:14px;
+  box-shadow:0 20px 40px rgba(0,0,0,.45);
+}
+
+.section-title{color:#cbd5e1;margin-bottom:6px;}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* INPUTS */
+input,select,textarea{
+  width:100%;padding:10px;
+  border-radius:10px;
+  border:1px solid #334155;
+  background:#020617;color:#e5e7eb;
+  margin-top:6px;
+}
+textarea{min-height:80px;}
+
+/* BUTTONS */
+button{padding:9px 12px;border:none;border-radius:10px;cursor:pointer;margin-top:8px;font-weight:600;}
+.btn-blue{background:#2563eb;}
+.btn-green{background:#16a34a;}
+.btn-yellow{background:#d97706;}
+.btn-red{background:#dc2626;}
+.btn-gray{background:#6b7280;}
+
+.btn-blue:hover{background:#1d4ed8;}
+.btn-green:hover{background:#15803d;}
+.btn-yellow:hover{background:#b45309;}
+.btn-red:hover{background:#b91c1c;}
+
+.badge{padding:5px 9px;border-radius:8px;font-size:11px;}
+.badge-public{background:#065f46;}
+.badge-private{background:#1e3a8a;}
+.note{color:#9ca3af;font-size:12px;}
+
+/* TABLE */
+.table{width:100%;border-collapse:collapse;margin-top:8px;}
+.table th,.table td{border:1px solid #1f2937;padding:9px;text-align:center;}
+
+.cand-photo{
+  height:55px;width:55px;border-radius:10px;
+  border:1px solid #334155;object-fit:cover;
+}
+
+.result-box{
+  margin-top:8px;padding:10px;
+  border-radius:12px;background:#020617;
+  border:1px solid #334155;
+}
+
+.winner{color:#22c55e;font-weight:bold;}
+
+/* MODALS */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;justify-content:center;align-items:center;
+}
+.modal-box{
+  width:420px;max-width:95%;
+  background:#020617;border:1px solid #334155;
+  border-radius:14px;padding:16px;
+}
+.modal h3{margin-bottom:8px;}
+.countdown-timer{
+  margin-top:4px;
+  font-size:11px;
+  color:#7dd3fc;
+}
+
+.election-state-note{
+  font-size:11px;
+  color:#9ca3af;
+}
+.cand-card{
+  background:#020617;
+  border:1px solid #334155;
+  border-radius:14px;
+  padding:10px;
+  margin-top:8px;
+}
+
+.cand-top{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.cand-photo{
+  height:60px;
+  width:60px;
+  border-radius:10px;
+  border:1px solid #334155;
+  object-fit:cover;
+}
+
+.no-photo{
+  height:60px;
+  width:60px;
+  border-radius:10px;
+  border:1px dashed #334155;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:10px;
+  color:#9ca3af;
+}
+
+.party{
+  color:#93c5fd;
+  font-size:12px;
+}
+
+.votes{
+  font-size:12px;
+  color:#cbd5e1;
+}
+
+.cand-actions{
+  margin-top:8px;
+  display:flex;
+  gap:8px;
+}
+.modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,0,.65);
+  z-index:900;  /* base layer */
+}
+
+.manage-modal{
+  z-index:900;
+}
+
+.editor-modal{
+  z-index:1000; /* always above */
+}
+.modal-box{
+  max-height:85vh;
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.modal-box::-webkit-scrollbar{
+  width:6px;
+}
+.modal-box::-webkit-scrollbar-thumb{
+  background:#334155;
+  border-radius:6px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <h2>Admin Dashboard</h2>
+  <small>Secure Election Management</small>
+</div>
+
+<div class="container">
+
+
+<!-- ================= ADMIN PROFILE ================= -->
+<div class="card">
+  <div class="section-title">Admin Profile</div>
+
+  <p><b>Name:</b> {{ admin.name }}</p>
+  <p><b>Username:</b> {{ admin.username }}</p>
+  <p><b>Admin Code:</b> {{ admin.admin_code }}</p>
+
+  <p class="note">Share this code ONLY with private voters.</p>
+
+  <a href="/logout">
+    <button class="btn-red">Logout</button>
+  </a>
+</div>
+
+
+
+<!-- ================= CREATE ELECTION ================= -->
+<div class="card">
+
+  <div class="section-title">Create New Election</div>
+
+  <form method="POST" action="/admin/create-election">
+
+    <label>Election Name</label>
+    <input name="name" required>
+
+    <label>Election Type</label>
+    <select name="type" required>
+      <option value="public">Public</option>
+      <option value="private">Private</option>
+    </select>
+
+    <label>Election Duration</label>
+    <div class="row">
+      <input type="datetime-local" name="start_time" required>
+      <input type="datetime-local" name="end_time" required>
+    </div>
+
+    <p class="note">
+      Private elections MUST have start + end time.<br>
+      Public elections can be time-less.
+    </p>
+
+    <button class="btn-blue">Create Election</button>
+  </form>
+
+</div>
+
+
+
+<!-- ================= GRID ================= -->
+<div class="grid-2">
+
+
+<!-- ************ PUBLIC ELECTIONS ************ -->
+<div>
+
+<div class="card">
+  <div class="section-title">Public Elections</div>
+  <input id="searchPublic" placeholder="Search public elections...">
+</div>
+
+{% for e in elections if e.election_type == "public" %}
+<div class="card public-item"
+     data-election-card
+     data-start="{{ e.start_time }}"
+     data-end="{{ e.end_time }}">
+
+
+  <b>{{ e.name }}</b>
+  <span class="badge badge-public">PUBLIC</span>
+
+  {% if e.public_code %}
+  <p class="note">Public Code: {{ e.public_code }}</p>
+  {% endif %}
+
+  <p class="note">Total Votes: {{ e.total_votes }}</p>
+
+  <button class="btn-yellow"
+          onclick="openEditElection('{{ e.id }}','{{ e.name }}','{{ e.start_time }}','{{ e.end_time }}')">
+    Edit Election
+  </button>
+  
+  <button class="btn-blue"
+          onclick="openManageCandidates('{{ e.id }}',
+                                        '{{ e.name }}')">
+    Manage Candidates
+  </button>
+  <p class="election-state-note"></p>
+  <p class="countdown-timer"></p>
+</div>
+{% endfor %}
+</div>
+
+
+
+
+<!-- ************ PRIVATE ELECTIONS ************ -->
+<div>
+
+<div class="card">
+  <div class="section-title">Private Elections</div>
+  <input id="searchPrivate" placeholder="Search private elections...">
+</div>
+
+{% for e in elections if e.election_type == "private" %}
+<div class="card private-item"
+     data-election-card
+     data-start="{{ e.start_time }}"
+     data-end="{{ e.end_time }}">
+
+
+  <b>{{ e.name }}</b>
+  <span class="badge badge-private">PRIVATE</span>
+
+  <p class="note">Total Votes: {{ e.total_votes }}</p>
+
+  <button class="btn-yellow"
+          onclick="openEditElection('{{ e.id }}','{{ e.name }}','{{ e.start_time }}','{{ e.end_time }}')">
+    Edit Election
+  </button>
+  <button class="btn-blue"
+          onclick="openManageCandidates('{{ e.id }}',
+                                        '{{ e.name }}')">
+    Manage Candidates
+  </button>
+  <button class="btn-blue"
+          onclick="openWhitelist('{{ e.id }}',
+                                '{{ e.name }}')">
+    Manage Whitelist
+  </button>
+  <p class="election-state-note"></p>
+  <p class="countdown-timer"></p>
+</div>
+{% endfor %}
+
+</div>
+</div>
+<!-- ================= MODERN ELECTION OVERVIEW ================= -->
+<div class="card">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div class="section-title">Election Overview</div>
+
+    <!-- Floating Create Button -->
+
+  </div>
+
+  <p class="note">Clear visual status indicators — public, private, running, ended.</p>
+
+  <!-- SEARCH FIELDS INSIDE OVERVIEW -->
+  <div class="row" style="margin-top:10px;">
+    <div>
+      <label class="note">Search Public Elections (name / code)</label>
+      <input id="ovPublicSearch" placeholder="Search public elections...">
+    </div>
+
+    <div>
+      <label class="note">Search Private Elections (name only)</label>
+      <input id="ovPrivateSearch" placeholder="Search private elections...">
+    </div>
+  </div>
+
+  <div id="overviewGrid"
+      style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+
+    <!-- LEFT COLUMN — PUBLIC -->
+    <div>
+
+      <h4 class="note">Public Elections</h4>
+
+      <div id="publicOverviewList"
+          style="margin-top:6px;max-height:420px;overflow-y:auto;">
+
+        {% for e in elections if e.election_type == "public" %}
+
+  {% set has_time   = e.start_time and e.end_time %}
+  {% set ended      = has_time and (e.end_time|tojson|safe)|string and (datetime.utcnow() >= datetime.fromisoformat(e.end_time)) %}
+  {% set running    = has_time and not ended and (datetime.utcnow() >= datetime.fromisoformat(e.start_time)) %}
+  {% set upcoming   = has_time and not running and not ended %}
+
+  <div class="result-box"
+      data-ov-card
+      data-type="{{ e.election_type }}"
+      data-name="{{ e.name|lower }}"
+      data-code="{{ e.public_code|lower if e.public_code }}"
+      data-start="{{ e.start_time }}"
+      data-end="{{ e.end_time }}">
+
+
+
+    <!-- HEADER -->
+    <div style="display:flex;justify-content:space-between;">
+      <b>{{ e.name }}</b>
+
+      {% if e.election_type == "public" %}
+        <span class="badge badge-public">PUBLIC</span>
+      {% else %}
+        <span class="badge badge-private">PRIVATE</span>
+      {% endif %}
+    </div>
+
+<!-- STATUS BAR -->
+<div style="margin-top:6px;">
+  {% if e.is_ended %}
+    <span class="badge" style="background:#14532d;">ENDED</span>
+  {% elif e.is_running %}
+    <span class="badge" style="background:#1e3a8a;">RUNNING</span>
+  {% elif e.is_upcoming %}
+    <span class="badge" style="background:#78350f;">UPCOMING</span>
+  {% else %}
+    <span class="badge" style="background:#334155;">NO SCHEDULE</span>
+  {% endif %}
+
+  {% if e.result_visible %}
+    <span class="badge" style="background:#064e3b;">Results Visible</span>
+  {% else %}
+    <span class="badge" style="background:#7c2d12;">Hidden</span>
+  {% endif %}
+</div>
+
+<p class="countdown-timer"></p>
+
+
+    <!-- METRICS -->
+    <div style="display:flex;gap:12px;margin-top:8px;">
+
+      <div class="cand-card" style="flex:1;">
+        <div class="votes"><b>{{ e.total_votes }}</b></div>
+        <div class="note">Total Votes</div>
+      </div>
+
+      <div class="cand-card" style="flex:1;">
+        <div class="votes"><b>{{ e.candidates|length }}</b></div>
+        <div class="note">Candidates</div>
+      </div>
+
+      {% if e.public_code %}
+      <div class="cand-card" style="flex:1;">
+        <div class="votes"><b>{{ e.public_code }}</b></div>
+        <div class="note">Code</div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- TIME SUMMARY -->
+    <div class="note" style="margin-top:6px;">
+      {% if e.start_time and e.end_time %}
+        {{ e.start_time }} ➜ {{ e.end_time }}
+      {% else %}
+        No schedule defined
+      {% endif %}
+    </div>
+
+    <!-- ACTIONS -->
+    <div style="display:flex;gap:10px;margin-top:10px;">
+
+      <a href="/admin/results/{{ e.id }}">
+        <button class="btn-green">Open Results</button>
+      </a>
+
+      <a href="/admin/toggle-results/{{ e.id }}">
+        <button class="btn-yellow">
+          {% if e.result_visible %}Hide Results{% else %}Show Results{% endif %}
+        </button>
+      </a>
+
+    </div>
+
+  </div>
+  {% endfor %}
+    </div>
+  </div>
+    <!-- 🔹 PRIVATE ELECTION OVERVIEW -->
+     
+  <!-- RIGHT COLUMN — PRIVATE -->
+  <div>
+
+    <h4 class="note">Private Elections</h4>
+
+    <div id="privateOverviewList"
+         style="margin-top:6px;max-height:420px;overflow-y:auto;">
+    {% for e in elections if e.election_type == "private" %}
+
+    {% set has_time   = e.start_time and e.end_time %}
+    {% set ended      = has_time and (e.end_time|tojson|safe)|string and (datetime.utcnow() >= datetime.fromisoformat(e.end_time)) %}
+    {% set running    = has_time and not ended and (datetime.utcnow() >= datetime.fromisoformat(e.start_time)) %}
+    {% set upcoming   = has_time and not running and not ended %}
+
+    <div class="result-box"
+        data-ov-card
+        data-type="{{ e.election_type }}"
+        data-name="{{ e.name|lower }}"
+        data-code="{{ e.public_code|lower if e.public_code }}"
+        data-start="{{ e.start_time }}"
+        data-end="{{ e.end_time }}">
+
+
+
+      <!-- HEADER -->
+      <div style="display:flex;justify-content:space-between;">
+        <b>{{ e.name }}</b>
+
+        {% if e.election_type == "public" %}
+          <span class="badge badge-public">PUBLIC</span>
+        {% else %}
+          <span class="badge badge-private">PRIVATE</span>
+        {% endif %}
+      </div>
+
+  <!-- STATUS BAR -->
+  <div style="margin-top:6px;">
+    {% if e.is_ended %}
+      <span class="badge" style="background:#14532d;">ENDED</span>
+    {% elif e.is_running %}
+      <span class="badge" style="background:#1e3a8a;">RUNNING</span>
+    {% elif e.is_upcoming %}
+      <span class="badge" style="background:#78350f;">UPCOMING</span>
+    {% else %}
+      <span class="badge" style="background:#334155;">NO SCHEDULE</span>
+    {% endif %}
+
+    {% if e.result_visible %}
+      <span class="badge" style="background:#064e3b;">Results Visible</span>
+    {% else %}
+      <span class="badge" style="background:#7c2d12;">Hidden</span>
+    {% endif %}
+  </div>
+
+  <p class="countdown-timer"></p>
+
+
+      <!-- METRICS -->
+      <div style="display:flex;gap:12px;margin-top:8px;">
+
+        <div class="cand-card" style="flex:1;">
+          <div class="votes"><b>{{ e.total_votes }}</b></div>
+          <div class="note">Total Votes</div>
+        </div>
+
+        <div class="cand-card" style="flex:1;">
+          <div class="votes"><b>{{ e.candidates|length }}</b></div>
+          <div class="note">Candidates</div>
+        </div>
+
+        {% if e.public_code %}
+        <div class="cand-card" style="flex:1;">
+          <div class="votes"><b>{{ e.public_code }}</b></div>
+          <div class="note">Code</div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- TIME SUMMARY -->
+      <div class="note" style="margin-top:6px;">
+        {% if e.start_time and e.end_time %}
+          {{ e.start_time }} ➜ {{ e.end_time }}
+        {% else %}
+          No schedule defined
+        {% endif %}
+      </div>
+
+      <!-- ACTIONS -->
+      <div style="display:flex;gap:10px;margin-top:10px;">
+
+        <a href="/admin/results/{{ e.id }}">
+          <button class="btn-green">Open Results</button>
+        </a>
+
+        <a href="/admin/toggle-results/{{ e.id }}">
+          <button class="btn-yellow">
+            {% if e.result_visible %}Hide Results{% else %}Show Results{% endif %}
+          </button>
+        </a>
+
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</div>
+</div>
+</div>
+
+
+
+<!-- ================= MODALS ================= -->
+
+<!-- EDIT ELECTION -->
+<div id="editElectionModal" class="modal">
+  <div class="modal-box">
+    <h3>Edit Election</h3>
+
+    <form method="POST" action="/admin/election/update">
+      <input type="hidden" id="editElectionId" name="election_id">
+
+      <label>Name</label>
+      <input id="editElectionName" name="name" required>
+
+      <label>Start Time</label>
+      <input type="datetime-local" id="editElectionStart" name="start_time">
+
+      <label>End Time</label>
+      <input type="datetime-local" id="editElectionEnd" name="end_time">
+
+      <button class="btn-green">Save Changes</button>
+
+      <a id="deleteElectionLink">
+      <button type="button" class="btn-red"
+              onclick="confirmDeleteElection()">
+        Delete Election
+      </button>
+
+      <button type="button" class="btn-yellow"
+              onclick="confirmForceDeleteElection()">
+        Force Delete (Remove All Votes)
+      </button>
+
+</a>
+
+      </a>
+
+      <button type="button" class="btn-gray" onclick="closeModals()">
+        Cancel
+      </button>
+
+    </form>
+  </div>
+</div>
+
+<!-- EDIT CANDIDATE -->
+<div id="editCandidateModal" class="modal editor-modal">
+  <div class="modal-box">
+    <h3>Edit Candidate</h3>
+
+    <form method="POST" action="/admin/candidate/update" enctype="multipart/form-data">
+      <input type="hidden" id="editCandidateId" name="candidate_id">
+
+      <label>Name (not editable)</label>
+      <input id="editCandidateName" disabled>
+
+      <label>Party</label>
+      <input id="editCandidateParty" name="party">
+
+      <label>Description</label>
+      <textarea id="editCandidateDesc" name="description"></textarea>
+
+      <label>Change Photo</label>
+      <input type="file" name="photo">
+
+      <button class="btn-green">Save Changes</button>
+
+      <a id="deleteCandidateLink">
+        <button type="button" class="btn-red"
+          onclick="confirmDeleteCandidate()">
+          Delete Candidate
+        </button>
+      </a>
+
+      <button type="button" class="btn-gray" onclick="closeModals()">
+        Cancel
+      </button>
+
+    </form>
+  </div>
+</div>
+<div id="manageCandidatesModal" class="modal manage-modal">
+  <div class="modal-box">
+
+    <h3 id="mcTitle">Manage Candidates</h3>
+
+    <!-- ADD FORM (top) -->
+    <h4>Add New Candidate</h4>
+
+    <form method="POST"
+          action="/admin/add-candidate"
+          enctype="multipart/form-data">
+
+      <input type="hidden" id="mcElectionId" name="election_id">
+
+      <label>Name</label>
+      <input name="name" required>
+
+      <label>Party</label>
+      <input name="party">
+
+      <label>Photo</label>
+      <input type="file" name="photo" accept="image/*">
+
+      <label>Description</label>
+      <textarea name="description"></textarea>
+
+      <button class="btn-green">Add Candidate</button>
+    </form>
+
+    <hr style="margin:10px 0">
+
+    <!-- SEARCH NOW BELOW ADD FORM -->
+    <h4>Existing Candidates</h4>
+    <input id="mcSearchInput"
+           placeholder="Search candidate name or party...">
+
+    <div id="mcList"></div>
+
+    <button type="button"
+            class="btn-gray"
+            onclick="closeModals()">Close</button>
+
+  </div>
+</div>
+
+<div id="whitelistModal" class="modal">
+  <div class="modal-box">
+
+    <h3 id="wlTitle">Whitelist Access</h3>
+
+    <!-- ADD FORM (top) -->
+    <h4>Add Emails</h4>
+
+    <form method="POST" action="/admin/whitelist/bulk-add" id="wlForm">
+      <input type="hidden" id="wlElectionId" name="election_id">
+
+      <textarea id="wlInput" name="emails"
+        placeholder="Paste emails — one per line or comma separated"></textarea>
+
+      <!-- DUPLICATE WARNING -->
+      <p id="wlDuplicateInfo" class="note"></p>
+
+      <button class="btn-blue" id="wlSubmitBtn">Add to Whitelist</button>
+    </form>
+
+
+    <hr style="margin:10px 0">
+
+    <!-- SEARCH BELOW ADD FORM -->
+    <h4>Existing Whitelist</h4>
+    <input id="wlSearchInput"
+           placeholder="Search email...">
+
+    <div id="wlList"></div>
+
+    <button type="button"
+            class="btn-gray"
+            onclick="closeModals()">Close</button>
+
+  </div>
+</div>
+
+</div>
+
+<script>
+function disableBodyScroll(){ document.body.style.overflow="hidden"; }
+function enableBodyScroll(){ document.body.style.overflow="auto"; }
+
+function openModal(id){
+  document.getElementById(id).style.display="flex";
+  disableBodyScroll();
+}
+
+function openManageCandidates(eid, name){
+
+  document.getElementById("mcElectionId").value = eid;
+  document.getElementById("mcTitle").innerText =
+    "Manage Candidates — " + name;
+
+  fetch(`/admin/api/candidates/${eid}`)
+    .then(r => r.json())
+    .then(data => {
+
+      if(!data.candidates.length){
+        document.getElementById("mcList").innerHTML =
+          "<p>No candidates added yet.</p>";
+        return;
+      }
+
+      const cards = data.candidates.map(c => `
+
+        <div class="cand-card">
+
+          <div class="cand-top">
+
+            ${c.photo
+              ? `<img src="/static/uploads/${c.photo}" class="cand-photo">`
+              : `<div class="no-photo">No Photo</div>`}
+
+            <div>
+              <b>${c.name}</b>
+              <div class="party">${c.party || "Independent"}</div>
+              <div class="votes">Votes: <b>${c.votes}</b></div>
+            </div>
+
+          </div>
+
+          <div class="cand-actions">
+
+            <button class="btn-gray"
+              onclick="openEditCandidate('${c.id}',
+                                         '${c.name}',
+                                         '${c.party||""}',
+                                         '${c.description||""}')">
+              Edit
+            </button>
+
+            <a href="/admin/candidate/delete/${c.id}"
+               onclick="return confirm('Delete candidate ${c.name}? This is only allowed if no votes exist.')">
+              <button class="btn-red"
+                ${c.votes > 0 ? "disabled" : ""}>
+                Delete
+              </button>
+            </a>
+
+          </div>
+
+        </div>
+
+      `).join("");
+
+      document.getElementById("mcList").innerHTML = cards;
+
+    });
+
+  openModal("manageCandidatesModal");
+}
+
+function openWhitelist(eid, name){
+
+  document.getElementById("wlElectionId").value = eid;
+  document.getElementById("wlTitle").innerText =
+    "Whitelist — " + name;
+
+  fetch(`/admin/api/whitelist/${eid}`)
+    .then(r => r.json())
+    .then(data => {
+
+      if(!data.whitelist.length){
+        document.getElementById("wlList").innerHTML =
+          "<p>No whitelist entries yet.</p>";
+        return;
+      }
+
+      // Sort whitelist alphabetically (A → Z)
+      data.whitelist.sort((a,b) =>
+        a.email.toLowerCase().localeCompare(b.email.toLowerCase())
+      );
+
+      const list = data.whitelist.map(w => `
+        <div class="cand-card">
+
+          <div class="cand-top">
+            <div>
+              <b>${w.email}</b>
+            </div>
+          </div>
+
+          <div class="cand-actions">
+            <a href="/admin/whitelist/remove/${w.id}"
+              onclick="return confirm('Remove ${w.email} from whitelist?')">
+              <button class="btn-red">Remove</button>
+            </a>
+          </div>
+
+        </div>
+      `).join("");
+
+      document.getElementById("wlList").innerHTML = list;
+
+    });
+
+  openModal("whitelistModal");
+}
+/* ================================
+   SEARCH FILTERS
+================================ */
+/* PUBLIC search → only name + public code */
+document.getElementById("searchPublic")?.addEventListener("keyup", e=>{
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll(".public-item").forEach(card=>{
+
+    const name = card.querySelector("b")?.innerText.toLowerCase() || "";
+    const code = card.querySelector(".note")?.innerText.toLowerCase() || "";
+
+    const match = name.includes(q) || code.includes(q);
+
+    card.style.display = match ? "" : "none";
+  });
+});
+
+/* PRIVATE search → ONLY name */
+document.getElementById("searchPrivate")?.addEventListener("keyup", e=>{
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll(".private-item").forEach(card=>{
+
+    const name = card.querySelector("b")?.innerText.toLowerCase() || "";
+
+    card.style.display = name.includes(q) ? "" : "none";
+  });
+});
+
+/* ================================
+   TIME-AWARE FORM PROTECTION
+   (Prevents confusion when backend blocks)
+================================ */
+
+// Parse ISO or blank
+function parseTime(v){
+  try { return v ? new Date(v) : null; }
+  catch { return null; }
+}
+
+function markElectionState(card){
+
+  const start = parseTime(card.dataset.start);
+  const end   = parseTime(card.dataset.end);
+  const now   = new Date();
+
+  const addBtn = card.querySelector(".btn-add-candidate");
+  const noteBox = card.querySelector(".election-state-note");
+
+  if(!addBtn || !noteBox) return;
+
+  // default enabled
+  addBtn.disabled = false;
+  noteBox.innerHTML = "";
+
+  if(end && now > end){
+    addBtn.disabled = true;
+    noteBox.innerHTML =
+      "<span style='color:#f87171'>Election already ended — candidate changes are locked.</span>";
+    return;
+  }
+
+  if(start && now < start){
+    noteBox.innerHTML =
+      "<span style='color:#facc15'>Election not started yet — you may still add candidates.</span>";
+    return;
+  }
+}
+
+/* ================================
+   CLIENT-SIDE SAFETY CHECKS
+================================ */
+
+document.querySelectorAll("form[action='/admin/add-candidate']").forEach(form=>{
+
+  form.addEventListener("submit", e=>{
+
+    const name = form.querySelector("input[name='name']");
+    if(!name || !name.value.trim()){
+      alert("Candidate name is required");
+      e.preventDefault();
+      return;
+    }
+
+    const card = form.closest("[data-election-card]");
+    if(!card) return;
+
+    const end = parseTime(card.dataset.end);
+    const now = new Date();
+
+    if(end && now > end){
+      alert("Election already ended — candidates cannot be added.");
+      e.preventDefault();
+    }
+  });
+});
+
+/* ================================
+   MODALS
+================================ */
+
+function closeModals(){
+  document.querySelectorAll(".modal").forEach(m=>m.style.display="none");
+}
+
+function openEditElection(id,name,start,end){
+  document.getElementById("editElectionId").value=id;
+  document.getElementById("editElectionName").value=name;
+  document.getElementById("editElectionStart").value=start || "";
+  document.getElementById("editElectionEnd").value=end || "";
+  document.getElementById("editElectionModal").style.display="flex";
+}
+
+function openEditCandidate(id,name,party,desc){
+  document.getElementById("editCandidateId").value=id;
+  document.getElementById("editCandidateName").value=name;
+  document.getElementById("editCandidateParty").value=party || "";
+  document.getElementById("editCandidateDesc").value=desc || "";
+  document.getElementById("editCandidateModal").style.display="flex";
+}
+
+window.onclick = e=>{
+  if(e.target.classList.contains("modal")) closeModals();
+};
+
+function formatRemaining(ms){
+  if (ms <= 0) return "00:00:00";
+
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+
+  return [
+    String(h).padStart(2,"0"),
+    String(m).padStart(2,"0"),
+    String(sec).padStart(2,"0")
+  ].join(":");
+}
+
+function updateElectionCountdowns(){
+
+  const now = new Date();
+
+  document.querySelectorAll("[data-election-card]").forEach(card => {
+
+    const start = card.dataset.start ? new Date(card.dataset.start) : null;
+    const end   = card.dataset.end   ? new Date(card.dataset.end)   : null;
+
+    const note  = card.querySelector(".election-state-note");
+    const timer = card.querySelector(".countdown-timer");
+    const btn   = card.querySelector(".btn-add-candidate");
+
+    // Safety check — missing timer fields
+    if(!start && !end){
+      note.textContent = "No election schedule set";
+      if(timer) timer.textContent = "";
+      return;
+    }
+
+    // Countdown to start (if exists)
+    if(start && now < start){
+      const remaining = start - now;
+      note.textContent = "Election has not started yet";
+      if(timer) timer.textContent = "Starts in: " + formatRemaining(remaining);
+
+      // candidate adding should still be allowed BEFORE start
+      if(btn){
+        btn.disabled = false;
+        btn.classList.remove("btn-gray");
+      }
+      return;
+    }
+
+    // Countdown until end
+    if(end && now < end){
+      const remaining = end - now;
+      note.textContent = "Election running";
+      if(timer) timer.textContent = "Ends in: " + formatRemaining(remaining);
+
+      // allow editing while running
+      if(btn){
+        btn.disabled = false;
+        btn.classList.remove("btn-gray");
+      }
+      return;
+    }
+
+    // Election ended — auto-lock
+    note.textContent = "Election ended — candidate changes locked";
+    if(timer) timer.textContent = "Ended";
+
+    if(btn){
+      btn.disabled = true;
+      btn.classList.add("btn-gray");
+    }
+  });
+  document.querySelectorAll("[data-ov-card]").forEach(card => {
+
+    const start = card.dataset.start ? new Date(card.dataset.start) : null;
+    const end   = card.dataset.end   ? new Date(card.dataset.end)   : null;
+
+    const timer = card.querySelector(".countdown-timer");
+
+    if(!start && !end){
+      timer.textContent = "";
+      return;
+    }
+
+    if(start && now < start){
+      timer.textContent = "Starts in: " + formatRemaining(start - now);
+      return;
+    }
+
+    if(end && now < end){
+      timer.textContent = "Ends in: " + formatRemaining(end - now);
+      return;
+    }
+
+    timer.textContent = "Ended";
+  });
+
+}
+
+// Initial run
+updateElectionCountdowns();
+
+// Auto-refresh every second
+setInterval(updateElectionCountdowns, 1000);
+
+function confirmDeleteCandidate(){
+  const id = document.getElementById("editCandidateId").value;
+
+  if(!id) return;
+
+  if(confirm("Delete this candidate?\n\nThis action is only allowed if:\n• Election has not ended\n• Candidate has zero votes")){
+    window.location = `/admin/candidate/delete/${id}`;
+  }
+}
+function confirmDeleteElection(){
+  const id = document.getElementById("editElectionId").value;
+
+  if(!id) return;
+
+  const msg =
+"Do you really want to delete this election?\n\n" +
+"Allowed ONLY if:\n" +
+"• Election has NOT ended\n" +
+"• No votes exist\n\n" +
+"Otherwise — use FORCE DELETE instead.";
+
+  if(confirm(msg)){
+    window.location = `/admin/election/delete/${id}`;
+  }
+}
+function confirmForceDeleteElection(){
+  const id = document.getElementById("editElectionId").value;
+
+  if(!id) return;
+
+  const msg =
+"⚠ WARNING ⚠\n\n" +
+"Force delete will permanently remove:\n" +
+"• Election\n" +
+"• All candidates\n" +
+"• All votes\n\n" +
+"This cannot be undone.\n\n" +
+"Are you absolutely sure?";
+
+  if(confirm(msg)){
+    window.location = `/admin/election/force-delete/${id}`;
+  }
+}
+/* CANDIDATE SEARCH (name + party) */
+document.getElementById("mcSearchInput")?.addEventListener("keyup", e=>{
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll("#mcList .cand-card").forEach(card=>{
+    const text = card.innerText.toLowerCase();
+    card.style.display = text.includes(q) ? "" : "none";
+  });
+});
+
+/* WHITELIST SEARCH (email only) */
+document.getElementById("wlSearchInput")?.addEventListener("keyup", e=>{
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll("#wlList .cand-card").forEach(card=>{
+    const email = card.querySelector("b")?.innerText.toLowerCase() || "";
+    card.style.display = email.includes(q) ? "" : "none";
+  });
+});
+/* ===== Overview Search Filters ===== */
+
+/* PUBLIC: name + public code */
+document.getElementById("ovPublicSearch")?.addEventListener("keyup", e=>{
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll("[data-ov-card]").forEach(card=>{
+    if(card.dataset.type !== "public") return;
+
+    const name = card.dataset.name || "";
+    const code = card.dataset.code || "";
+
+    card.style.display =
+      (name.includes(q) || code.includes(q)) ? "" : "none";
+  });
+});
+
+/* PRIVATE: name only */
+document.getElementById("ovPrivateSearch")?.addEventListener("keyup", e=>{
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll("[data-ov-card]").forEach(card=>{
+    if(card.dataset.type !== "private") return;
+
+    const name = card.dataset.name || "";
+
+    card.style.display =
+      name.includes(q) ? "" : "none";
+  });
+});
+
+</script>
+
+</body>
+</html>

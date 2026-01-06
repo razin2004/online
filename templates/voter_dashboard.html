@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Voter Dashboard — Online Voting System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial;}
+
+body{
+  background:#020617;
+  color:#e5e7eb;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.container{
+  width:1180px;
+  max-width:96%;
+  margin-top:18px;
+}
+
+/* CARD BLOCK */
+.card{
+  background:#0b1220;
+  border:1px solid #1f2937;
+  border-radius:18px;
+  padding:18px;
+  margin-top:12px;
+  box-shadow:0 26px 48px rgba(0,0,0,.45);
+}
+
+.section-title{
+  font-size:18px;
+  font-weight:700;
+  color:#f9fafb;
+}
+
+.subtext{color:#9ca3af;font-size:12px;}
+
+/* FILTER BAR */
+.filter-bar{
+  margin-top:8px;
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr;
+  gap:10px;
+}
+
+input, select{
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #334155;
+  background:#020617;
+  color:#e5e7eb;
+}
+
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+  gap:14px;
+  margin-top:10px;
+}
+
+/* ELECTION CARD */
+.election-card{
+  padding:14px;
+  border-radius:14px;
+  background:#020617;
+  border:1px solid #334155;
+  transition:.25s;
+}
+
+.election-card:hover{
+  border-color:#64748b;
+  transform:scale(1.01);
+}
+
+.election-name{
+  font-size:15px;
+  font-weight:600;
+}
+
+/* BADGES */
+.badge{
+  padding:6px 9px;
+  border-radius:10px;
+  font-size:11px;
+  margin-left:6px;
+}
+
+.badge-public{background:#047857;}
+.badge-private{background:#1e3a8a;}
+.badge-ok{background:#16a34a;}
+.badge-locked{background:#6b7280;}
+
+/* INFO */
+.info-line{
+  margin-top:4px;
+  font-size:12px;
+  color:#a1a1aa;
+}
+
+.time-line{
+  margin-top:6px;
+  font-size:12px;
+}
+
+/* BUTTONS */
+.btn{
+  padding:9px 12px;
+  border:none;
+  border-radius:10px;
+  margin-top:10px;
+  width:150px;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.btn-green{background:#16a34a;}
+.btn-green:hover{background:#15803d;}
+
+.btn-gray{background:#6b7280;}
+.btn-gray:hover{background:#4b5563;}
+
+.btn-disabled{
+  background:#6b7280;
+  cursor:not-allowed;
+}
+/* ===== PREMIUM MODAL ===== */
+
+.modal-bg{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,.65);
+  backdrop-filter:blur(6px);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:20;
+}
+
+.modal-bg.show{display:flex;}
+
+.modal-box{
+  background:linear-gradient(145deg,#0b1220,#020617);
+  border:1px solid #334155;
+  border-radius:16px;
+  padding:18px;
+  width:360px;
+  animation:pop .25s ease-out;
+}
+
+@keyframes pop{
+  from{transform:scale(.92);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+
+.modal-title{
+  font-size:16px;
+  font-weight:700;
+  color:#fca5a5;
+}
+
+.modal-text{
+  margin-top:6px;
+  color:#e5e7eb;
+  font-size:13px;
+  line-height:18px;
+}
+
+.modal-btn{
+  padding:8px 12px;
+  border-radius:10px;
+  border:none;
+  margin-top:12px;
+  cursor:pointer;
+  font-weight:600;
+  width:120px;
+}
+
+</style>
+</head>
+
+
+
+<body>
+
+<div class="container">
+
+
+
+<!-- HEADER -->
+<div class="card">
+  <div class="section-title">Voter Dashboard</div>
+
+  <p><b>Email:</b> {{ email }}</p>
+
+  {% if session.get('voter_admin_id') %}
+    <p class="subtext">Private voter — Access to your admin’s elections + public elections.</p>
+  {% else %}
+    <p class="subtext">Public voter — Only public elections are available.</p>
+  {% endif %}
+
+  <a href="/logout">
+    <button class="btn-gray">Logout</button>
+  </a>
+</div>
+
+
+
+<!-- RESULTS NAV -->
+<div class="card">
+  <div class="section-title">Election Results</div>
+  <p class="subtext">View completed election summaries</p>
+
+  <a href="/voter/results">
+    <button class="btn-green">Open Results</button>
+  </a>
+</div>
+
+
+
+<!-- FILTER BAR -->
+<div class="card">
+
+  <div class="section-title">Available Elections</div>
+  <p class="subtext">Search & filter elections</p>
+
+  <div class="filter-bar">
+
+    <input id="searchBox" placeholder="Search election name...">
+
+    <select id="filterType">
+      <option value="">All Types</option>
+      <option value="public">Public</option>
+      <option value="private">Private</option>
+    </select>
+
+    <select id="filterStatus">
+      <option value="">All Status</option>
+      <option value="upcoming">Not Started</option>
+      <option value="running">Running</option>
+      <option value="ended">Ended</option>
+    </select>
+
+  </div>
+</div>
+
+
+
+
+
+<!-- MIXED ELECTION GRID -->
+<div class="grid">
+
+{% for e in elections %}
+
+<div class="election-card election-item"
+ data-name="{{ e.name | lower }}"
+ data-type="{{ e.type }}">
+
+  <div class="election-name">
+    {{ e.name }}
+
+    {% if e.type == "public" %}
+      <span class="badge badge-public">PUBLIC</span>
+    {% else %}
+      <span class="badge badge-private">PRIVATE</span>
+    {% endif %}
+  </div>
+
+
+  <div class="info-line">Total votes: {{ e.total_votes }}</div>
+
+
+  <div class="time-line" id="time-{{ e.id }}">⏳ Checking schedule…</div>
+
+
+  {% if not e.allowed and e.type == "private" %}
+    <span class="badge badge-locked">Your email is not approved</span>
+  {% endif %}
+
+  {% if e.voted %}
+    <span class="badge badge-ok">✔ You already voted</span>
+  {% endif %}
+
+
+  <a href="/election/{{ e.id }}"
+     class="vote-link"
+     data-candidates="{{ e.candidate_count }}">
+    <button class="btn-green"
+            id="btn-{{ e.id }}"
+            data-start="{{ e.start_time }}"
+            data-end="{{ e.end_time }}">
+      {% if e.voted %}View{% else %}Vote{% endif %}
+    </button>
+  </a>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+
+<div class="modal-bg" id="candidateModal">
+  <div class="modal-box">
+
+    <div class="modal-title">⚠ Voting Not Available</div>
+
+    <div class="modal-text">
+      This election currently has fewer than
+      <b>2 eligible candidates.</b><br><br>
+      The administrator must add more candidates
+      before voting can begin.
+    </div>
+
+    <button class="modal-btn btn-gray"
+            onclick="closeCandidateModal()">
+      Close
+    </button>
+
+  </div>
+</div>
+
+
+
+<script>
+/* ---------- SEARCH + FILTER ENGINE ---------- */
+
+const searchBox = document.getElementById("searchBox");
+const filterType = document.getElementById("filterType");
+const filterStatus = document.getElementById("filterStatus");
+
+function applyFilters(){
+
+  const q = searchBox.value.toLowerCase();
+  const type = filterType.value;
+  const status = filterStatus.value;
+
+  document.querySelectorAll(".election-item").forEach(card => {
+
+    const name = card.dataset.name;
+    const t = card.dataset.type;
+    const s = card.dataset.state || "";
+
+    let show = true;
+
+    if(q && !name.includes(q)) show = false;
+    if(type && t !== type) show = false;
+    if(status && s !== status) show = false;
+
+    card.style.display = show ? "" : "none";
+  });
+
+}
+
+searchBox.onkeyup = applyFilters;
+filterType.onchange = applyFilters;
+filterStatus.onchange = applyFilters;
+
+
+
+
+
+/* ---------- MINIMUM 2 CANDIDATE POPUP RULE ---------- */
+
+/* ---------- PREMIUM MIN-CANDIDATE MODAL ---------- */
+
+const modal = document.getElementById("candidateModal");
+
+function closeCandidateModal(){
+  modal.classList.remove("show");
+}
+
+document.querySelectorAll(".vote-link").forEach(link => {
+
+  link.addEventListener("click", function(evt){
+
+    const count = parseInt(this.dataset.candidates || 0);
+
+    if(count < 2){
+
+      evt.preventDefault();
+
+      modal.classList.add("show");
+
+      // Soft UX: auto-dismiss on ESC
+      document.onkeydown = e=>{
+        if(e.key==="Escape") closeCandidateModal();
+      };
+    }
+  });
+
+});
+
+
+
+
+
+
+/* ---------- LIVE COUNTDOWN / STATUS ENGINE ---------- */
+
+document.querySelectorAll("button[id^='btn-']").forEach(btn => {
+
+  const start = btn.dataset.start ? new Date(btn.dataset.start).getTime() : null;
+  const end   = btn.dataset.end   ? new Date(btn.dataset.end).getTime()   : null;
+
+  const label = document.getElementById("time-" + btn.id.split('-')[1]);
+  const card  = btn.closest(".election-item");
+
+  function fmt(ms){
+    let s=Math.floor(ms/1000);
+    const h=Math.floor(s/3600);s%=3600;
+    const m=Math.floor(s/60);s%=60;
+    return h+"h "+m+"m "+s+"s";
+  }
+
+  function update(){
+
+    const now = Date.now();
+
+    if(!start || !end){
+      label.innerHTML = "⏺ No schedule enforced";
+      card.dataset.state = "running";
+      applyFilters();
+      return;
+    }
+
+    if(now < start){
+      label.innerHTML = "⏳ Starts in: <b>"+fmt(start-now)+"</b>";
+      btn.disabled = true;
+      btn.classList.add("btn-disabled");
+      card.dataset.state = "upcoming";
+      applyFilters();
+      return;
+    }
+
+    if(now >= start && now <= end){
+      label.innerHTML = "🟢 Voting open — ends in <b>"+fmt(end-now)+"</b>";
+      btn.disabled = false;
+      btn.classList.remove("btn-disabled");
+      card.dataset.state = "running";
+      applyFilters();
+      return;
+    }
+
+    label.innerHTML = "🔴 Voting ended";
+    btn.disabled = true;
+    btn.classList.add("btn-disabled");
+    card.dataset.state = "ended";
+    applyFilters();
+  }
+
+  update();
+  setInterval(update, 1000);
+});
+</script>
+
+</body>
+</html>

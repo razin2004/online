@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Online Voting System — Secure Access Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI, Arial;}
+
+body{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#0b1220;
+  color:#fff;
+}
+
+/* ---------- MAIN WRAPPER ---------- */
+
+.wrapper{
+  width:960px;
+  height:600px;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 30px 60px rgba(0,0,0,.45);
+  backdrop-filter:blur(10px);
+  position:relative;
+}
+
+.panel{
+  position:absolute;
+  width:50%;
+  height:100%;
+  padding:34px;
+  transition:.6s;
+  background:rgba(15,23,42,.88);
+  overflow-y:auto;
+}
+
+.panel::-webkit-scrollbar{width:6px;}
+.panel::-webkit-scrollbar-thumb{background:#334155;border-radius:8px;}
+
+.welcome{
+  position:absolute;
+  width:50%;
+  height:100%;
+  right:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+}
+
+h1{font-size:24px;margin-bottom:6px;}
+.sub{font-size:13px;color:#9ca3af;margin-bottom:10px;}
+
+/* ---------- FIELDS ---------- */
+
+.field{margin-top:10px;}
+.field label{font-size:12px;color:#cbd5e1;}
+.field input{
+  width:100%;
+  padding:10px;
+  margin-top:4px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.08);
+  color:#fff;
+}
+
+/* ---------- BUTTONS ---------- */
+
+.btn{
+  width:100%;
+  padding:11px;
+  border-radius:9px;
+  border:none;
+  font-weight:600;
+  cursor:pointer;
+  margin-top:12px;
+}
+
+.primary{background:#22c55e;}
+.primary:hover{background:#16a34a;}
+
+.blue{background:#2563eb;}
+.blue:hover{background:#1d4ed8;}
+
+.neutral{background:rgba(255,255,255,.1);}
+.neutral:hover{background:rgba(255,255,255,.18);}
+
+/* ---------- PANEL STATES ---------- */
+
+.login-panel{left:0;}
+.register-panel{left:-100%;}
+.voter-panel{left:-200%;}
+
+.wrapper.register .login-panel{left:100%;}
+.wrapper.register .register-panel{left:0;}
+
+.wrapper.voter .login-panel{left:200%;}
+.wrapper.voter .voter-panel{left:0;}
+
+/* ---------- VOTER OPTION CARDS ---------- */
+
+.option-box{
+  margin-top:10px;
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:10px;
+  padding:12px;
+  cursor:pointer;
+  background:rgba(255,255,255,.06);
+}
+
+.option-box:hover{background:rgba(255,255,255,.12);}
+.option-form{display:none;margin-top:8px;}
+</style>
+</head>
+
+<body>
+
+{% set messages = get_flashed_messages(with_categories=True) %}
+{% set open_panel = "login" %}
+
+{% if messages %}
+  {% for cat,msg in messages %}
+    {% if cat in ["admin_register_error","admin_register_success"] %}
+      {% set open_panel = "register" %}
+    {% elif cat in ["voter_error","voter_success"] %}
+      {% set open_panel = "voter" %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{# ensure open_panel can be passed from render_template() #}
+{% if open_panel is not defined %}
+  {% set open_panel = request.args.get('panel', 'login') %}
+{% endif %}
+
+
+<div id="wrap"
+     class="wrapper
+     {% if open_panel == 'register' %} register
+     {% elif open_panel == 'voter' %} voter
+     {% endif %}">
+
+
+  <!-- ========== ADMIN LOGIN PANEL ========== -->
+
+  <div class="panel login-panel">
+
+    <h1>Welcome to the Voting Portal</h1>
+    <p class="sub">Please select your login mode to continue.</p>
+
+    <h1>Admin Login</h1>
+    <p class="sub">Sign in to manage elections, candidates and results.</p>
+
+    {% if messages %}
+      {% for cat,msg in messages %}
+        {% if cat == "admin_login_error" %}
+          <div style="background:#7f1d1d;border:1px solid #ef4444;
+          padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
+            {{ msg }}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="/admin/login">
+
+      <div class="field">
+        <label>Username</label>
+        <input name="username" required>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input type="password" name="password" required>
+      </div>
+
+      <button class="btn blue">Login as Admin</button>
+
+      <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
+        Don’t have an admin account?
+        <a href="javascript:void(0)" id="openRegister" style="color:#7dd3fc;">
+          Create account
+        </a>
+      </p>
+
+    </form>
+
+    <hr style="margin:16px 0;opacity:.25;">
+
+    <h1>Voter Access</h1>
+    <p class="sub">Continue here if you are participating in an election.</p>
+
+    <button class="btn primary" id="openVoter">
+      Continue as Voter
+    </button>
+
+    <div style="margin-top:6px;font-size:12px;color:#9ca3af;">
+      You will receive an OTP to verify your identity before voting.
+    </div>
+
+  </div>
+
+
+
+  <!-- ========== ADMIN REGISTER PANEL ========== -->
+
+  <div class="panel register-panel">
+
+    <h1>Create Admin Account</h1>
+    <p class="sub">
+      An OTP will be sent to your registered email for verification.
+    </p>
+
+    {% if messages %}
+      {% for cat,msg in messages %}
+        {% if cat in ["admin_register_error","admin_register_success"] %}
+          <div style="background:#334155;border:1px solid #94a3b8;
+          padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
+            {{ msg }}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="/admin/register">
+
+      <div class="field"><label>Full Name</label>
+        <input name="name" 
+       value="{{ form.name if form else '' }}" required></div>
+
+      <div class="field"><label>Username</label>
+        <input name="username" 
+       value="{{ form.username if form else '' }}" required></div>
+
+      <div class="field"><label>Mobile Number</label>
+        <input name="mobile" 
+       value="{{ form.mobile if form else '' }}" required></div>
+
+      <div class="field"><label>Email Address</label>
+        <input type="email" name="email"
+       value="{{ form.email if form else '' }}" required></div>
+
+      <div class="field"><label>Password</label>
+        <input type="password" name="password" required></div>
+
+      <div class="field"><label>Confirm Password</label>
+        <input type="password" name="confirm" required></div>
+
+      <button class="btn blue">Send OTP & Complete Registration</button>
+
+      <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
+        Already have an admin account?
+        <a href="javascript:void(0)" id="backLogin1" style="color:#7dd3fc;">
+          Go back to login
+        </a>
+      </p>
+
+    </form>
+  </div>
+
+
+
+  <!-- ========== VOTER LOGIN PANEL ========== -->
+
+  <div class="panel voter-panel">
+
+    <h1>Voter Login</h1>
+    <p class="sub">Choose your election type and continue with OTP verification.</p>
+
+    {% if messages %}
+      {% for cat,msg in messages %}
+        {% if cat in ["voter_error","voter_success"] %}
+          <div style="background:#334155;border:1px solid #94a3b8;
+          padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
+            {{ msg }}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+
+    <!-- PUBLIC ELECTION -->
+    <div class="option-box" id="optPublic">
+      🟢 Public Election — Open Participation
+    </div>
+
+    <div class="option-form" id="publicForm">
+      <form method="POST" action="/voter/login/public">
+
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" name="email" required>
+        </div>
+
+        <button class="btn primary">Send OTP & Continue</button>
+      </form>
+    </div>
+
+
+    <!-- PRIVATE ELECTION -->
+    <div class="option-box" id="optPrivate">
+      🔵 Private Election — Admin Approved Access
+    </div>
+
+    <div class="option-form" id="privateForm">
+      <form method="POST" action="/voter/login/private">
+
+        <div class="field">
+          <label>Admin Code</label>
+          <input name="admin_code" required>
+        </div>
+
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" name="email" required>
+        </div>
+
+        <button class="btn blue">Send OTP & Continue</button>
+      </form>
+    </div>
+
+    <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
+      Want to switch back?
+      <a href="javascript:void(0)" id="backLogin2" style="color:#7dd3fc;">
+        Return to main login
+      </a>
+    </p>
+
+  </div>
+
+
+
+  <!-- RIGHT STATIC PANEL -->
+  <div class="welcome">
+    <h2>Online Voting System</h2>
+    <p style="color:#cbd5e1;font-size:13px;">
+      Secure • Verified • One Vote Per User
+    </p>
+  </div>
+
+</div>
+
+
+
+<script>
+const wrap = document.getElementById("wrap");
+
+// panel switching
+document.getElementById("openVoter").onclick   = ()=> wrap.className="wrapper voter";
+document.getElementById("openRegister").onclick= ()=> wrap.className="wrapper register";
+
+document.getElementById("backLogin1").onclick  =
+document.getElementById("backLogin2").onclick  =
+()=> wrap.className="wrapper";
+
+// voter panel toggles
+const publicForm  = document.getElementById("publicForm");
+const privateForm = document.getElementById("privateForm");
+
+document.getElementById("optPublic").onclick = ()=>{
+  publicForm.style.display="block";
+  privateForm.style.display="none";
+};
+
+document.getElementById("optPrivate").onclick = ()=>{
+  privateForm.style.display="block";
+  publicForm.style.display="none";
+};
+</script>
+
+</body>
+</html>

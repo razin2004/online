@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>{{ election.name }} — Election Result</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial;}
+
+body{
+  min-height:100vh;
+  background:radial-gradient(circle at top,#020617,#020617 60%,#000);
+  color:#e5e7eb;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* ===== TOP HEADER ===== */
+
+.topbar{
+  width:100%;
+  padding:22px 28px;
+  background:rgba(2,6,23,.9);
+  border-bottom:1px solid #1f2937;
+  backdrop-filter:blur(8px);
+}
+
+.title{
+  font-size:22px;
+  font-weight:700;
+}
+
+.subtext{
+  color:#9ca3af;
+  font-size:13px;
+}
+
+/* ===== CONTAINER ===== */
+
+.container{
+  width:1200px;
+  max-width:95%;
+  margin-top:18px;
+}
+
+/* ===== CARD (Glass UI) ===== */
+
+.card{
+  background:linear-gradient(180deg,rgba(15,23,42,.92),rgba(2,6,23,.92));
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:18px;
+  padding:18px;
+  margin-top:16px;
+  box-shadow:
+    0 30px 60px rgba(0,0,0,.5),
+    inset 0 0 8px rgba(255,255,255,.05);
+  transition:.25s;
+}
+
+.card:hover{
+  border-color:rgba(148,163,184,.35);
+}
+
+/* ===== TITLES ===== */
+
+.section-title{
+  font-weight:700;
+  color:#f3f4f6;
+  margin-bottom:6px;
+}
+
+.note{
+  color:#9ca3af;
+  font-size:12px;
+}
+
+/* ===== GRID LAYOUT ===== */
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:14px;
+  margin-top:12px;
+}
+
+/* ===== CANDIDATE CARD ===== */
+
+.cand-card{
+  background:linear-gradient(180deg,#020617,#020617,#0a0f1e);
+  border:1px solid rgba(51,65,85,.6);
+  border-radius:16px;
+  padding:14px;
+  transition:.25s;
+}
+
+.cand-card:hover{
+  transform:scale(1.01);
+  border-color:#64748b;
+}
+
+/* Winner Glow */
+.cand-card.winner{
+  border-color:#22c55e;
+  box-shadow:
+    0 0 30px rgba(34,197,94,.35),
+    inset 0 0 10px rgba(34,197,94,.25);
+}
+
+/* Tie Glow */
+.cand-card.tie{
+  border-color:#eab308;
+  box-shadow:
+    0 0 30px rgba(234,179,8,.35),
+    inset 0 0 10px rgba(234,179,8,.25);
+}
+
+/* ===== CANDIDATE PHOTO ===== */
+
+.cand-photo{
+  width:95px;
+  height:95px;
+  border-radius:14px;
+  border:1px solid #334155;
+  object-fit:cover;
+  margin-bottom:8px;
+}
+
+/* ===== BADGES ===== */
+
+.badge{
+  display:inline-block;
+  padding:6px 9px;
+  border-radius:10px;
+  font-size:12px;
+  margin-top:4px;
+}
+
+.badge-win{
+  background:#022c22;
+  color:#22c55e;
+  border:1px solid #22c55e;
+}
+
+.badge-tie{
+  background:#422006;
+  color:#facc15;
+  border:1px solid #eab308;
+}
+
+/* ===== BAR CONTAINER ===== */
+
+.bar-box{
+  margin-top:10px;
+  background:rgba(2,6,23,.85);
+  border:1px solid #334155;
+  border-radius:12px;
+  padding:8px;
+}
+
+.bar-track{
+  width:100%;
+  height:12px;
+  background:#0f172a;
+  border-radius:12px;
+  overflow:hidden;
+}
+
+/* ===== ANIMATED BAR ===== */
+
+.bar-fill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#22c55e,#4ade80);
+  box-shadow:0 0 12px rgba(74,222,128,.6);
+  transition:width .9s ease;
+}
+
+/* ===== LABELS ===== */
+
+.vote-label{
+  margin-top:6px;
+  font-size:13px;
+  color:#e5e7eb;
+}
+
+/* ===== NAV BUTTON ===== */
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:600;
+  transition:.25s;
+}
+
+.btn-blue{
+  background:#2563eb;
+}
+.btn-blue:hover{
+  background:#1d4ed8;
+  transform:translateY(-1px);
+}
+</style>
+</head>
+
+
+
+<body>
+
+<div class="topbar">
+  <div class="title">Election Result</div>
+  <div class="subtext">Secure certified voting summary</div>
+</div>
+
+
+<div class="container">
+
+
+<!-- ===== HEADER ===== -->
+<div class="card">
+
+  <div class="section-title">Election Summary</div>
+
+  <p><b>Name:</b> {{ election.name }}</p>
+
+  <p><b>Type:</b>
+    {% if election.election_type == "public" %}
+      Public Election
+    {% else %}
+      Private Election
+    {% endif %}
+  </p>
+
+  <p><b>Total Votes:</b> {{ total_votes }}</p>
+
+  <p class="note">
+    Winners are automatically detected — multiple winners possible in tie cases.
+  </p>
+
+</div>
+
+
+
+<!-- ===== RESULT GRID ===== -->
+<div class="card">
+
+  <div class="section-title">Candidate Results</div>
+
+  {% set tie_count = result | selectattr('winner') | list | length %}
+
+  {% if tie_count > 1 %}
+    <p class="note">⚠ Tie detected — {{ tie_count }} candidates share top votes.</p>
+  {% endif %}
+
+  <div class="grid">
+
+  {% for r in result %}
+
+    <div class="cand-card
+      {% if r.winner and tie_count == 1 %}winner{% endif %}
+      {% if r.winner and tie_count > 1 %}tie{% endif %}
+    ">
+
+      {% if r.photo %}
+        <img src="/static/uploads/{{ r.photo }}" class="cand-photo">
+      {% endif %}
+
+      <p><b>{{ r.name }}</b></p>
+
+      {% if r.winner and tie_count == 1 %}
+        <span class="badge badge-win">Winner</span>
+      {% elif r.winner and tie_count > 1 %}
+        <span class="badge badge-tie">Tie Winner</span>
+      {% endif %}
+
+
+      <div class="bar-box">
+
+        <div class="bar-track">
+          <div class="bar-fill"
+               data-count="{{ r.count }}"
+               data-total="{{ total_votes }}">
+          </div>
+        </div>
+
+        <div class="vote-label">
+          Votes — <b>{{ r.count }}</b>
+          <span class="pct"></span>
+        </div>
+
+      </div>
+
+    </div>
+
+  {% endfor %}
+
+  </div>
+
+</div>
+
+
+
+<!-- ===== NAV ===== -->
+<div class="card">
+  <a href="/voter/results">
+    <button class="btn-blue">Back to Results List</button>
+  </a>
+</div>
+
+</div>
+
+
+
+<script>
+/* Compute percentage in JS (avoids template math errors) */
+document.querySelectorAll(".bar-fill").forEach(bar => {
+
+  const count = parseInt(bar.dataset.count);
+  const total = parseInt(bar.dataset.total);
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+
+  bar.style.width = pct + "%";
+
+  const label = bar.closest(".bar-box").querySelector(".pct");
+  label.innerHTML = " — " + pct + "%";
+});
+</script>
+
+</body>
+</html>
