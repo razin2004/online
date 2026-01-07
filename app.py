@@ -33,31 +33,20 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # SMTP — GMAIL OTP SETUP
 # -------------------------------------------------
 
-import os
 
-SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+SMTP_EMAIL = "control.your.voting@gmail.com"
+SMTP_PASSWORD = "sydpdtgkauovfiee"
+
 
 def send_otp_email(to, subject, text):
-    print("SMTP DEBUG — email:", SMTP_EMAIL, "password:", bool(SMTP_PASSWORD))
-
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
-        print("⚠️ SMTP NOT CONFIGURED — OTP NOT SENT")
-        return
-
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.starttls()
             smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
             message = f"Subject: {subject}\n\n{text}"
             smtp.sendmail(SMTP_EMAIL, to, message)
-
-        print("✅ OTP EMAIL SENT TO:", to)
-
     except Exception as e:
-        print("❌ SMTP ERROR:", e)
-
-
+        print("SMTP ERROR:", e)
 
 
 def generate_otp():
@@ -1565,3 +1554,6 @@ def logout():
 
     return redirect("/")
 
+# -------------------------------------------------
+if __name__ == "__main__": 
+    app.run(debug=True)
