@@ -39,6 +39,8 @@ SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
 def send_otp_email(to, subject, text):
+    print("SMTP DEBUG — email:", SMTP_EMAIL, "password:", bool(SMTP_PASSWORD))
+
     if not SMTP_EMAIL or not SMTP_PASSWORD:
         print("⚠️ SMTP NOT CONFIGURED — OTP NOT SENT")
         return
@@ -50,8 +52,11 @@ def send_otp_email(to, subject, text):
             message = f"Subject: {subject}\n\n{text}"
             smtp.sendmail(SMTP_EMAIL, to, message)
 
+        print("✅ OTP EMAIL SENT TO:", to)
+
     except Exception as e:
-        print("SMTP ERROR:", e)
+        print("❌ SMTP ERROR:", e)
+
 
 
 
@@ -1560,6 +1565,3 @@ def logout():
 
     return redirect("/")
 
-# -------------------------------------------------
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0")
