@@ -118,23 +118,82 @@ h1{font-size:24px;margin-bottom:6px;}
 
 .option-box:hover{background:rgba(255,255,255,.12);}
 .option-form{display:none;margin-top:8px;}
+
+/* ---------- FORGOT PASSWORD MODAL ---------- */
+
+.reset-overlay{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  backdrop-filter:blur(6px);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:9999; /* ensures overlay is above welcome panel */
+}
+
+
+.reset-box{
+  width:420px;
+  background:linear-gradient(180deg,#0f172a,#020617);
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.15);
+  padding:18px;
+  box-shadow:0 35px 80px rgba(0,0,0,.6);
+}
+
+.reset-title{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:4px;
+}
+
+.reset-sub{
+  font-size:12px;
+  color:#9ca3af;
+  margin-bottom:10px;
+}
+
+.reset-btn{
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  margin-top:10px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.green{background:#22c55e;}
+.green:hover{background:#16a34a;}
+
+.gray{background:#4b5563;}
+.gray:hover{background:#6b7280;}
+
 </style>
 </head>
 
 <body>
 
 {% set messages = get_flashed_messages(with_categories=True) %}
-{% set open_panel = "login" %}
+{% set open_panel = request.args.get('panel', 'login') %}
 
 {% if messages %}
   {% for cat,msg in messages %}
-    {% if cat in ["admin_register_error","admin_register_success"] %}
+
+    {# --- force open REGISTER panel on any admin register alert --- #}
+    {% if "register" in cat or "admin_register" in cat %}
       {% set open_panel = "register" %}
-    {% elif cat in ["voter_error","voter_success"] %}
+    {% endif %}
+
+    {# --- force open VOTER panel on any voter alert --- #}
+    {% if "voter" in cat %}
       {% set open_panel = "voter" %}
     {% endif %}
+
   {% endfor %}
 {% endif %}
+
 
 {# ensure open_panel can be passed from render_template() #}
 {% if open_panel is not defined %}
@@ -183,6 +242,12 @@ h1{font-size:24px;margin-bottom:6px;}
       </div>
 
       <button class="btn blue">Login as Admin</button>
+      <p style="margin-top:6px;font-size:12px;color:#9ca3af;">
+        Forgot your password?
+        <a href="javascript:void(0)" id="openReset" style="color:#ecd072;">
+          Reset password
+        </a>
+      </p>
 
       <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
         Don’t have an admin account?
@@ -222,7 +287,7 @@ h1{font-size:24px;margin-bottom:6px;}
     {% if messages %}
       {% for cat,msg in messages %}
         {% if cat in ["admin_register_error","admin_register_success"] %}
-          <div style="background:#334155;border:1px solid #94a3b8;
+          <div style="background:#7f1d1d;border:1px solid #ef4444;
           padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
             {{ msg }}
           </div>
@@ -275,56 +340,14 @@ h1{font-size:24px;margin-bottom:6px;}
     <h1>Voter Login</h1>
     <p class="sub">Choose your election type and continue with OTP verification.</p>
 
-    {% if messages %}
-      {% for cat,msg in messages %}
-        {% if cat in ["voter_error","voter_success"] %}
-          <div style="background:#334155;border:1px solid #94a3b8;
-          padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
-            {{ msg }}
-          </div>
-        {% endif %}
-      {% endfor %}
-    {% endif %}
-
-
     <!-- PUBLIC ELECTION -->
     <div class="option-box" id="optPublic">
       🟢 Public Election — Open Participation
     </div>
 
-    <div class="option-form" id="publicForm">
-      <form method="POST" action="/voter/login/public">
-
-        <div class="field">
-          <label>Email Address</label>
-          <input type="email" name="email" required>
-        </div>
-
-        <button class="btn primary">Send OTP & Continue</button>
-      </form>
-    </div>
-
-
     <!-- PRIVATE ELECTION -->
     <div class="option-box" id="optPrivate">
       🔵 Private Election — Admin Approved Access
-    </div>
-
-    <div class="option-form" id="privateForm">
-      <form method="POST" action="/voter/login/private">
-
-        <div class="field">
-          <label>Admin Code</label>
-          <input name="admin_code" required>
-        </div>
-
-        <div class="field">
-          <label>Email Address</label>
-          <input type="email" name="email" required>
-        </div>
-
-        <button class="btn blue">Send OTP & Continue</button>
-      </form>
     </div>
 
     <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
@@ -336,8 +359,6 @@ h1{font-size:24px;margin-bottom:6px;}
 
   </div>
 
-
-
   <!-- RIGHT STATIC PANEL -->
   <div class="welcome">
     <h2>Online Voting System</h2>
@@ -346,11 +367,157 @@ h1{font-size:24px;margin-bottom:6px;}
     </p>
   </div>
 
+<!-- ========== FORGOT PASSWORD RESET PANEL ========== -->
+
+<div id="resetOverlay" class="reset-overlay">
+
+  <div class="reset-box">
+
+    <div class="reset-title">Reset Admin Password</div>
+    <div class="reset-sub">
+      Enter your registered admin email — an OTP will be sent to verify identity.
+    </div>
+
+    <form method="POST" action="/admin/forgot-password">
+
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" name="email" required>
+      </div>
+
+      <button class="reset-btn green">Send Reset OTP</button>
+    </form>
+<button id="closeReset"
+        style="
+          background:none;
+          border:none;
+          color:#809dd1;
+          font-size:12px;
+          margin-top:6px;
+          cursor:pointer;
+          text-decoration:underline;
+        ">
+  Back to Login
+</button>
+
+
+    <p style="margin-top:6px;font-size:11px;color:#9ca3af;">
+      For security reasons, the system will not confirm whether an email exists.
+    </p>
+  </div>
+
+</div>
+
+</div>
+
+<!-- ================= PUBLIC VOTER OTP POPUP ================= -->
+
+<div id="publicOtpOverlay" class="reset-overlay">
+
+  <div class="reset-box">
+
+    <div class="reset-title">Public Voting — OTP Verification</div>
+
+    <div class="reset-sub">
+      Enter your email address to receive a secure OTP before voting.
+    </div>
+    {% if messages %}
+      {% for cat,msg in messages %}
+        {% if cat == "voter_public_error" %}
+          <div style="background:#7f1d1d;border:1px solid #ef4444;
+          padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
+            {{ msg }}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="/voter/login/public" novalidate>
+
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" name="email" required>
+      </div>
+
+      <button class="reset-btn green">
+        Send OTP & Continue
+      </button>
+    </form>
+
+    <button onclick="closePublicOtp()"
+            style="background:none;border:none;color:#9fb6ff;
+            font-size:12px;margin-top:6px;cursor:pointer;text-decoration:underline;">
+      Cancel & Return
+    </button>
+
+  </div>
 </div>
 
 
 
+<!-- ================= PRIVATE VOTER OTP POPUP ================= -->
+
+<div id="privateOtpOverlay" class="reset-overlay">
+
+  <div class="reset-box">
+
+    <div class="reset-title">Private Voting — Secure Access</div>
+
+    <div class="reset-sub">
+      Enter Admin Code and your Email — OTP verification required.
+    </div>
+    {% if messages %}
+      {% for cat,msg in messages %}
+        {% if cat == "voter_private_error" %}
+          <div style="background:#7f1d1d;border:1px solid #ef4444;
+          padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
+            {{ msg }}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="/voter/login/private" novalidate>
+
+      <div class="field">
+        <label>Admin Code</label>
+        <input name="admin_code" required>
+      </div>
+
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" name="email" required>
+      </div>
+
+      <button class="reset-btn blue">
+        Send OTP & Continue
+      </button>
+    </form>
+
+    <button onclick="closePrivateOtp()"
+            style="background:none;border:none;color:#9fb6ff;
+            font-size:12px;margin-top:6px;cursor:pointer;text-decoration:underline;">
+      Cancel & Return
+    </button>
+
+  </div>
+</div>
+
+
 <script>
+
+// ---------- Forgot Password Panel ----------
+
+const resetOverlay = document.getElementById("resetOverlay");
+
+document.getElementById("openReset").onclick = ()=>{
+  resetOverlay.style.display="flex";
+};
+
+document.getElementById("closeReset").onclick = ()=>{
+  resetOverlay.style.display="none";
+};
+
 const wrap = document.getElementById("wrap");
 
 // panel switching
@@ -362,18 +529,82 @@ document.getElementById("backLogin2").onclick  =
 ()=> wrap.className="wrapper";
 
 // voter panel toggles
-const publicForm  = document.getElementById("publicForm");
-const privateForm = document.getElementById("privateForm");
+// ==== VOTER OTP MODALS ====
+
+const publicOtpOverlay  = document.getElementById("publicOtpOverlay");
+const privateOtpOverlay = document.getElementById("privateOtpOverlay");
 
 document.getElementById("optPublic").onclick = ()=>{
-  publicForm.style.display="block";
-  privateForm.style.display="none";
+  publicOtpOverlay.style.display = "flex";
 };
 
 document.getElementById("optPrivate").onclick = ()=>{
-  privateForm.style.display="block";
-  publicForm.style.display="none";
+  privateOtpOverlay.style.display = "flex";
 };
+
+function closePublicOtp(){
+  publicOtpOverlay.style.display = "none";
+}
+
+function closePrivateOtp(){
+  privateOtpOverlay.style.display = "none";
+}
+
+// ===== AUTO-HIDE SYSTEM MESSAGES (3.5 seconds) =====
+setTimeout(() => {
+
+  document.querySelectorAll(
+    "div[style*='background:#7f1d1d'], \
+     div[style*='background:#334155'], \
+     div[style*='background:#2c0a0a'], \
+     div[style*='background:#022c22']"
+  ).forEach(el => el.remove());
+
+}, 3500);
+
+/* ===== PANEL MEMORY SYSTEM ===== */
+
+// apply stored panel on load
+const savedPanel = sessionStorage.getItem("active_panel");
+if(savedPanel){
+  wrap.className = "wrapper " + savedPanel;
+}
+
+// store panel whenever user switches
+document.getElementById("openVoter").onclick = ()=>{
+  wrap.className="wrapper voter";
+  sessionStorage.setItem("active_panel","voter");
+};
+
+document.getElementById("openRegister").onclick = ()=>{
+  wrap.className="wrapper register";
+  sessionStorage.setItem("active_panel","register");
+};
+
+document.getElementById("backLogin1").onclick =
+document.getElementById("backLogin2").onclick = ()=>{
+  wrap.className="wrapper";
+  sessionStorage.setItem("active_panel","");
+};
+
+// when OTP / redirects bring custom panel — keep it
+if("{{ open_panel }}" === "voter"){
+  sessionStorage.setItem("active_panel","voter");
+}
+if("{{ open_panel }}" === "register"){
+  sessionStorage.setItem("active_panel","register");
+}
+// reopen popup when validation error occurs
+const last_error = "{{ messages[-1][0] if messages else '' }}";
+
+if(last_error === "voter_public_error"){
+  publicOtpOverlay.style.display = "flex";
+}
+
+if(last_error === "voter_private_error"){
+  privateOtpOverlay.style.display = "flex";
+}
+
 </script>
 
 </body>

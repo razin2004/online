@@ -33,20 +33,26 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # SMTP — GMAIL OTP SETUP
 # -------------------------------------------------
 
+import os
 
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
-
 def send_otp_email(to, subject, text):
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        print("⚠️ SMTP NOT CONFIGURED — OTP NOT SENT")
+        return
+
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.starttls()
             smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
             message = f"Subject: {subject}\n\n{text}"
             smtp.sendmail(SMTP_EMAIL, to, message)
+
     except Exception as e:
         print("SMTP ERROR:", e)
+
 
 
 def generate_otp():
@@ -212,8 +218,9 @@ with app.app_context():
 
 @app.route("/")
 def index():
+    session.pop("otp_reset_verified", None)
+    session.pop("reset_email", None)
     return render_template("login.html")
-
 
 # -------------------------------------------------
 # ADMIN LOGIN
@@ -336,7 +343,8 @@ def verify_otp():
     # ---- expired ----
     if record.expires_at < datetime.utcnow():
         flash("OTP expired — request a new one", "otp_error")
-        return redirect("/")
+        return redirect("/voter/otp")
+
 
     # ---- delete OTP ----
     db.session.delete(record)
@@ -369,53 +377,221 @@ def verify_otp():
     return redirect("/?panel=login")
 
 # -------------------------------------------------
+# ADMIN FORGOT PASSWORD — REQUEST RESET OTP
+# -------------------------------------------------
+
+@app.route("/admin/forgot-password", methods=["POST"])
+def admin_forgot_password():
+
+    email = request.form["email"].strip().lower()
+
+    admin = Admin.query.filter_by(email=email).first()
+
+    # Security: do NOT reveal whether email exists
+    # Always show success response
+
+    otp = generate_otp()
+
+    if admin:
+
+        # delete previous reset OTPs
+        OTPStore.query.filter_by(
+            email=email,
+            role="admin_reset"
+        ).delete()
+
+        store_new_otp(email, otp, "admin_reset")
+
+        send_otp_email(
+            email,
+            "Admin Password Reset OTP",
+            f"Your OTP to reset password is: {otp}"
+        )
+
+        session["reset_email"] = email
+
+    session["otp_context"] = "admin_reset"
+
+    flash("If the email is registered, an OTP has been sent.", "otp_success")
+    return redirect("/verify-otp?context=reset")
+# -------------------------------------------------
+# ADMIN PASSWORD RESET — OTP VERIFICATION
+# -------------------------------------------------
+
+@app.route("/admin/reset-verify", methods=["POST"])
+def admin_reset_verify():
+
+    email = session.get("reset_email")
+
+    if not email:
+        flash("Session expired — restart reset process", "otp_error")
+        return redirect("/")
+
+    otp = request.form["otp"]
+
+    record = OTPStore.query.filter_by(
+        email=email,
+        role="admin_reset"
+    ).order_by(OTPStore.id.desc()).first()
+
+    if not record or record.code != otp:
+        flash("Invalid OTP", "otp_error")
+        return redirect("/verify-otp?context=reset")
+
+    if record.expires_at < datetime.utcnow():
+        flash("OTP expired — request new reset link", "otp_error")
+        return redirect("/")
+
+    # delete otp after verification
+    db.session.delete(record)
+    db.session.commit()
+
+    session["otp_reset_verified"] = True
+
+    flash("OTP verified — create your new password", "otp_success")
+    return redirect("/verify-otp?context=reset")
+# -------------------------------------------------
+# ADMIN RESET — UPDATE PASSWORD
+# -------------------------------------------------
+
+@app.route("/admin/reset-password", methods=["POST"])
+def admin_reset_password():
+
+    if not session.get("otp_reset_verified"):
+        flash("OTP verification required", "otp_error")
+        return redirect("/")
+
+    email = session.get("reset_email")
+
+    admin = Admin.query.filter_by(email=email).first()
+
+    if not admin:
+        flash("Account not found", "otp_error")
+        return redirect("/")
+
+    password = request.form["password"]
+    confirm  = request.form["confirm"]
+
+    if password != confirm:
+        flash("Passwords do not match", "otp_error")
+        return redirect("/verify-otp?context=reset")
+
+    admin.password = generate_password_hash(password)
+    db.session.commit()
+
+    # cleanup session
+    session.pop("otp_reset_verified", None)
+    session.pop("reset_email", None)
+    session.pop("otp_context", None)
+
+    flash("Password updated successfully — login again", "otp_success")
+    return redirect("/?panel=login")
+
+@app.route("/admin/reset-resend")
+def admin_reset_resend():
+
+    email = session.get("reset_email")
+    if not email:
+        flash("Session expired — restart reset process", "otp_error")
+        return redirect("/")
+
+    otp = generate_otp()
+    store_new_otp(email, otp, "admin_reset")
+
+    send_otp_email(email, "Admin Password Reset OTP", f"Your OTP is {otp}")
+
+    flash("New OTP sent to your email", "otp_success")
+    return redirect("/verify-otp?context=reset")
+@app.route("/voter/resend-otp")
+def voter_resend_otp():
+
+    email = session.get("voter_email")
+    if not email:
+        flash("Session expired — start login again", "otp_error")
+        return redirect("/")
+
+    role = "voter_private" if "voter_admin_id" in session else "voter_public"
+
+    otp = generate_otp()
+    store_new_otp(email, otp, role)
+
+    send_otp_email(email, "Voting Login OTP", f"Your new OTP is {otp}")
+
+    flash("A new OTP has been sent", "otp_success")
+    return redirect("/voter/otp")
+@app.route("/admin/register-resend")
+def admin_register_resend():
+
+    pending = session.get("pending_admin")
+    if not pending:
+        flash("Session expired — register again", "otp_error")
+        return redirect("/")
+
+    email = pending["email"]
+
+    otp = generate_otp()
+    store_new_otp(email, otp, "admin_register")
+
+    send_otp_email(email, "Admin Registration OTP", f"Your OTP is {otp}")
+
+    flash("New OTP sent to your email", "otp_success")
+    return redirect("/verify-otp")
+
+# -------------------------------------------------
 # VOTER LOGIN — PUBLIC
 # -------------------------------------------------
 
 @app.route("/voter/login/public", methods=["POST"])
 def voter_public_login():
 
-    email = request.form["email"]
-    otp = generate_otp()
+    email = request.form["email"].strip().lower()
 
+    if "@" not in email:
+        flash("Enter a valid email address", "voter_public_error")
+        return render_template("login.html", open_panel="voter")
+
+    otp = generate_otp()
     store_new_otp(email, otp, "voter_public")
 
-
     send_otp_email(email, "Voting Login OTP", f"Your OTP is {otp}")
-    session["voter_email"] = email
-    flash("OTP sent to your email", "voter_success")
 
+    session["voter_email"] = email
+
+    flash("OTP sent to your email", "voter_public_success")
     return redirect("/voter/otp")
+
 
 
 # -------------------------------------------------
 # VOTER LOGIN — PRIVATE
 # -------------------------------------------------
-
 @app.route("/voter/login/private", methods=["POST"])
 def voter_private_login():
 
-    admin_code = request.form["admin_code"]
-    email = request.form["email"]
+    admin_code = request.form["admin_code"].strip()
+    email = request.form["email"].strip().lower()
 
     admin = Admin.query.filter_by(admin_code=admin_code).first()
 
     if not admin:
-        flash("Admin code not found", "voter_error")
-        return redirect("/")
+        flash("Admin code not found", "voter_private_error")
+        return render_template("login.html", open_panel="voter")
+
+    if "@" not in email:
+        flash("Enter a valid email address", "voter_private_error")
+        return render_template("login.html", open_panel="voter")
 
     otp = generate_otp()
-
     store_new_otp(email, otp, "voter_private", admin.id)
-
 
     send_otp_email(email, "Private Voting OTP", f"Your OTP is {otp}")
 
     session["voter_email"] = email
     session["voter_admin_id"] = admin.id
-    flash("OTP sent to your email", "voter_success")
 
+    flash("OTP sent to your email", "voter_private_success")
     return redirect("/voter/otp")
+
 
 
 # -------------------------------------------------
@@ -424,6 +600,11 @@ def voter_private_login():
 
 @app.route("/voter/otp", methods=["GET", "POST"])
 def voter_verify():
+
+    # prevent admin reset state leaking into voter login
+    session.pop("otp_reset_verified", None)
+    session.pop("reset_email", None)
+    session.pop("otp_context", None)
 
     if request.method == "GET":
         return render_template("otp.html",context="voter")
@@ -1380,10 +1561,5 @@ def logout():
     return redirect("/")
 
 # -------------------------------------------------
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(
-        host="0.0.0.0",
-        port=port,
-        debug=False
-    )
+if __name__ == "__main__": 
+    app.run(debug=True)

@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Admin Dashboard — Online Voting System</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Segoe UI, Inter, Arial;
+}
+
+body{
+  min-height:100vh;
+  background:radial-gradient(circle at top,#020617,#01030c 60%);
+  color:#e5e7eb;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* =====================
+   PREMIUM DASHBOARD FRAME
+===================== */
+
+.dashboard-wrap{
+  width:1250px;
+  max-width:95%;
+  margin-top:20px;
+  display:grid;
+  grid-template-columns:260px 1fr;
+  gap:18px;
+}
+
+/* =====================
+   SIDEBAR
+===================== */
+
+.sidebar{
+  background:linear-gradient(180deg,#020617,#030712);
+  border:1px solid #0f172a;
+  border-radius:18px;
+  padding:16px;
+  box-shadow:0 35px 60px rgba(0,0,0,.55);
+  position:sticky;
+  top:12px;
+  height:fit-content;
+}
+
+.sidebar h3{
+  color:#f8fafc;
+  margin-bottom:6px;
+}
+
+.side-note{
+  color:#94a3b8;
+  font-size:12px;
+}
+
+/* PROFILE CARD */
+
+.profile-box{
+  margin-top:10px;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid #1f2937;
+  background:rgba(15,23,42,.6);
+}
+
+.profile-box b{
+  color:#f1f5f9;
+}
+
+.profile-box .code{
+  color:#7dd3fc;
+}
+
+.logout-btn{
+  margin-top:12px;
+  width:100%;
+  padding:10px;
+  border-radius:12px;
+  border:none;
+  background:#dc2626;
+  cursor:pointer;
+  font-weight:600;
+}
+.logout-btn:hover{background:#b91c1c}
+
+/* =====================
+   MAIN DASHBOARD AREA
+===================== */
+
+.main{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+/* PREMIUM CARD */
+
+.card{
+  background:linear-gradient(180deg,rgba(15,23,42,.92),rgba(2,6,23,.92));
+  border:1px solid #1f2937;
+  border-radius:18px;
+  padding:18px;
+  box-shadow:0 30px 55px rgba(0,0,0,.55);
+}
+
+.card h3{
+  color:#f1f5f9;
+}
+
+.sub{
+  color:#9ca3af;
+  font-size:12px;
+}
+
+/* BUTTON SET */
+
+button{
+  padding:10px 12px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.btn-blue{background:#2563eb}
+.btn-green{background:#16a34a}
+.btn-yellow{background:#d97706}
+.btn-red{background:#dc2626}
+.btn-gray{background:#6b7280}
+
+.btn-blue:hover{background:#1d4ed8}
+.btn-green:hover{background:#15803d}
+.btn-yellow:hover{background:#b45309}
+.btn-red:hover{background:#b91c1c}
+
+/* =====================
+   SUMMARY STRIP
+===================== */
+
+.summary-grid{
+  margin-top:8px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+}
+
+.summary-box{
+  padding:12px;
+  border-radius:14px;
+  border:1px solid #334155;
+  background:rgba(2,6,23,.6);
+}
+
+.summary-value{
+  font-size:18px;
+  font-weight:bold;
+  color:#f8fafc;
+}
+
+.summary-label{
+  font-size:12px;
+  color:#94a3b8;
+}
+.search-input{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #334155;
+  margin:8px 0 12px 0;
+  background:#020617;
+  color:#e5e7eb;
+}
+
+.election-card{
+  background:#020617;
+  border:1px solid #1f2937;
+  border-radius:14px;
+  padding:12px;
+  margin-top:10px;
+}
+
+.election-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.tag{
+  padding:4px 8px;
+  border-radius:8px;
+  font-size:11px;
+}
+
+.tag.public{background:#064e3b;}
+.tag.private{background:#1e3a8a;}
+.tag.code{background:#4b5563;}
+
+.status-row{
+  display:flex;
+  gap:6px;
+  margin-top:6px;
+  flex-wrap:wrap;
+}
+
+.state{
+  padding:4px 8px;
+  border-radius:8px;
+  font-size:10px;
+}
+
+.state.running{background:#1e3a8a;}
+.state.ended{background:#14532d;}
+.state.upcoming{background:#78350f;}
+.state.idle{background:#334155;}
+
+.vis{padding:4px 8px;border-radius:8px;font-size:10px;}
+.vis.visible{background:#065f46;}
+.vis.hidden{background:#7c2d12;}
+
+.timer{color:#7dd3fc;font-size:11px;}
+
+.metrics{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:8px;
+}
+
+.metric{
+  background:#020617;
+  border:1px solid #334155;
+  border-radius:12px;
+  padding:8px;
+  text-align:center;
+}
+
+.time-info{
+  margin-top:6px;
+  color:#9ca3af;
+  font-size:12px;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+.panel{
+  background:#020617;
+  border:1px solid #334155;
+  border-radius:14px;
+  padding:10px;
+  margin-top:6px;
+}
+
+.wl-text{
+  min-height:120px;
+  margin-top:6px;
+  border-radius:10px;
+  border:1px solid #334155;
+  background:#020617;
+  color:#e5e7eb;
+  padding:10px;
+}
+
+.whitelist-scroll{
+  max-height:360px;
+  overflow-y:auto;
+  margin-top:6px;
+}
+
+.whitelist-card{
+  background:#020617;
+  border:1px solid #334155;
+  border-radius:12px;
+  padding:10px;
+  margin-top:8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.whitelist-email{
+  font-weight:600;
+}
+.cand-scroll{
+  max-height:420px;
+  overflow-y:auto;
+  margin-top:6px;
+}
+
+.cand-card{
+  background:#020617;
+  border:1px solid #334155;
+  border-radius:14px;
+  padding:10px;
+  margin-top:8px;
+}
+
+.cand-header{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.cand-photo-lg{
+  height:60px;
+  width:60px;
+  border-radius:10px;
+  border:1px solid #334155;
+  object-fit:cover;
+}
+
+.cand-photo-placeholder{
+  height:60px;
+  width:60px;
+  border-radius:10px;
+  border:1px dashed #334155;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:10px;
+  color:#9ca3af;
+}
+
+.cand-meta{
+  display:flex;
+  flex-direction:column;
+}
+
+.cand-name{
+  font-weight:700;
+}
+
+.cand-party{
+  font-size:12px;
+  color:#7dd3fc;
+}
+
+.cand-vote-count{
+  font-size:12px;
+  color:#cbd5e1;
+  margin-top:2px;
+}
+
+.cand-actions{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+
+</style>
+</head>
+
+<body>
+
+
+<div class="dashboard-wrap">
+
+
+<!-- ===================== SIDEBAR ===================== -->
+<div class="sidebar">
+
+  <h3>Admin Control</h3>
+  <div class="side-note">Secure Election Management Panel</div>
+
+  <div class="profile-box">
+
+    <p><b>Name:</b> {{ admin.name }}</p>
+    <p><b>Username:</b> {{ admin.username }}</p>
+
+    <p>
+      <b>Admin Code:</b>
+      <span class="code">{{ admin.admin_code }}</span>
+    </p>
+
+    <div class="side-note">
+      Share this code ONLY with private election voters.
+    </div>
+
+    <a href="/logout">
+      <button class="logout-btn">Logout</button>
+    </a>
+
+  </div>
+
+</div>
+
+
+
+<!-- ===================== MAIN PANEL ===================== -->
+<div class="main">
+
+
+<!-- ===================== DASHBOARD SUMMARY ===================== -->
+<div class="card">
+
+  <h3>Election Overview</h3>
+  <p class="sub">Live status — votes, visibility, locks</p>
+
+  <div class="summary-grid">
+
+    <div class="summary-box">
+      <div class="summary-value">
+        {{ elections|length }}
+      </div>
+      <div class="summary-label">Total Elections</div>
+    </div>
+
+    <div class="summary-box">
+      <div class="summary-value">
+        {{ elections|selectattr('election_type','equalto','public')|list|length }}
+      </div>
+      <div class="summary-label">Public Elections</div>
+    </div>
+
+    <div class="summary-box">
+      <div class="summary-value">
+        {{ elections|selectattr('election_type','equalto','private')|list|length }}
+      </div>
+      <div class="summary-label">Private Elections</div>
+    </div>
+
+    <div class="summary-box">
+      <div class="summary-value">
+        {{ elections|sum(attribute='total_votes') }}
+      </div>
+      <div class="summary-label">Total Votes Collected</div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ===================== CREATE ELECTION ===================== -->
+<div class="card">
+
+  <h3>Create New Election</h3>
+  <p class="sub">
+    Configure election type & schedule — private elections require time limits.
+  </p>
+
+  <form method="POST" action="/admin/create-election">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+
+      <div>
+        <label>Election Name</label>
+        <input name="name" required placeholder="Enter election title">
+      </div>
+
+      <div>
+        <label>Election Type</label>
+
+        <select name="type" id="electionType" required>
+          <option value="public">Public — open to all voters</option>
+          <option value="private">Private — restricted voters only</option>
+        </select>
+
+        <div id="typeHint" class="sub" style="margin-top:4px;">
+          Public elections do not require schedule.
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- TIME INPUTS -->
+
+    <div style="margin-top:12px;">
+      <label>Election Duration</label>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <input type="datetime-local" name="start_time" id="startTime">
+        <input type="datetime-local" name="end_time" id="endTime">
+      </div>
+
+      <div id="timeHint" class="sub" style="margin-top:4px;">
+        Start & End time are optional for public elections.
+      </div>
+    </div>
+
+
+    <!-- VALIDATION WARNINGS -->
+
+    <p id="warnPrivate" class="sub"
+       style="color:#facc15;display:none;margin-top:6px;">
+      ⚠ Private elections require both start & end time.
+    </p>
+
+    <p id="warnTime" class="sub"
+       style="color:#f87171;display:none;margin-top:6px;">
+      ⚠ End time must be later than start time.
+    </p>
+
+
+    <button class="btn-blue" style="margin-top:10px;">
+      Create Election
+    </button>
+
+  </form>
+
+</div>
+<div class="card">
+
+  <h3>Public Elections</h3>
+  <p class="sub">Accessible to all voters — optional schedule</p>
+
+  <input id="searchPublic"
+         placeholder="Search public elections by name or code"
+         class="search-input">
+
+  {% for e in elections if e.election_type == "public" %}
+
+  <div class="election-card"
+       data-election-card
+       data-start="{{ e.start_time }}"
+       data-end="{{ e.end_time }}">
+
+    <!-- HEADER -->
+    <div class="election-header">
+      <div>
+        <b>{{ e.name }}</b>
+        <span class="tag public">PUBLIC</span>
+      </div>
+
+      {% if e.public_code %}
+      <span class="tag code">CODE: {{ e.public_code }}</span>
+      {% endif %}
+    </div>
+
+
+    <!-- STATUS BAR -->
+    <div class="status-row">
+
+      {% if e.is_ended %}
+        <span class="state ended">ENDED</span>
+
+      {% elif e.is_running %}
+        <span class="state running">RUNNING</span>
+
+      {% elif e.is_upcoming %}
+        <span class="state upcoming">UPCOMING</span>
+
+      {% else %}
+        <span class="state idle">NO SCHEDULE</span>
+      {% endif %}
+
+      {% if e.result_visible %}
+        <span class="vis visible">Results Visible</span>
+      {% else %}
+        <span class="vis hidden">Results Hidden</span>
+      {% endif %}
+
+      <span class="timer countdown-timer"></span>
+
+    </div>
+
+
+    <!-- METRICS -->
+    <div class="metrics">
+
+      <div class="metric">
+        <b>{{ e.total_votes }}</b>
+        <span>Votes</span>
+      </div>
+
+      <div class="metric">
+        <b>{{ e.candidates|length }}</b>
+        <span>Candidates</span>
+      </div>
+
+      {% if e.public_code %}
+      <div class="metric">
+        <b>{{ e.public_code }}</b>
+        <span>Access Code</span>
+      </div>
+      {% endif %}
+
+    </div>
+
+
+    <!-- TIME SUMMARY -->
+    <p class="time-info">
+      {% if e.start_time and e.end_time %}
+        {{ e.start_time }} → {{ e.end_time }}
+      {% else %}
+        No schedule defined
+      {% endif %}
+    </p>
+
+
+    <!-- ACTIONS -->
+    <div class="actions">
+
+      <button class="btn-yellow"
+              onclick="openEditElection('{{ e.id }}',
+                                        '{{ e.name }}',
+                                        '{{ e.start_time }}',
+                                        '{{ e.end_time }}')">
+        Edit
+      </button>
+
+      <button class="btn-blue"
+              onclick="openManageCandidates('{{ e.id }}',
+                                            '{{ e.name }}')">
+        Candidates
+      </button>
+
+      <a href="/admin/results/{{ e.id }}">
+        <button class="btn-green">Results</button>
+      </a>
+
+      <a href="/admin/toggle-results/{{ e.id }}">
+        <button class="btn-gray">
+          {% if e.result_visible %}Hide{% else %}Show{% endif %}
+        </button>
+      </a>
+
+    </div>
+
+  </div>
+
+  {% endfor %}
+</div>
+<div class="card">
+
+  <h3>Private Elections</h3>
+  <p class="sub">Restricted access — whitelist required</p>
+
+  <input id="searchPrivate"
+         placeholder="Search private elections"
+         class="search-input">
+
+  {% for e in elections if e.election_type == "private" %}
+
+  <div class="election-card"
+       data-election-card
+       data-start="{{ e.start_time }}"
+       data-end="{{ e.end_time }}">
+
+    <!-- HEADER -->
+    <div class="election-header">
+      <div>
+        <b>{{ e.name }}</b>
+        <span class="tag private">PRIVATE</span>
+      </div>
+    </div>
+
+
+    <!-- STATUS BAR -->
+    <div class="status-row">
+
+      {% if e.is_ended %}
+        <span class="state ended">ENDED</span>
+
+      {% elif e.is_running %}
+        <span class="state running">RUNNING</span>
+
+      {% elif e.is_upcoming %}
+        <span class="state upcoming">UPCOMING</span>
+
+      {% else %}
+        <span class="state idle">NO SCHEDULE</span>
+      {% endif %}
+
+      {% if e.result_visible %}
+        <span class="vis visible">Results Visible</span>
+      {% else %}
+        <span class="vis hidden">Results Hidden</span>
+      {% endif %}
+
+      <span class="timer countdown-timer"></span>
+
+    </div>
+
+
+    <!-- METRICS -->
+    <div class="metrics">
+
+      <div class="metric">
+        <b>{{ e.total_votes }}</b>
+        <span>Total Votes</span>
+      </div>
+
+      <div class="metric">
+        <b>{{ e.candidates|length }}</b>
+        <span>Candidates</span>
+      </div>
+
+    </div>
+
+
+    <!-- TIME -->
+    <p class="time-info">
+      {{ e.start_time }} → {{ e.end_time }}
+    </p>
+
+
+    <!-- ACTION BUTTONS -->
+    <div class="actions">
+
+      <button class="btn-yellow"
+              onclick="openEditElection('{{ e.id }}',
+                                        '{{ e.name }}',
+                                        '{{ e.start_time }}',
+                                        '{{ e.end_time }}')">
+        Edit
+      </button>
+
+      <button class="btn-blue"
+              onclick="openManageCandidates('{{ e.id }}',
+                                            '{{ e.name }}')">
+        Candidates
+      </button>
+
+      <button class="btn-blue"
+              onclick="openWhitelist('{{ e.id }}',
+                                      '{{ e.name }}')">
+        Whitelist
+      </button>
+
+      <a href="/admin/results/{{ e.id }}">
+        <button class="btn-green">Results</button>
+      </a>
+
+    </div>
+
+  </div>
+
+  {% endfor %}
+</div>
+<div id="whitelistModal" class="modal manage-modal">
+  <div class="modal-box">
+
+    <h3 id="wlTitle">Whitelist Access — Secure Control</h3>
+    <p class="sub">
+      Only approved email addresses may vote in this private election.
+    </p>
+
+
+    <!-- ▸ Bulk Add Panel -->
+    <div class="panel">
+
+      <h4>Add Whitelisted Emails</h4>
+
+      <form method="POST"
+            action="/admin/whitelist/bulk-add"
+            id="wlForm">
+
+        <input type="hidden"
+               id="wlElectionId"
+               name="election_id">
+
+        <textarea id="wlInput"
+                  name="emails"
+                  placeholder="Paste email list — one per line or comma separated"
+                  class="wl-text"></textarea>
+
+        <p id="wlDuplicateInfo" class="note"></p>
+
+        <div class="row">
+          <button class="btn-blue" id="wlSubmitBtn">
+            Add to Whitelist
+          </button>
+
+          <button type="button"
+                  class="btn-gray"
+                  onclick="closeModals()">
+            Close
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+
+
+    <hr style="margin:12px 0;">
+
+
+
+    <!-- ▸ Existing Whitelist -->
+    <h4>Approved Voters</h4>
+    <input id="wlSearchInput"
+           placeholder="Search email address…"
+           class="search-input">
+
+    <div id="wlList"
+         class="whitelist-scroll"></div>
+
+  </div>
+</div>
+<script>
+const typeSelect = document.getElementById("electionType");
+const startInput = document.getElementById("startTime");
+const endInput   = document.getElementById("endTime");
+
+const warnPrivate = document.getElementById("warnPrivate");
+const warnTime    = document.getElementById("warnTime");
+const typeHint    = document.getElementById("typeHint");
+const timeHint    = document.getElementById("timeHint");
+
+function updateFormState(){
+
+  const type = typeSelect.value;
+  warnPrivate.style.display = "none";
+  warnTime.style.display = "none";
+
+  // PUBLIC MODE
+  if(type === "public"){
+
+    startInput.required = false;
+    endInput.required   = false;
+
+    typeHint.textContent =
+      "Public elections may run indefinitely — schedule is optional.";
+
+    timeHint.textContent =
+      "You may leave start & end time empty.";
+  }
+
+  // PRIVATE MODE
+  else{
+
+    startInput.required = true;
+    endInput.required   = true;
+
+    typeHint.textContent =
+      "Private elections require voter whitelist access.";
+
+    timeHint.textContent =
+      "Start & End time are mandatory for private elections.";
+
+    if(!startInput.value || !endInput.value)
+      warnPrivate.style.display = "block";
+  }
+
+  // Time ordering validation
+  if(startInput.value && endInput.value){
+
+    const start = new Date(startInput.value);
+    const end   = new Date(endInput.value);
+
+    warnTime.style.display = end <= start ? "block" : "none";
+  }
+}
+
+typeSelect.addEventListener("change", updateFormState);
+startInput.addEventListener("change", updateFormState);
+endInput.addEventListener("change", updateFormState);
+
+updateFormState(); // initial load
+function openWhitelist(eid, name){
+
+  document.getElementById("wlElectionId").value = eid;
+  document.getElementById("wlTitle").innerText =
+    "Whitelist — " + name;
+
+  fetch(`/admin/api/whitelist/${eid}`)
+    .then(r => r.json())
+    .then(data => {
+
+      if(!data.whitelist.length){
+        document.getElementById("wlList").innerHTML =
+          "<p class='note'>No whitelisted voters yet.</p>";
+        return;
+      }
+
+      // alphabetical list ordering
+      data.whitelist.sort((a,b)=>
+        a.email.localeCompare(b.email)
+      );
+
+      const rows = data.whitelist.map(w => `
+        <div class="whitelist-card">
+
+          <div class="whitelist-email">${w.email}</div>
+
+          <a href="/admin/whitelist/remove/${w.id}"
+             onclick="return confirm('Remove ${w.email}?')">
+            <button class="btn-red">Remove</button>
+          </a>
+
+        </div>
+      `).join("");
+
+      document.getElementById("wlList").innerHTML = rows;
+
+    });
+
+  openModal("whitelistModal");
+}
+document.getElementById("wlSearchInput")
+?.addEventListener("keyup", e => {
+
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll("#wlList .whitelist-card")
+    .forEach(card => {
+
+      const email =
+        card.querySelector(".whitelist-email")
+        ?.innerText.toLowerCase() || "";
+
+      card.style.display =
+        email.includes(q) ? "" : "none";
+    });
+});
+document.getElementById("wlInput")
+?.addEventListener("input", () => {
+
+  const raw = wlInput.value;
+
+  const emails = raw
+    .replace(/,/g, "\n")
+    .split("\n")
+    .map(e => e.trim().toLowerCase())
+    .filter(e => e);
+
+  const unique = new Set(emails);
+
+  const dupes = emails.length - unique.size;
+
+  document.getElementById("wlDuplicateInfo").innerText =
+    dupes > 0
+    ? `⚠ ${dupes} duplicate entries detected — they will be ignored.`
+    : "";
+});
+function openManageCandidates(eid, name){
+
+  document.getElementById("mcElectionId").value = eid;
+  document.getElementById("mcTitle").innerText =
+    "Manage Candidates — " + name;
+
+  fetch(`/admin/api/candidates/${eid}`)
+    .then(r => r.json())
+    .then(data => {
+
+      if(!data.candidates.length){
+        document.getElementById("mcList").innerHTML =
+          "<p class='note'>No candidates added yet.</p>";
+        return;
+      }
+
+      const list = data.candidates.map(c => `
+
+        <div class="cand-card">
+
+          <div class="cand-header">
+
+            ${c.photo
+              ? `<img src="/static/uploads/${c.photo}"
+                      class="cand-photo-lg">`
+              : `<div class="cand-photo-placeholder">No Photo</div>`}
+
+            <div class="cand-meta">
+
+              <div class="cand-name">${c.name}</div>
+
+              <div class="cand-party">
+                ${c.party || "Independent"}
+              </div>
+
+              <div class="cand-vote-count">
+                Votes: <b>${c.votes}</b>
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="cand-actions">
+
+            <button class="btn-gray"
+              onclick="openEditCandidate(
+                '${c.id}',
+                '${c.name}',
+                '${c.party || ""}',
+                '${(c.description || "").replace(/'/g, '&#39;')}'
+              )">
+              Edit
+            </button>
+
+
+            <a href="/admin/candidate/delete/${c.id}"
+               onclick="return confirm(
+                'Delete ${c.name}? Allowed only if no votes exist.'
+               )">
+
+              <button class="btn-red"
+                ${c.votes > 0 ? "disabled" : ""}>
+                Delete
+              </button>
+
+            </a>
+
+          </div>
+
+        </div>
+
+      `).join("");
+
+      document.getElementById("mcList").innerHTML = list;
+
+    });
+
+  openModal("manageCandidatesModal");
+}
+document.getElementById("mcSearchInput")
+?.addEventListener("keyup", e => {
+
+  const q = e.target.value.toLowerCase();
+
+  document.querySelectorAll("#mcList .cand-card")
+    .forEach(card => {
+
+      const text = card.innerText.toLowerCase();
+
+      card.style.display =
+        text.includes(q) ? "" : "none";
+    });
+});
+
+</script>
+</body>
+</html>
