@@ -2,1206 +2,2559 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Admin Dashboard — Online Voting System</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Panel | Secure Vote</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial;}
+/* ======================================================
+   PREMIUM ADMIN DASHBOARD UI
+   Compatible with existing HTML & JS
+====================================================== */
+
+/* ======================================================
+   DESIGN TOKENS
+====================================================== */
+:root{
+  --bg-dark:#020617;
+  --bg-panel:#020617;
+  --sidebar-bg:#0b1220;
+  --card-bg:rgba(30,41,59,.72);
+  --card-bg-hover:rgba(30,41,59,.88);
+  --border:rgba(148,163,184,.12);
+
+  --blue:#38bdf8;
+  --indigo:#6366f1;
+  --green:#10b981;
+  --red:#ef4444;
+  --yellow:#f59e0b;
+
+  --text:#f8fafc;
+  --muted:#94a3b8;
+  --muted-soft:#64748b;
+
+  --radius-xl:20px;
+  --radius-lg:16px;
+  --radius-md:12px;
+
+  --shadow-soft:0 10px 30px rgba(0,0,0,.25);
+  --shadow-hover:0 20px 60px rgba(0,0,0,.45);
+
+  --blur:blur(14px);
+}
+input,
+select,
+textarea{
+  min-width:0;       /* 🔑 prevents grid overflow */
+  max-width:100%;
+}
+
+/* ======================================================
+   RESET & BASE
+====================================================== */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Plus Jakarta Sans",system-ui,sans-serif;
+}
+
+html,body{
+  height:100%;
+  overflow-x: hidden;
+}
 
 body{
-  min-height:100vh;
-  background:#020617;
-  color:#e5e7eb;
+  background:
+    radial-gradient(1200px 600px at 80% -10%,rgba(56,189,248,.08),transparent),
+    linear-gradient(180deg,#020617,#020617);
+  color:var(--text);
+  display:flex;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ======================================================
+   SCROLLBAR (GLOBAL)
+====================================================== */
+*::-webkit-scrollbar{
+  width:8px;
+}
+*::-webkit-scrollbar-thumb{
+  background:rgba(148,163,184,.25);
+  border-radius:20px;
+}
+*::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+/* ======================================================
+   SIDEBAR
+====================================================== */
+.sidebar{
+  width:260px;
+  background:linear-gradient(180deg,#020617,#0b1220);
+  border-right:1px solid var(--border);
+  padding:22px;
   display:flex;
   flex-direction:column;
+  gap:18px;
+}
+
+.sidebar-brand{
+  font-size:20px;
+  font-weight:800;
+  letter-spacing:.4px;
+  background:linear-gradient(90deg,var(--blue),var(--indigo));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  margin-bottom:6px;
+}
+
+.nav-menu{
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.nav-item{
+  padding:12px 16px;
+  border-radius:14px;
+  cursor:pointer;
+  color:var(--muted);
+  font-weight:600;
+  display:flex;
   align-items:center;
+  gap:12px;
+  transition:.25s ease;
 }
 
-/* HEADER */
-.topbar{
-  width:100%;
-  padding:18px 26px;
-  background:#020617;
-  border-bottom:1px solid #1f2937;
+.nav-item:hover{
+  background:rgba(56,189,248,.08);
+  color:var(--text);
 }
 
-.container{
-  width:1250px;
-  max-width:95%;
-  margin-top:18px;
+.nav-item.active{
+  background:linear-gradient(90deg,rgba(56,189,248,.18),transparent);
+  color:var(--blue);
+  box-shadow:inset 0 0 0 1px rgba(56,189,248,.25);
 }
 
-/* CARDS */
+.sidebar-footer{
+  margin-top:auto;
+}
+
+/* ======================================================
+   MAIN WRAPPER
+====================================================== */
+.main-wrapper{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+}
+
+/* ======================================================
+   TOP HEADER
+====================================================== */
+.top-header{
+  height:72px;
+  padding:0 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:rgba(2,6,23,.75);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  z-index:50;
+}
+
+#view-title{
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:.3px;
+}
+
+/* ======================================================
+   VIEW CONTAINERS
+====================================================== */
+.view-container{
+  flex:1;
+  padding:26px;
+  overflow-y:auto;
+  display:none;
+  animation:fadeUp .35s ease;
+}
+
+.view-container.active{
+  display:block;
+}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ======================================================
+   CARDS
+====================================================== */
 .card{
-  background:rgba(15,23,42,.88);
-  border:1px solid #1f2937;
-  border-radius:16px;
-  padding:18px;
-  margin-top:14px;
-  box-shadow:0 20px 40px rgba(0,0,0,.45);
+  background:linear-gradient(180deg,var(--card-bg),rgba(2,6,23,.85));
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  padding:20px;
+  margin-bottom:18px;
+  backdrop-filter:var(--blur);
+  box-shadow:var(--shadow-soft);
+  transition:.3s ease;
 }
 
-.section-title{color:#cbd5e1;margin-bottom:6px;}
+.card:hover{
+  background:linear-gradient(180deg,var(--card-bg-hover),rgba(2,6,23,.9));
+  box-shadow:var(--shadow-hover);
+  transform:translateY(-2px);
+}
 
-/* GRID */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* ======================================================
+   GRIDS
+====================================================== */
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px;
+}
 
-/* INPUTS */
-input,select,textarea{
-  width:100%;padding:10px;
-  border-radius:10px;
-  border:1px solid #334155;
-  background:#020617;color:#e5e7eb;
+.election-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:18px;
+}
+
+/* ======================================================
+   TYPOGRAPHY INSIDE CARDS
+====================================================== */
+.card h1{
+  font-size:32px;
+  font-weight:800;
   margin-top:6px;
 }
-textarea{min-height:80px;}
 
-/* BUTTONS */
-button{padding:9px 12px;border:none;border-radius:10px;cursor:pointer;margin-top:8px;font-weight:600;}
-.btn-blue{background:#2563eb;}
-.btn-green{background:#16a34a;}
-.btn-yellow{background:#d97706;}
-.btn-red{background:#dc2626;}
-.btn-gray{background:#6b7280;}
-
-.btn-blue:hover{background:#1d4ed8;}
-.btn-green:hover{background:#15803d;}
-.btn-yellow:hover{background:#b45309;}
-.btn-red:hover{background:#b91c1c;}
-
-.badge{padding:5px 9px;border-radius:8px;font-size:11px;}
-.badge-public{background:#065f46;}
-.badge-private{background:#1e3a8a;}
-.note{color:#9ca3af;font-size:12px;}
-
-/* TABLE */
-.table{width:100%;border-collapse:collapse;margin-top:8px;}
-.table th,.table td{border:1px solid #1f2937;padding:9px;text-align:center;}
-
-.cand-photo{
-  height:55px;width:55px;border-radius:10px;
-  border:1px solid #334155;object-fit:cover;
+.card h3{
+  font-size:16px;
+  font-weight:700;
 }
 
-.result-box{
-  margin-top:8px;padding:10px;
-  border-radius:12px;background:#020617;
-  border:1px solid #334155;
+.card b{
+  font-weight:700;
 }
 
-.winner{color:#22c55e;font-weight:bold;}
+.card small{
+  color:var(--muted);
+  font-weight:600;
+}
 
-/* MODALS */
-.modal{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.65);
-  display:none;justify-content:center;align-items:center;
+/* ======================================================
+   BUTTONS
+====================================================== */
+.btn{
+  padding:10px 18px;
+  border-radius:12px;
+  border:none;
+  cursor:pointer;
+  font-weight:700;
+  letter-spacing:.2px;
+  transition:.25s ease;
 }
-.modal-box{
-  width:420px;max-width:95%;
-  background:#020617;border:1px solid #334155;
-  border-radius:14px;padding:16px;
+
+.btn-primary{
+  background:linear-gradient(135deg,var(--blue),var(--indigo));
+  color:#020617;
 }
-.modal h3{margin-bottom:8px;}
-.countdown-timer{
-  margin-top:4px;
+
+.btn-primary:hover{
+  filter:brightness(1.1);
+}
+
+.btn-outline{
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);
+  color:var(--text);
+}
+
+.btn-outline:hover{
+  background:rgba(255,255,255,.08);
+}
+
+.btn-danger{
+  background:rgba(239,68,68,.15);
+  color:var(--red);
+  border:1px solid rgba(239,68,68,.35);
+}
+
+/* ======================================================
+   BADGES
+====================================================== */
+.badge{
+  padding:5px 12px;
+  border-radius:999px;
   font-size:11px;
-  color:#7dd3fc;
+  font-weight:800;
+  letter-spacing:.4px;
 }
 
-.election-state-note{
+.badge-public{
+  background:rgba(16,185,129,.18);
+  color:#34d399;
+}
+
+.badge-private{
+  background:rgba(99,102,241,.18);
+  color:#818cf8;
+}
+
+/* ======================================================
+   INPUTS & SELECTS
+====================================================== */
+input,select,textarea{
+  width:100%;
+  padding:11px 12px;
+  border-radius:12px;
+  background:rgba(2,6,23,.85);
+  border:1px solid var(--border);
+  color:var(--text);
+  outline:none;
+  transition:.25s ease;
+}
+
+input::placeholder{
+  color:var(--muted-soft);
+}
+
+input:focus,select:focus,textarea:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 2px rgba(56,189,248,.25);
+}
+
+/* ======================================================
+   MOBILE NAV
+====================================================== */
+
+.mobile-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:70px;
+  background:rgba(2,6,23,.9);
+  backdrop-filter:blur(18px);
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  z-index:1000;
+}
+
+.m-nav-item{
+  color:var(--muted);
   font-size:11px;
-  color:#9ca3af;
-}
-.cand-card{
-  background:#020617;
-  border:1px solid #334155;
-  border-radius:14px;
-  padding:10px;
-  margin-top:8px;
+  font-weight:600;
+  text-align:center;
+  transition:.25s ease;
 }
 
-.cand-top{
-  display:flex;
-  gap:10px;
-  align-items:center;
+.m-nav-item.active{
+  color:var(--blue);
+  transform:translateY(-2px);
 }
 
-.cand-photo{
-  height:60px;
-  width:60px;
-  border-radius:10px;
-  border:1px solid #334155;
-  object-fit:cover;
-}
-
-.no-photo{
-  height:60px;
-  width:60px;
-  border-radius:10px;
-  border:1px dashed #334155;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:10px;
-  color:#9ca3af;
-}
-
-.party{
-  color:#93c5fd;
-  font-size:12px;
-}
-
-.votes{
-  font-size:12px;
-  color:#cbd5e1;
-}
-
-.cand-actions{
-  margin-top:8px;
-  display:flex;
-  gap:8px;
-}
+/* ======================================================
+   MODALS
+====================================================== */
 .modal{
   position:fixed;
   inset:0;
   display:none;
   justify-content:center;
   align-items:center;
-  background:rgba(0,0,0,.65);
-  z-index:900;  /* base layer */
-}
-
-.manage-modal{
+  background:rgba(0,0,0,.78);
+  backdrop-filter:blur(8px);
   z-index:900;
 }
 
-.editor-modal{
-  z-index:1000; /* always above */
-}
 .modal-box{
+  width:460px;
+  max-width:94%;
+  background:linear-gradient(180deg,#020617,#020617);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:20px;
   max-height:85vh;
   overflow-y:auto;
-  scrollbar-width:thin;
+  box-shadow:0 40px 120px rgba(0,0,0,.8);
 }
-.modal-box::-webkit-scrollbar{
-  width:6px;
+
+/* ======================================================
+   RESPONSIVE
+====================================================== */
+.mobile-nav{
+  display:none;
 }
-.modal-box::-webkit-scrollbar-thumb{
-  background:#334155;
-  border-radius:6px;
+
+@media(max-width:768px){
+  .sidebar{display:none}
+  .mobile-nav{display:flex}
+  .view-container{padding:18px;padding-bottom:90px}
+  .top-header{padding:0 16px}
 }
+/* Auto-hide animation for mobile nav */
+.mobile-nav{
+  transition: transform .35s ease, opacity .35s ease;
+  will-change: transform, opacity;
+}
+
+.mobile-nav.hidden{
+  transform: translateY(110%);
+  opacity: 0;
+}
+/* ======================================================
+   EMPTY STATES
+====================================================== */
+.empty-state{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:46px 24px;
+  border:1px dashed rgba(148,163,184,.25);
+  border-radius:18px;
+  background:rgba(2,6,23,.35);
+  color:var(--muted);
+  animation:fadeUp .35s ease;
+}
+
+.empty-icon{
+  font-size:36px;
+  margin-bottom:12px;
+  opacity:.9;
+}
+
+.empty-title{
+  font-size:15px;
+  font-weight:700;
+  color:var(--text);
+  margin-bottom:4px;
+}
+
+.empty-text{
+  font-size:13px;
+  max-width:320px;
+  line-height:1.5;
+}
+
+.empty-action{
+  margin-top:14px;
+}
+@media(max-width:768px){
+  .empty-state{
+    padding:36px 18px;
+  }
+  .empty-text{
+    font-size:12.5px;
+  }
+}
+.m-nav-item.active{
+  color:var(--blue);
+  transform:translateY(-1px);
+}
+
+/* ======================================================
+   DIRECTIONAL VIEW TRANSITIONS
+====================================================== */
+.view-container{
+  position:relative;
+}
+
+.view-enter-right{
+  animation:slideInRight .35s ease forwards;
+}
+
+.view-enter-left{
+  animation:slideInLeft .35s ease forwards;
+}
+
+@keyframes slideInRight{
+  from{opacity:0; transform:translateX(24px)}
+  to{opacity:1; transform:translateX(0)}
+}
+
+@keyframes slideInLeft{
+  from{opacity:0; transform:translateX(-24px)}
+  to{opacity:1; transform:translateX(0)}
+}
+/* ======================================================
+   BUTTON LOADING STATES
+====================================================== */
+.btn{
+  position:relative;
+}
+
+.btn.loading{
+  pointer-events:none;
+  opacity:.7;
+}
+
+.btn.loading::after{
+  content:"";
+  width:16px;
+  height:16px;
+  border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff;
+  border-radius:50%;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  animation:spin .8s linear infinite;
+}
+
+@keyframes spin{
+  to{ transform:translate(-50%,-50%) rotate(360deg) }
+}
+.btn-danger.loading::after{
+  border-top-color:var(--red);
+}
+/* ======================================================
+   DISABLED BUTTON STATES (GLOBAL)
+====================================================== */
+.btn:disabled,
+.btn[disabled]{
+  cursor:not-allowed;
+  opacity:.45;
+  filter:grayscale(.6);
+  box-shadow:none !important;
+  transform:none !important;
+}
+
+/* Prevent hover / active effects */
+.btn:disabled:hover{
+  background:inherit;
+  filter:grayscale(.6);
+}
+
+/* Primary disabled */
+.btn-primary:disabled{
+  background:linear-gradient(135deg,#475569,#64748b);
+  color:#e5e7eb;
+}
+
+/* Outline disabled */
+.btn-outline:disabled{
+  background:rgba(255,255,255,.03);
+  color:var(--muted);
+  border-color:rgba(148,163,184,.2);
+}
+
+/* Danger disabled */
+.btn-danger:disabled{
+  background:rgba(239,68,68,.12);
+  color:#fca5a5;
+  border-color:rgba(239,68,68,.25);
+}
+
+/* Tooltip-style hint (uses title attribute) */
+.btn:disabled[title]{
+  position:relative;
+}
+
+.btn:disabled[title]:hover::after{
+  content:attr(title);
+  position:absolute;
+  bottom:110%;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(15,23,42,.95);
+  color:#f8fafc;
+  font-size:11px;
+  font-weight:600;
+  padding:6px 10px;
+  border-radius:8px;
+  white-space:nowrap;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+  pointer-events:none;
+  opacity:1;
+  z-index:999;
+}
+
+.btn:disabled[title]:hover::before{
+  content:"";
+  position:absolute;
+  bottom:100%;
+  left:50%;
+  transform:translateX(-50%);
+  border:6px solid transparent;
+  border-top-color:rgba(15,23,42,.95);
+}
+.profile-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px dashed var(--border);
+}
+
+.profile-row:last-child{
+  border-bottom:none;
+}
+
+.profile-label{
+  color:var(--muted);
+  font-size:13px;
+}
+
+.profile-value{
+  font-weight:600;
+}
+
+.edit-btn{
+  background:none;
+  border:none;
+  cursor:pointer;
+  color:var(--blue);
+  font-size:14px;
+}
+
+.profile-input{
+  display:none;
+  margin-top:6px;
+}
+.stat-breakdown{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+
+.chip{
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.3px;
+}
+
+.chip-public{
+  background:rgba(16,185,129,.18);
+  color:#34d399;
+}
+
+.chip-private{
+  background:rgba(99,102,241,.18);
+  color:#818cf8;
+}
+
+.chip-running{
+  background:rgba(16,185,129,.18);
+  color:#34d399;
+}
+
+.chip-upcoming{
+  background:rgba(245,158,11,.18);
+  color:#fbbf24;
+}
+
+.chip-ended{
+  background:rgba(239,68,68,.18);
+  color:#f87171;
+}
+/* ======================================================
+   DASHBOARD ALERT SEVERITY
+====================================================== */
+.alert-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:.25s ease;
+}
+
+.alert-item:hover{
+  background:rgba(255,255,255,.05);
+}
+
+.alert-icon{
+  font-size:18px;
+}
+
+.alert-text{
+  font-size:14px;
+  font-weight:600;
+}
+
+.alert-critical{
+  color:#f87171;
+}
+
+.alert-warning{
+  color:#fbbf24;
+}
+
+.alert-info{
+  color:#60a5fa;
+}
+/* EXTRA-STRONG election name inside alerts */
+.alert-text b{
+  font-weight:900;              /* heavier than default bold */
+  color:#f6f8f8;                /* max contrast */
+  letter-spacing:.3px;
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.888),
+}
+@media (max-width: 768px){
+
+  :root{
+    --radius-xl:16px;
+    --radius-lg:14px;
+    --radius-md:10px;
+  }
+}
+@media (max-width: 768px){
+
+  .view-container{
+    padding:14px 14px 86px;
+  }
+
+  .card{
+    padding:14px;
+    margin-bottom:12px;
+  }
+
+  .stat-grid,
+  .election-grid{
+    gap:12px;
+  }
+}
+@media (max-width: 768px){
+
+  .card h1{
+    font-size:22px;
+  }
+
+  .card h3{
+    font-size:14px;
+  }
+
+  .card b{
+    font-size:14px;
+  }
+
+  .card small{
+    font-size:11px;
+  }
+
+  .alert-text{
+    font-size:13px;
+  }
+
+  .empty-title{
+    font-size:14px;
+  }
+
+  .empty-text{
+    font-size:12px;
+  }
+}
+@media (max-width: 768px){
+
+  .btn{
+    padding:8px 14px;
+    font-size:12px;
+    border-radius:10px;
+  }
+
+  .btn-primary,
+  .btn-outline,
+  .btn-danger{
+    font-weight:600;
+  }
+}
+@media (max-width: 768px){
+
+  .top-header{
+    height:58px;
+    padding:0 14px;
+  }
+
+  #view-title{
+    font-size:15px;
+  }
+
+  .mobile-nav{
+    height:58px;
+  }
+
+  .m-nav-item{
+    font-size:10px;
+  }
+}
+@media (max-width: 768px){
+
+  .election-grid{
+    grid-template-columns:1fr;
+  }
+
+  .stat-grid{
+    grid-template-columns:1fr 1fr;
+  }
+}
+@media (max-width: 768px){
+
+  .card{
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+
+  .card:hover{
+    transform:none;
+  }
+}
+@media (max-width: 768px){
+  .modal{
+    align-items:center;     /* ✅ center vertically */
+    justify-content:center; /* ✅ center horizontally */
+  }
+}
+@media (max-width: 768px){
+  .modal-box{
+    width:92%;
+    max-width:420px;
+    border-radius:18px;
+    padding:16px;
+    max-height:85vh;
+  }
+}
+
+@media (max-width: 768px){
+
+  .chip,
+  .badge{
+    font-size:10px;
+    padding:3px 8px;
+  }
+}
+@media (max-width: 768px){
+
+  .alert-item{
+    padding:6px 8px;
+  }
+
+  .alert-icon{
+    font-size:16px;
+  }
+}
+@media (max-width: 768px){
+  input, select, textarea{
+    padding:9px 10px;
+    font-size:13px;
+  }
+}
+@media (max-width: 480px){
+
+  /* Filter bars stack instead of overflow */
+  .view-container .card > div[style*="grid-template-columns"]{
+    grid-template-columns: 1fr !important;
+  }
+
+  .view-container .card > div{
+    row-gap:10px;
+  }
+}
+.card{
+  max-width:100%;
+  overflow:hidden;
+}
+.modal-box{
+  box-sizing:border-box;
+}
+
+.modal-box .card{
+  max-width:100%;
+}
+@media (max-width: 480px){
+  .modal-box .card{
+    padding:10px !important;
+  }
+}
+@media (max-width: 480px){
+  input, select{
+    height:40px;
+    font-size:13px;
+    line-height:1.2;
+  }
+}
+/* Overview mini metrics */
+.ov-metrics{
+  margin-top:4px;
+  margin-bottom: 4px;
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.ov-metrics span{
+  white-space:nowrap;
+}
+@media (max-width:768px){
+  .ov-metrics{
+    font-size:11px;
+    gap:8px;
+  }
+}
+/* ================= STATUS CHIPS ================= */
+.status-chip{
+  margin-top: 8px;
+  margin-left: -4px;
+  padding:4px 6px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.3px;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+
+.status-upcoming{
+  background:rgba(56,189,248,.18);
+  color:#38bdf8;
+}
+
+.status-running{
+  background:rgba(16,185,129,.18);
+  color:#10b981;
+}
+
+.status-ended{
+  background:rgba(148,163,184,.18);
+  color:#94a3b8;
+}
+/* ======================================================
+   PREMIUM TIME & VOTE DISPLAY
+====================================================== */
+
+/* Time wrapper */
+.time-box{
+  margin-top:6px;
+  margin-left: -4px;
+  margin-bottom: 3px;
+  padding:8px 12px;
+  border-radius:12px;
+  background:rgba(2,6,23,.55);
+  border:1px solid rgba(148,163,184,.18);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  font-size:12px;
+}
+
+/* Countdown text */
+.time-label{
+  color:var(--muted);
+  font-weight:600;
+}
+
+.time-value{
+  font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight:800;
+  letter-spacing:.6px;
+}
+
+/* Color sync with status */
+.time-upcoming .time-value{ color:var(--blue); }
+.time-running  .time-value{ color:var(--green); }
+.time-ended    .time-value{ color:#94a3b8; }
+
+/* Votes pill */
+/* ======================================================
+   PREMIUM TOTAL VOTES PILL (IMPROVED)
+====================================================== */
+
+.vote-pill{
+  margin-top:10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:7px 14px;
+  border-radius:999px;
+
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.4px;
+
+  background:linear-gradient(
+    135deg,
+    rgba(16,185,129,.28),
+    rgba(16,185,129,.12)
+  );
+  color:#ecfdf5;
+
+  border:1px solid rgba(16,185,129,.45);
+  box-shadow:
+    inset 0 0 0 1px rgba(16,185,129,.15),
+    0 6px 18px rgba(0,0,0,.35);
+
+  white-space:nowrap;
+}
+
+/* Zero votes — neutral & calm */
+.vote-pill.zero{
+  background:linear-gradient(
+    135deg,
+    rgba(148,163,184,.22),
+    rgba(148,163,184,.10)
+  );
+  color:#e5e7eb;
+  border-color:rgba(148,163,184,.35);
+  box-shadow:
+    inset 0 0 0 1px rgba(148,163,184,.15),
+    0 4px 14px rgba(0,0,0,.3);
+}
+
+/* Results tab emphasis */
+[data-result-card] .vote-pill{
+  margin-top:12px;
+  font-size:13px;
+  padding:8px 16px;
+}
+
 
 </style>
 </head>
 
 <body>
 
-<div class="topbar">
-  <h2>Admin Dashboard</h2>
-  <small>Secure Election Management</small>
-</div>
+<!-- ================= SIDEBAR ================= -->
+<aside class="sidebar">
+  <div class="sidebar-brand">VOTEGUARD ADMIN</div>
+  <ul class="nav-menu">
+    <li class="nav-item active" onclick="switchView('dashboard')">📊 Dashboard</li>
+    <li class="nav-item" onclick="switchView('overview')">👁️ Overview</li>
+    <li class="nav-item" onclick="switchView('elections')">🗳️ Elections</li>
+    <li class="nav-item" onclick="switchView('results')">🏆 Results</li>
+    <li class="nav-item" onclick="switchView('profile')">👤 Profile</li>
+  </ul>
 
-<div class="container">
+  <div class="sidebar-footer">
+<button class="btn btn-danger" style="width:100%" onclick="openLogoutConfirm()">
+  Logout
+</button>
 
 
-<!-- ================= ADMIN PROFILE ================= -->
+  </div>
+</aside>
+
+<!-- ================= MOBILE NAV ================= -->
+<nav class="mobile-nav">
+  <div class="m-nav-item" data-view="dashboard" onclick="switchView('dashboard')">📊<br>Dash</div>
+  <div class="m-nav-item" data-view="overview" onclick="switchView('overview')">👁️<br>View</div>
+  <div class="m-nav-item" data-view="elections" onclick="switchView('elections')">🗳️<br>Vote</div>
+  <div class="m-nav-item" data-view="results" onclick="switchView('results')">🏆<br>Win</div>
+  <div class="m-nav-item" data-view="profile" onclick="switchView('profile')">👤<br>Me</div>
+</nav>
+
+
+<!-- ================= MAIN ================= -->
+<main class="main-wrapper">
+
+<header class="top-header">
+  <h2 id="view-title">Dashboard</h2>
+
+  <div id="header-actions" style="display:flex;gap:10px">
+    <button
+      id="newElectionBtn"
+      class="btn btn-primary"
+      onclick="openModal('createElectionModal')">
+      + New Election
+    </button>
+  </div>
+</header>
+
+
+<!-- ================= DASHBOARD ================= -->
+<section id="dashboard" class="view-container">
+  <div class="stat-grid">
+
+    <!-- TOTAL -->
+    <div class="card">
+      <small>Total Elections</small>
+      <h1>{{ elections|length }}</h1>
+      <div class="note">All elections created</div>
+    </div>
+
+    <!-- RUNNING -->
+    <div class="card">
+      <small>Running Elections</small>
+      <h1 style="color:var(--green)">
+        {{ elections|selectattr("is_running")|list|length }}
+      </h1>
+
+      <div class="stat-breakdown">
+        <span class="chip chip-public">
+          Public:
+          {{
+            elections
+            | selectattr("is_running")
+            | selectattr("election_type","equalto","public")
+            | list | length
+          }}
+        </span>
+
+        <span class="chip chip-private">
+          Private:
+          {{
+            elections
+            | selectattr("is_running")
+            | selectattr("election_type","equalto","private")
+            | list | length
+          }}
+        </span>
+      </div>
+    </div>
+
+    <!-- PUBLIC -->
+    <div class="card">
+      <small>Public Elections</small>
+      <h1 style="color:#34d399">
+        {{ elections|selectattr("election_type","equalto","public")|list|length }}
+      </h1>
+
+      <div class="stat-breakdown">
+        <span class="chip chip-running">
+          Running:
+          {{
+            elections
+            | selectattr("election_type","equalto","public")
+            | selectattr("is_running")
+            | list | length
+          }}
+        </span>
+
+        <span class="chip chip-upcoming">
+          Upcoming:
+          {{ elections
+            | selectattr("election_type","equalto","public")
+            | selectattr("is_upcoming")
+            | list | length }}
+        </span>
+
+        <span class="chip chip-ended">
+          Ended:
+          {{
+            elections
+            | selectattr("election_type","equalto","public")
+            | selectattr("is_ended")
+            | list | length
+          }}
+        </span>
+      </div>
+    </div>
+
+    <!-- PRIVATE -->
+    <div class="card">
+      <small>Private Elections</small>
+      <h1 style="color:#818cf8">
+        {{ elections|selectattr("election_type","equalto","private")|list|length }}
+      </h1>
+
+      <div class="stat-breakdown">
+        <span class="chip chip-running">
+          Running:
+          {{
+            elections
+            | selectattr("election_type","equalto","private")
+            | selectattr("is_running")
+            | list | length
+          }}
+        </span>
+
+        <span class="chip chip-upcoming">
+          Upcoming:
+          {{
+            elections
+            | selectattr("election_type","equalto","private")
+            | selectattr("is_upcoming")
+            | list | length
+          }}
+        </span>
+
+        <span class="chip chip-ended">
+          Ended:
+          {{
+            elections
+            | selectattr("election_type","equalto","private")
+            | selectattr("is_ended")
+            | list | length
+          }}
+        </span>
+      </div>
+    </div>
+
+  </div>
+{% set alerts = [] %}
+
+{# 🔴 Critical: Running but no votes #}
+{% for e in elections if e.is_running and e.total_votes == 0 %}
+  {% set _ = alerts.append({
+    "level": "critical",
+    "icon": "🔴",
+    "text": "Running election <b>" ~ e.name ~ "</b> has no votes yet",
+    "action": "candidates",
+    "id": e.id,
+    "name": e.name,
+    "start": e.start_time,
+    "end": e.end_time
+  }) %}
+{% endfor %}
+
+{# 🟡 Warning: Private with empty whitelist #}
+{% for e in elections if e.election_type == "private" and e.whitelist|length == 0 %}
+  {% set _ = alerts.append({
+    "level": "warning",
+    "icon": "🟡",
+    "text": "Private election <b>" ~ e.name ~ "</b> has an empty whitelist",
+    "action": "whitelist",
+    "id": e.id,
+    "name": e.name,
+    "start": e.start_time,
+    "end": e.end_time
+  }) %}
+{% endfor %}
+
+{# 🔵 Info: Starting soon #}
+{% for e in elections if e.is_upcoming and e.start_time %}
+  {% set start_ts = datetime.fromisoformat(e.start_time) %}
+  {% if (start_ts - datetime.now()).total_seconds() <= 86400 %}
+    {% set _ = alerts.append({
+      "level": "info",
+      "icon": "🔵",
+      "text": "Election <b>" ~ e.name ~ "</b> starts within 24 hours",
+      "action": "scroll",
+      "id": e.id
+    }) %}
+  {% endif %}
+{% endfor %}
+
+{% if alerts|length > 0 %}
 <div class="card">
-  <div class="section-title">Admin Profile</div>
+  <h3 style="color:var(--yellow)">⚠️ Attention Needed</h3>
 
-  <p><b>Name:</b> {{ admin.name }}</p>
-  <p><b>Username:</b> {{ admin.username }}</p>
-  <p><b>Admin Code:</b> {{ admin.admin_code }}</p>
+  <ul style="margin-top:10px;line-height:1.8;list-style:none;padding-left:0">
+    {% for a in alerts %}
+      <li
+        class="alert-item alert-{{ a.level }}"
+        onclick="handleDashboardAlert(
+          '{{ a.action }}',
+          '{{ a.id }}',
+          '{{ a.name|default('') }}',
+          '{{ a.start|default('') }}',
+          '{{ a.end|default('') }}'
+        )"
+      >
+        <span class="alert-icon">{{ a.icon }}</span>
+        <span class="alert-text">{{ a.text | safe }}</span>
 
-  <p class="note">Share this code ONLY with private voters.</p>
-
-  <a href="/logout">
-    <button class="btn-red">Logout</button>
-  </a>
+      </li>
+    {% endfor %}
+  </ul>
 </div>
+{% endif %}
+
+  <!-- QUICK ACTIONS -->
+  <div class="card">
+    <h3>Quick Actions</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px">
+      <button class="btn btn-primary" onclick="openModal('createElectionModal')">
+        + Create Election
+      </button>
+      <button class="btn btn-outline" onclick="switchView('elections')">
+        Manage Elections
+      </button>
+      <button class="btn btn-outline" onclick="switchView('results')">
+        View Results
+      </button>
+    </div>
+  </div>
+</section>
 
 
-
-<!-- ================= CREATE ELECTION ================= -->
+<!-- ================= OVERVIEW ================= -->
+<section id="overview" class="view-container">
 <div class="card">
+  <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:12px">
+    <input id="overviewSearch" placeholder="Search elections...">
 
-  <div class="section-title">Create New Election</div>
-
-  <form method="POST" action="/admin/create-election">
-
-    <label>Election Name</label>
-    <input name="name" required>
-
-    <label>Election Type</label>
-    <select name="type" required>
+    <select id="overviewTypeFilter">
+      <option value="all">All Types</option>
       <option value="public">Public</option>
       <option value="private">Private</option>
     </select>
 
-    <label>Election Duration</label>
-    <div class="row">
-      <input type="datetime-local" name="start_time" required>
-      <input type="datetime-local" name="end_time" required>
-    </div>
-
-    <p class="note">
-      Private elections MUST have start + end time.<br>
-      Public elections can be time-less.
-    </p>
-
-    <button class="btn-blue">Create Election</button>
-  </form>
-
-</div>
-
-
-
-<!-- ================= GRID ================= -->
-<div class="grid-2">
-
-
-<!-- ************ PUBLIC ELECTIONS ************ -->
-<div>
-
-<div class="card">
-  <div class="section-title">Public Elections</div>
-  <input id="searchPublic" placeholder="Search public elections...">
-</div>
-
-{% for e in elections if e.election_type == "public" %}
-<div class="card public-item"
-     data-election-card
-     data-start="{{ e.start_time }}"
-     data-end="{{ e.end_time }}">
-
-
-  <b>{{ e.name }}</b>
-  <span class="badge badge-public">PUBLIC</span>
-
-  {% if e.public_code %}
-  <p class="note">Public Code: {{ e.public_code }}</p>
-  {% endif %}
-
-  <p class="note">Total Votes: {{ e.total_votes }}</p>
-
-  <button class="btn-yellow"
-          onclick="openEditElection('{{ e.id }}','{{ e.name }}','{{ e.start_time }}','{{ e.end_time }}')">
-    Edit Election
-  </button>
-  
-  <button class="btn-blue"
-          onclick="openManageCandidates('{{ e.id }}',
-                                        '{{ e.name }}')">
-    Manage Candidates
-  </button>
-  <p class="election-state-note"></p>
-  <p class="countdown-timer"></p>
-</div>
-{% endfor %}
-</div>
-
-
-
-
-<!-- ************ PRIVATE ELECTIONS ************ -->
-<div>
-
-<div class="card">
-  <div class="section-title">Private Elections</div>
-  <input id="searchPrivate" placeholder="Search private elections...">
-</div>
-
-{% for e in elections if e.election_type == "private" %}
-<div class="card private-item"
-     data-election-card
-     data-start="{{ e.start_time }}"
-     data-end="{{ e.end_time }}">
-
-
-  <b>{{ e.name }}</b>
-  <span class="badge badge-private">PRIVATE</span>
-
-  <p class="note">Total Votes: {{ e.total_votes }}</p>
-
-  <button class="btn-yellow"
-          onclick="openEditElection('{{ e.id }}','{{ e.name }}','{{ e.start_time }}','{{ e.end_time }}')">
-    Edit Election
-  </button>
-  <button class="btn-blue"
-          onclick="openManageCandidates('{{ e.id }}',
-                                        '{{ e.name }}')">
-    Manage Candidates
-  </button>
-  <button class="btn-blue"
-          onclick="openWhitelist('{{ e.id }}',
-                                '{{ e.name }}')">
-    Manage Whitelist
-  </button>
-  <p class="election-state-note"></p>
-  <p class="countdown-timer"></p>
-</div>
-{% endfor %}
-
-</div>
-</div>
-<!-- ================= MODERN ELECTION OVERVIEW ================= -->
-<div class="card">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;">
-    <div class="section-title">Election Overview</div>
-
-    <!-- Floating Create Button -->
-
+    <select id="overviewStatusFilter">
+      <option value="all">All Status</option>
+      <option value="running">Running</option>
+      <option value="upcoming">Upcoming</option>
+      <option value="ended">Ended</option>
+    </select>
   </div>
-
-  <p class="note">Clear visual status indicators — public, private, running, ended.</p>
-
-  <!-- SEARCH FIELDS INSIDE OVERVIEW -->
-  <div class="row" style="margin-top:10px;">
-    <div>
-      <label class="note">Search Public Elections (name / code)</label>
-      <input id="ovPublicSearch" placeholder="Search public elections...">
-    </div>
-
-    <div>
-      <label class="note">Search Private Elections (name only)</label>
-      <input id="ovPrivateSearch" placeholder="Search private elections...">
-    </div>
-  </div>
-
-  <div id="overviewGrid"
-      style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
-
-    <!-- LEFT COLUMN — PUBLIC -->
-    <div>
-
-      <h4 class="note">Public Elections</h4>
-
-      <div id="publicOverviewList"
-          style="margin-top:6px;max-height:420px;overflow-y:auto;">
-
-        {% for e in elections if e.election_type == "public" %}
-
-  {% set has_time   = e.start_time and e.end_time %}
-  {% set ended      = has_time and (e.end_time|tojson|safe)|string and (datetime.utcnow() >= datetime.fromisoformat(e.end_time)) %}
-  {% set running    = has_time and not ended and (datetime.utcnow() >= datetime.fromisoformat(e.start_time)) %}
-  {% set upcoming   = has_time and not running and not ended %}
-
-  <div class="result-box"
-      data-ov-card
-      data-type="{{ e.election_type }}"
-      data-name="{{ e.name|lower }}"
-      data-code="{{ e.public_code|lower if e.public_code }}"
-      data-start="{{ e.start_time }}"
-      data-end="{{ e.end_time }}">
-
-
-
-    <!-- HEADER -->
-    <div style="display:flex;justify-content:space-between;">
-      <b>{{ e.name }}</b>
-
-      {% if e.election_type == "public" %}
-        <span class="badge badge-public">PUBLIC</span>
-      {% else %}
-        <span class="badge badge-private">PRIVATE</span>
-      {% endif %}
-    </div>
-
-<!-- STATUS BAR -->
-<div style="margin-top:6px;">
-  {% if e.is_ended %}
-    <span class="badge" style="background:#14532d;">ENDED</span>
-  {% elif e.is_running %}
-    <span class="badge" style="background:#1e3a8a;">RUNNING</span>
-  {% elif e.is_upcoming %}
-    <span class="badge" style="background:#78350f;">UPCOMING</span>
-  {% else %}
-    <span class="badge" style="background:#334155;">NO SCHEDULE</span>
-  {% endif %}
-
-  {% if e.result_visible %}
-    <span class="badge" style="background:#064e3b;">Results Visible</span>
-  {% else %}
-    <span class="badge" style="background:#7c2d12;">Hidden</span>
-  {% endif %}
 </div>
 
-<p class="countdown-timer"></p>
 
-
-    <!-- METRICS -->
-    <div style="display:flex;gap:12px;margin-top:8px;">
-
-      <div class="cand-card" style="flex:1;">
-        <div class="votes"><b>{{ e.total_votes }}</b></div>
-        <div class="note">Total Votes</div>
-      </div>
-
-      <div class="cand-card" style="flex:1;">
-        <div class="votes"><b>{{ e.candidates|length }}</b></div>
-        <div class="note">Candidates</div>
-      </div>
-
-      {% if e.public_code %}
-      <div class="cand-card" style="flex:1;">
-        <div class="votes"><b>{{ e.public_code }}</b></div>
-        <div class="note">Code</div>
-      </div>
-      {% endif %}
-
-    </div>
-
-    <!-- TIME SUMMARY -->
-    <div class="note" style="margin-top:6px;">
-      {% if e.start_time and e.end_time %}
-        {{ e.start_time }} ➜ {{ e.end_time }}
-      {% else %}
-        No schedule defined
-      {% endif %}
-    </div>
-
-    <!-- ACTIONS -->
-    <div style="display:flex;gap:10px;margin-top:10px;">
-
-      <a href="/admin/results/{{ e.id }}">
-        <button class="btn-green">Open Results</button>
-      </a>
-
-      <a href="/admin/toggle-results/{{ e.id }}">
-        <button class="btn-yellow">
-          {% if e.result_visible %}Hide Results{% else %}Show Results{% endif %}
-        </button>
-      </a>
-
-    </div>
-
-  </div>
-  {% endfor %}
-    </div>
-  </div>
-    <!-- 🔹 PRIVATE ELECTION OVERVIEW -->
-     
-  <!-- RIGHT COLUMN — PRIVATE -->
-  <div>
-
-    <h4 class="note">Private Elections</h4>
-
-    <div id="privateOverviewList"
-         style="margin-top:6px;max-height:420px;overflow-y:auto;">
-    {% for e in elections if e.election_type == "private" %}
-
-    {% set has_time   = e.start_time and e.end_time %}
-    {% set ended      = has_time and (e.end_time|tojson|safe)|string and (datetime.utcnow() >= datetime.fromisoformat(e.end_time)) %}
-    {% set running    = has_time and not ended and (datetime.utcnow() >= datetime.fromisoformat(e.start_time)) %}
-    {% set upcoming   = has_time and not running and not ended %}
-
-    <div class="result-box"
-        data-ov-card
-        data-type="{{ e.election_type }}"
-        data-name="{{ e.name|lower }}"
-        data-code="{{ e.public_code|lower if e.public_code }}"
-        data-start="{{ e.start_time }}"
-        data-end="{{ e.end_time }}">
-
-
-
-      <!-- HEADER -->
-      <div style="display:flex;justify-content:space-between;">
+    <div class="election-grid" id="overviewGrid">
+      {% for e in elections %}
+      <div class="card"
+           data-ov-card
+           data-type="{{ e.election_type }}"
+           data-name="{{ e.name|lower }}"
+           data-code="{{ e.public_code|lower if e.public_code }}"
+           data-start="{{ e.start_time }}"
+           data-end="{{ e.end_time }}">
         <b>{{ e.name }}</b>
+        <span class="badge {{ 'badge-public' if e.election_type=='public' else 'badge-private' }}">
+          {{ e.election_type|upper }}
+        </span>
+        <div class="status-chip" data-status-chip></div>
+        <div class="time-box">
+  <span class="time-label">Time</span>
+  <span class="time-value countdown-timer"></span>
+</div>
 
-        {% if e.election_type == "public" %}
-          <span class="badge badge-public">PUBLIC</span>
-        {% else %}
-          <span class="badge badge-private">PRIVATE</span>
-        {% endif %}
-      </div>
-
-  <!-- STATUS BAR -->
-  <div style="margin-top:6px;">
-    {% if e.is_ended %}
-      <span class="badge" style="background:#14532d;">ENDED</span>
-    {% elif e.is_running %}
-      <span class="badge" style="background:#1e3a8a;">RUNNING</span>
-    {% elif e.is_upcoming %}
-      <span class="badge" style="background:#78350f;">UPCOMING</span>
-    {% else %}
-      <span class="badge" style="background:#334155;">NO SCHEDULE</span>
-    {% endif %}
-
-    {% if e.result_visible %}
-      <span class="badge" style="background:#064e3b;">Results Visible</span>
-    {% else %}
-      <span class="badge" style="background:#7c2d12;">Hidden</span>
-    {% endif %}
-  </div>
-
-  <p class="countdown-timer"></p>
+        <div class="ov-metrics">
+  <span>Candidates: {{ e.candidates|length }}</span>
+  <span>Votes: {{ e.total_votes }}</span>
 
 
-      <!-- METRICS -->
-      <div style="display:flex;gap:12px;margin-top:8px;">
-
-        <div class="cand-card" style="flex:1;">
-          <div class="votes"><b>{{ e.total_votes }}</b></div>
-          <div class="note">Total Votes</div>
-        </div>
-
-        <div class="cand-card" style="flex:1;">
-          <div class="votes"><b>{{ e.candidates|length }}</b></div>
-          <div class="note">Candidates</div>
-        </div>
-
-        {% if e.public_code %}
-        <div class="cand-card" style="flex:1;">
-          <div class="votes"><b>{{ e.public_code }}</b></div>
-          <div class="note">Code</div>
-        </div>
-        {% endif %}
-
-      </div>
-
-      <!-- TIME SUMMARY -->
-      <div class="note" style="margin-top:6px;">
-        {% if e.start_time and e.end_time %}
-          {{ e.start_time }} ➜ {{ e.end_time }}
-        {% else %}
-          No schedule defined
-        {% endif %}
-      </div>
-
-      <!-- ACTIONS -->
-      <div style="display:flex;gap:10px;margin-top:10px;">
-
-        <a href="/admin/results/{{ e.id }}">
-          <button class="btn-green">Open Results</button>
-        </a>
+  {% if e.election_type == "private" %}
+    <span>Whitelist: {{ e.whitelist|length }}</span>
+  {% endif %}
+</div>
 
         <a href="/admin/toggle-results/{{ e.id }}">
-          <button class="btn-yellow">
+          <button class="btn btn-outline">
             {% if e.result_visible %}Hide Results{% else %}Show Results{% endif %}
           </button>
         </a>
-
       </div>
+      {% endfor %}
+      
+    </div>
+  </div>
+</section>
+
+<!-- ================= ELECTIONS ================= -->
+<section id="elections" class="view-container">
+{% if elections|length == 0 %}
+<div class="empty-state">
+  <div class="empty-icon">🗳️</div>
+  <div class="empty-title">No elections created</div>
+  <div class="empty-text">
+    Elections will appear here once you create one.
+    Start by defining election type, schedule, and candidates.
+  </div>
+  <div class="empty-action">
+    <button class="btn btn-primary" onclick="openModal('createElectionModal')">
+      + Create Election
+    </button>
+  </div>
+</div>
+{% endif %}
+
+  <div class="card">
+  <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:12px">
+    <input id="electionSearch" placeholder="Search elections...">
+
+    <select id="electionTypeFilter">
+      <option value="all">All Types</option>
+      <option value="public">Public</option>
+      <option value="private">Private</option>
+    </select>
+
+    <select id="electionStatusFilter">
+      <option value="all">All Status</option>
+      <option value="running">Running</option>
+      <option value="upcoming">Upcoming</option>
+      <option value="ended">Ended</option>
+    </select>
+  </div>
+</div>
+
+  <div class="election-grid">
+    {% for e in elections %}
+<div class="card"
+     data-election-card
+     data-type="{{ e.election_type }}"
+     data-start="{{ e.start_time }}"
+     data-end="{{ e.end_time }}">
+
+      <div style="display:flex;align-items:center;gap:8px">
+  <h3 style="margin:0">{{ e.name }}</h3>
+  <span class="badge {{ 'badge-public' if e.election_type=='public' else 'badge-private' }}">
+    {{ e.election_type|upper }}
+  </span>
+</div>
+<div
+  class="status-chip"
+  data-status-chip
+></div>
+
+      <div class="time-box">
+  <span class="time-label">Time</span>
+  <span class="time-value countdown-timer"></span>
+</div>
+
+      <p class="election-state-note" hidden></p>
+      <button class="btn btn-primary"
+        onclick="
+          rememberModal('candidates','{{ e.id }}','{{ e.name }}');
+          openManageCandidates(
+            '{{ e.id }}',
+            '{{ e.name }}',
+            '{{ e.start_time }}',
+            '{{ e.end_time }}'
+          );
+        ">
+        Manage Candidates
+      </button>
+
+
+      {% if e.election_type == "private" %}
+      <button class="btn btn-outline"
+        onclick="
+          rememberModal('whitelist','{{ e.id }}','{{ e.name }}');
+          openWhitelist(
+            '{{ e.id }}',
+            '{{ e.name }}',
+            '{{ e.start_time }}',
+            '{{ e.end_time }}'
+          );
+        ">
+        Whitelist
+      </button>
+
+
+      {% endif %}
+      <button class="btn btn-outline" onclick="openEditElection('{{ e.id }}','{{ e.name }}','{{ e.start_time }}','{{ e.end_time }}')">Edit</button>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="results" class="view-container">
+{% set total_votes = elections | sum(attribute='total_votes') %}
+
+{% if total_votes == 0 %}
+<div class="empty-state">
+  <div class="empty-icon">📊</div>
+  <div class="empty-title">No votes recorded</div>
+  <div class="empty-text">
+    Voting has not started yet or no votes have been cast.
+    Results will appear automatically once voting begins.
+  </div>
+</div>
+{% endif %}
+
+  <!-- FILTER BAR -->
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:12px">
+      <input id="resultsSearch" placeholder="Search elections...">
+
+      <select id="resultsTypeFilter">
+        <option value="all">All Types</option>
+        <option value="public">Public</option>
+        <option value="private">Private</option>
+      </select>
+
+      <select id="resultsStatusFilter">
+        <option value="all">All Status</option>
+        <option value="running">Running</option>
+        <option value="upcoming">Upcoming</option>
+        <option value="ended">Ended</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- RESULTS GRID -->
+  <div class="election-grid">
+    {% for e in elections %}
+    <div class="card"
+         data-result-card
+         data-type="{{ e.election_type }}"
+         data-start="{{ e.start_time }}"
+         data-end="{{ e.end_time }}">
+
+      <div style="display:flex;align-items:center;gap:8px">
+  <b>{{ e.name }}</b>
+  <span class="badge {{ 'badge-public' if e.election_type=='public' else 'badge-private' }}">
+    {{ e.election_type|upper }}
+  </span>
+</div>
+<div
+  class="status-chip"
+  data-status-chip
+></div>
+
+<div class="vote-pill {{ 'zero' if e.total_votes == 0 }}">
+  Total Votes: {{ e.total_votes }}
+</div>
+
+
+      <button class="btn btn-primary"
+        onclick="handleResultAccess(
+          '{{ e.id }}',
+          '{{ e.election_type }}',
+          '{{ e.start_time }}',
+          '{{ e.end_time }}'
+        )">
+        Open Results
+      </button>
 
     </div>
     {% endfor %}
   </div>
-</div>
-</div>
-</div>
+
+</section>
+
+<!-- ================= PROFILE ================= -->
+<section id="profile" class="view-container">
+  <div class="card" style="max-width:520px">
+
+    <h3 style="margin-bottom:10px">Admin Profile</h3>
+
+    <!-- NAME -->
+    <div class="profile-row">
+      <div>
+        <div class="profile-label">Name</div>
+        <div id="profileName" class="profile-value">{{ admin.name }}</div>
+        <input id="profileNameInput" class="profile-input" value="{{ admin.name }}">
+      </div>
+      <button class="edit-btn" onclick="toggleEdit('Name')">✏️</button>
+    </div>
+
+    <!-- USERNAME -->
+    <div class="profile-row">
+      <div>
+        <div class="profile-label">Username</div>
+        <div id="profileUsername" class="profile-value">{{ admin.username }}</div>
+        <input id="profileUsernameInput" class="profile-input" value="{{ admin.username }}">
+      </div>
+      <button class="edit-btn" onclick="toggleEdit('Username')">✏️</button>
+    </div>
+
+    <!-- MOBILE -->
+    <div class="profile-row">
+      <div>
+        <div class="profile-label">Mobile Number</div>
+        <div id="profileMobile" class="profile-value">{{ admin.mobile or "Not set" }}</div>
+        <input id="profileMobileInput" class="profile-input" value="{{ admin.mobile or '' }}" placeholder="+91xxxxxxxxxx">
+      </div>
+      <button class="edit-btn" onclick="toggleEdit('Mobile')">✏️</button>
+    </div>
+
+    <!-- WHATSAPP -->
+    <div class="profile-row">
+      <div>
+        <div class="profile-label">WhatsApp Link</div>
+        <div id="profileWhatsapp" class="profile-value">
+          {{ admin.whatsapp or "Not set" }}
+        </div>
+        <input id="profileWhatsappInput" class="profile-input" value="{{ admin.whatsapp or '' }}" placeholder="https://wa.me/91xxxxxxxxxx">
+      </div>
+      <button class="edit-btn" onclick="toggleEdit('Whatsapp')">✏️</button>
+    </div>
+
+    <!-- ADMIN CODE -->
+    <div class="profile-row">
+      <div>
+        <div class="profile-label">Admin Code</div>
+        <div class="profile-value">{{ admin.admin_code }}</div>
+      </div>
+    </div>
+
+<button
+  id="saveProfileBtn"
+  class="btn btn-primary"
+  style="margin-top:14px; display:none"
+  onclick="saveProfile()">
+  Save Changes
+</button>
 
 
+  </div>
+</section>
 
-<!-- ================= MODALS ================= -->
+</main>
+
+<!-- ================= MODALS (ALL REQUIRED) ================= -->
+
+{% raw %}
+<!-- CREATE ELECTION -->
+<div id="createElectionModal" class="modal">
+  <div class="modal-box">
+    <h3>Create Election</h3>
+    <form method="POST" action="/admin/create-election">
+      <input name="name" placeholder="Election name" required>
+      <select name="type">
+        <option value="public">Public</option>
+        <option value="private">Private</option>
+      </select>
+      <input type="datetime-local" name="start_time">
+      <input type="datetime-local" name="end_time">
+      <button class="btn btn-primary">Create</button>
+      <button class="btn btn-outline" data-no-loading onclick="closeModals()">Cancel</button>
+
+    </form>
+  </div>
+</div>
 
 <!-- EDIT ELECTION -->
 <div id="editElectionModal" class="modal">
   <div class="modal-box">
     <h3>Edit Election</h3>
-
     <form method="POST" action="/admin/election/update">
       <input type="hidden" id="editElectionId" name="election_id">
-
-      <label>Name</label>
-      <input id="editElectionName" name="name" required>
-
-      <label>Start Time</label>
+      <input id="editElectionName" name="name">
       <input type="datetime-local" id="editElectionStart" name="start_time">
-
-      <label>End Time</label>
       <input type="datetime-local" id="editElectionEnd" name="end_time">
-
-      <button class="btn-green">Save Changes</button>
-
-      <a id="deleteElectionLink">
-      <button type="button" class="btn-red"
-              onclick="confirmDeleteElection()">
-        Delete Election
-      </button>
-
-      <button type="button" class="btn-yellow"
-              onclick="confirmForceDeleteElection()">
-        Force Delete (Remove All Votes)
-      </button>
-
-</a>
-
-      </a>
-
-      <button type="button" class="btn-gray" onclick="closeModals()">
-        Cancel
-      </button>
-
+      <button class="btn btn-primary">Save</button>
+      <button type="button" class="btn btn-danger" onclick="confirmDeleteElection()">Delete</button>
+      <button type="button" class="btn btn-outline" onclick="confirmForceDeleteElection()">Force Delete</button>
     </form>
+  </div>
+</div>
+
+<!-- MANAGE CANDIDATES -->
+<div id="manageCandidatesModal" class="modal">
+  <div class="modal-box">
+    <h3 id="mcTitle">Manage Candidates</h3>
+    <form method="POST" action="/admin/add-candidate" enctype="multipart/form-data">
+      <input type="hidden" id="mcElectionId" name="election_id">
+      <input name="name" placeholder="Candidate name" required>
+      <input name="party" placeholder="Party">
+      <input type="file" name="photo">
+      <textarea name="description" placeholder="Description"></textarea>
+      <button class="btn btn-primary">Add Candidate</button>
+    </form>
+    <input id="mcSearchInput" placeholder="Search candidates">
+    <div id="mcList"></div>
+    <button class="btn btn-outline" onclick="closeModals()">Close</button>
   </div>
 </div>
 
 <!-- EDIT CANDIDATE -->
-<div id="editCandidateModal" class="modal editor-modal">
+<div id="editCandidateModal" class="modal">
   <div class="modal-box">
     <h3>Edit Candidate</h3>
-
     <form method="POST" action="/admin/candidate/update" enctype="multipart/form-data">
       <input type="hidden" id="editCandidateId" name="candidate_id">
-
-      <label>Name (not editable)</label>
       <input id="editCandidateName" disabled>
-
-      <label>Party</label>
       <input id="editCandidateParty" name="party">
-
-      <label>Description</label>
       <textarea id="editCandidateDesc" name="description"></textarea>
-
-      <label>Change Photo</label>
       <input type="file" name="photo">
-
-      <button class="btn-green">Save Changes</button>
-
-      <a id="deleteCandidateLink">
-        <button type="button" class="btn-red"
-          onclick="confirmDeleteCandidate()">
-          Delete Candidate
-        </button>
-      </a>
-
-      <button type="button" class="btn-gray" onclick="closeModals()">
-        Cancel
-      </button>
-
+      <button class="btn btn-primary">Save</button>
+      <button type="button" class="btn btn-danger" onclick="confirmDeleteCandidate()">Delete</button>
     </form>
   </div>
 </div>
-<div id="manageCandidatesModal" class="modal manage-modal">
-  <div class="modal-box">
 
-    <h3 id="mcTitle">Manage Candidates</h3>
-
-    <!-- ADD FORM (top) -->
-    <h4>Add New Candidate</h4>
-
-    <form method="POST"
-          action="/admin/add-candidate"
-          enctype="multipart/form-data">
-
-      <input type="hidden" id="mcElectionId" name="election_id">
-
-      <label>Name</label>
-      <input name="name" required>
-
-      <label>Party</label>
-      <input name="party">
-
-      <label>Photo</label>
-      <input type="file" name="photo" accept="image/*">
-
-      <label>Description</label>
-      <textarea name="description"></textarea>
-
-      <button class="btn-green">Add Candidate</button>
-    </form>
-
-    <hr style="margin:10px 0">
-
-    <!-- SEARCH NOW BELOW ADD FORM -->
-    <h4>Existing Candidates</h4>
-    <input id="mcSearchInput"
-           placeholder="Search candidate name or party...">
-
-    <div id="mcList"></div>
-
-    <button type="button"
-            class="btn-gray"
-            onclick="closeModals()">Close</button>
-
-  </div>
-</div>
-
+<!-- WHITELIST -->
 <div id="whitelistModal" class="modal">
   <div class="modal-box">
-
-    <h3 id="wlTitle">Whitelist Access</h3>
-
-    <!-- ADD FORM (top) -->
-    <h4>Add Emails</h4>
-
-    <form method="POST" action="/admin/whitelist/bulk-add" id="wlForm">
+    <h3 id="wlTitle">Whitelist</h3>
+    <form method="POST" action="/admin/whitelist/bulk-add">
       <input type="hidden" id="wlElectionId" name="election_id">
-
-      <textarea id="wlInput" name="emails"
-        placeholder="Paste emails — one per line or comma separated"></textarea>
-
-      <!-- DUPLICATE WARNING -->
-      <p id="wlDuplicateInfo" class="note"></p>
-
-      <button class="btn-blue" id="wlSubmitBtn">Add to Whitelist</button>
+      <textarea name="emails" placeholder="Emails"></textarea>
+      <button class="btn btn-primary">Add</button>
     </form>
-
-
-    <hr style="margin:10px 0">
-
-    <!-- SEARCH BELOW ADD FORM -->
-    <h4>Existing Whitelist</h4>
-    <input id="wlSearchInput"
-           placeholder="Search email...">
-
+    <input id="wlSearchInput" placeholder="Search email">
     <div id="wlList"></div>
+    <button class="btn btn-outline" onclick="closeModals()">Close</button>
+  </div>
+</div>
+{% endraw %}
+<div id="alertModal" class="modal">
+  <div class="modal-box" style="max-width:380px;text-align:center">
+    <h3 id="alertTitle">Notice</h3>
+    <p id="alertMessage" style="margin:14px 0;color:var(--muted)"></p>
+    <button class="btn btn-primary" onclick="closeAlert()">OK</button>
+  </div>
+</div>
+<!-- LOGOUT CONFIRMATION -->
+<div id="logoutConfirmModal" class="modal">
+  <div class="modal-box" style="max-width:360px;text-align:center">
+    
+    <div style="font-size:36px;margin-bottom:6px">🚪</div>
 
-    <button type="button"
-            class="btn-gray"
-            onclick="closeModals()">Close</button>
+    <h3 style="margin-bottom:6px">Confirm Logout</h3>
+
+    <p style="color:var(--muted);font-size:14px;line-height:1.5">
+      Are you sure you want to log out of the admin panel?
+    </p>
+
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:18px">
+      <button class="btn btn-outline" onclick="closeLogoutConfirm()">
+        Cancel
+      </button>
+      <button class="btn btn-danger" onclick="confirmLogout()">
+        Logout
+      </button>
+    </div>
 
   </div>
 </div>
 
-</div>
 
 <script>
-function disableBodyScroll(){ document.body.style.overflow="hidden"; }
-function enableBodyScroll(){ document.body.style.overflow="auto"; }
+  const VIEW_ORDER = [
+  "dashboard",
+  "overview",
+  "elections",
+  "results",
+  "profile"
+];
 
-function openModal(id){
-  document.getElementById(id).style.display="flex";
-  disableBodyScroll();
+function showAlert(message){
+  $("#alertMessage").textContent = message;
+  $("#alertModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
 }
 
-function openManageCandidates(eid, name){
+function closeAlert(){
+  $("#alertModal").style.display = "none";
+  document.body.style.overflow = "auto";
+}
 
-  document.getElementById("mcElectionId").value = eid;
-  document.getElementById("mcTitle").innerText =
-    "Manage Candidates — " + name;
+/* ======================================================
+   CORE HELPERS
+====================================================== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* ======================================================
+   SPA VIEW SWITCHING
+====================================================== */
+let currentViewIndex = 0;
+
+function switchView(viewId){
+  const views = $$(".view-container");
+  const newIndex = VIEW_ORDER.indexOf(viewId);
+  if(newIndex === -1) return;
+
+  const direction =
+    newIndex > currentViewIndex ? "right" : "left";
+
+  views.forEach(v=>{
+    v.classList.remove(
+      "active",
+      "view-enter-right",
+      "view-enter-left"
+    );
+  });
+
+  const view = document.getElementById(viewId);
+  if(!view) return;
+
+  view.classList.add("active");
+  view.classList.add(
+    direction === "right"
+      ? "view-enter-right"
+      : "view-enter-left"
+  );
+
+  currentViewIndex = newIndex;
+
+  /* Title update */
+  const titles = {
+    dashboard:"Dashboard",
+    overview:"Election Overview",
+    elections:"Manage Elections",
+    results:"Results",
+    profile:"Admin Profile"
+  };
+  $("#view-title").textContent = titles[viewId] || "Admin Panel";
+  updateHeaderActions(viewId);
+
+
+  /* Sidebar + mobile active states */
+  $$(".nav-item").forEach(i=>{
+    i.classList.toggle("active", i.textContent.toLowerCase().includes(viewId));
+  });
+  $$(".m-nav-item").forEach(i=>{
+    i.classList.toggle("active", i.dataset.view === viewId);
+  });
+
+  localStorage.setItem("admin_active_view", viewId);
+  view.scrollTo({ top:0 });
+}
+
+
+/* ======================================================
+   MODALS
+====================================================== */
+function openModal(id){
+  const m = document.getElementById(id);
+  if(!m) return;
+  m.style.display="flex";
+  document.body.style.overflow="hidden";
+}
+function closeModals(){
+  $$(".modal").forEach(m=>m.style.display="none");
+  document.body.style.overflow="auto";
+  localStorage.removeItem("admin_modal"); // ✅ ADD
+
+  document.querySelectorAll(".btn.loading").forEach(btn=>{
+    btn.classList.remove("loading");
+    btn.disabled = false;
+  });
+}
+
+
+window.addEventListener("click",e=>{
+  if(e.target.classList.contains("modal")) closeModals();
+});
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape"){
+    closeLogoutConfirm();
+  }
+});
+
+
+/* ======================================================
+   EDIT / DELETE ELECTION
+====================================================== */
+function openEditElection(id,name,start,end){
+  $("#editElectionId").value=id;
+  $("#editElectionName").value=name;
+  $("#editElectionStart").value=start||"";
+  $("#editElectionEnd").value=end||"";
+  openModal("editElectionModal");
+}
+function confirmDeleteElection(){
+  const id=$("#editElectionId").value;
+  if(id && confirm("Delete election? Only allowed if no votes exist.")){
+    location.href=`/admin/election/delete/${id}`;
+  }
+}
+function confirmForceDeleteElection(){
+  const id=$("#editElectionId").value;
+  if(id && confirm("⚠ FORCE DELETE will remove election, candidates & votes. Continue?")){
+    location.href=`/admin/election/force-delete/${id}`;
+  }
+}
+
+/* ======================================================
+   MANAGE CANDIDATES
+====================================================== */
+function openManageCandidates(eid, name, start, end){
+  $("#mcElectionId").value = eid;
+  $("#mcTitle").textContent = "Manage Candidates — " + name;
+
+  // Determine election status
+  const fakeCard = document.createElement("div");
+  fakeCard.dataset.start = start;
+  fakeCard.dataset.end = end;
+  const isEnded = getElectionStatus(fakeCard) === "ended";
+
+  // Disable ADD CANDIDATE button if ended
+  const addBtn = document.querySelector(
+    "#manageCandidatesModal form button.btn-primary"
+  );
+  if(addBtn){
+    addBtn.disabled = isEnded;
+    addBtn.title = isEnded ? "Election has ended" : "";
+  }
 
   fetch(`/admin/api/candidates/${eid}`)
     .then(r => r.json())
     .then(data => {
+      const list = $("#mcList");
 
       if(!data.candidates.length){
-        document.getElementById("mcList").innerHTML =
-          "<p>No candidates added yet.</p>";
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">👤</div>
+            <div class="empty-title">No candidates added</div>
+            <div class="empty-text">
+              ${isEnded
+                ? "This election has ended. Candidates can no longer be modified."
+                : "Add candidates to allow voting."}
+            </div>
+          </div>
+        `;
         return;
       }
 
-      const cards = data.candidates.map(c => `
+      list.innerHTML = data.candidates.map(c => `
+        <div class="card" style="padding:12px">
+          <b>${c.name}</b>
+          <div class="note">${c.party || "Independent"}</div>
+          <div class="note">Votes: ${c.votes}</div>
 
-        <div class="cand-card">
-
-          <div class="cand-top">
-
-            ${c.photo
-              ? `<img src="/static/uploads/${c.photo}" class="cand-photo">`
-              : `<div class="no-photo">No Photo</div>`}
-
-            <div>
-              <b>${c.name}</b>
-              <div class="party">${c.party || "Independent"}</div>
-              <div class="votes">Votes: <b>${c.votes}</b></div>
-            </div>
-
-          </div>
-
-          <div class="cand-actions">
-
-            <button class="btn-gray"
-              onclick="openEditCandidate('${c.id}',
-                                         '${c.name}',
-                                         '${c.party||""}',
-                                         '${c.description||""}')">
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="btn btn-outline"
+              ${isEnded ? "disabled title='Election has ended'" : ""}
+              onclick="openEditCandidate(
+                '${c.id}',
+                '${c.name}',
+                '${c.party || ""}',
+                '${c.description || ""}'
+              )">
               Edit
             </button>
 
-            <a href="/admin/candidate/delete/${c.id}"
-               onclick="return confirm('Delete candidate ${c.name}? This is only allowed if no votes exist.')">
-              <button class="btn-red"
-                ${c.votes > 0 ? "disabled" : ""}>
-                Delete
-              </button>
-            </a>
-
+            <button class="btn btn-danger"
+              ${isEnded || c.votes > 0 ? "disabled" : ""}
+              onclick="
+                if(confirm('Delete ${c.name}?')){
+                  location.href='/admin/candidate/delete/${c.id}';
+                }
+              ">
+              Delete
+            </button>
           </div>
-
         </div>
-
       `).join("");
-
-      document.getElementById("mcList").innerHTML = cards;
-
     });
 
   openModal("manageCandidatesModal");
 }
 
-function openWhitelist(eid, name){
+/* ======================================================
+   EDIT CANDIDATE
+====================================================== */
+function openEditCandidate(id,name,party,desc){
+  $("#editCandidateId").value=id;
+  $("#editCandidateName").value=name;
+  $("#editCandidateParty").value=party||"";
+  $("#editCandidateDesc").value=desc||"";
+  openModal("editCandidateModal");
+}
+function confirmDeleteCandidate(){
+  const id=$("#editCandidateId").value;
+  if(id && confirm("Delete candidate? Only allowed if zero votes.")){
+    location.href=`/admin/candidate/delete/${id}`;
+  }
+}
 
-  document.getElementById("wlElectionId").value = eid;
-  document.getElementById("wlTitle").innerText =
-    "Whitelist — " + name;
+/* ======================================================
+   WHITELIST
+====================================================== */
+function openWhitelist(eid, name, start, end){
+  $("#wlElectionId").value = eid;
+  $("#wlTitle").textContent = "Whitelist — " + name;
+
+  // Determine election status
+  const fakeCard = document.createElement("div");
+  fakeCard.dataset.start = start;
+  fakeCard.dataset.end = end;
+  const isEnded = getElectionStatus(fakeCard) === "ended";
+
+  // Disable ADD button if ended
+  const addBtn = document.querySelector(
+    "#whitelistModal form button.btn-primary"
+  );
+  if(addBtn){
+    addBtn.disabled = isEnded;
+    addBtn.title = isEnded ? "Election has ended" : "";
+  }
 
   fetch(`/admin/api/whitelist/${eid}`)
     .then(r => r.json())
     .then(data => {
+      const list = $("#wlList");
 
       if(!data.whitelist.length){
-        document.getElementById("wlList").innerHTML =
-          "<p>No whitelist entries yet.</p>";
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📧</div>
+            <div class="empty-title">Whitelist is empty</div>
+            <div class="empty-text">
+              Only whitelisted voters can participate in this private election.
+              ${isEnded ? "This election has ended." : "Add voter emails to enable access."}
+            </div>
+          </div>
+        `;
         return;
       }
 
-      // Sort whitelist alphabetically (A → Z)
-      data.whitelist.sort((a,b) =>
-        a.email.toLowerCase().localeCompare(b.email.toLowerCase())
-      );
-
-      const list = data.whitelist.map(w => `
-        <div class="cand-card">
-
-          <div class="cand-top">
-            <div>
-              <b>${w.email}</b>
-            </div>
+      list.innerHTML = data.whitelist
+        .sort((a,b)=>a.email.localeCompare(b.email))
+        .map(w => `
+          <div class="card" style="padding:10px">
+            <b>${w.email}</b>
+            <button class="btn btn-danger"
+              ${isEnded ? "disabled title='Election has ended'" : ""}
+              onclick="
+                if(confirm('Remove ${w.email}?')){
+                  location.href='/admin/whitelist/remove/${w.id}';
+                }
+              ">
+              Remove
+            </button>
           </div>
-
-          <div class="cand-actions">
-            <a href="/admin/whitelist/remove/${w.id}"
-              onclick="return confirm('Remove ${w.email} from whitelist?')">
-              <button class="btn-red">Remove</button>
-            </a>
-          </div>
-
-        </div>
-      `).join("");
-
-      document.getElementById("wlList").innerHTML = list;
-
+        `).join("");
     });
 
   openModal("whitelistModal");
 }
-/* ================================
+
+
+/* ======================================================
    SEARCH FILTERS
-================================ */
-/* PUBLIC search → only name + public code */
-document.getElementById("searchPublic")?.addEventListener("keyup", e=>{
-  const q = e.target.value.toLowerCase();
+====================================================== */
+function attachCandidateSearch(){
+  const input = document.getElementById("mcSearchInput");
+  const list  = document.getElementById("mcList");
+  if(!input || !list) return;
 
-  document.querySelectorAll(".public-item").forEach(card=>{
+  input.addEventListener("input", () => {
+    const q = input.value.toLowerCase();
+    list.querySelectorAll(".card").forEach(card => {
+      const name = card.querySelector("b")?.innerText.toLowerCase() || "";
+      card.style.display = name.includes(q) ? "" : "none";
+    });
+  });
+}
+function attachWhitelistSearch(){
+  const input = document.getElementById("wlSearchInput");
+  const list  = document.getElementById("wlList");
+  if(!input || !list) return;
 
-    const name = card.querySelector("b")?.innerText.toLowerCase() || "";
-    const code = card.querySelector(".note")?.innerText.toLowerCase() || "";
+  input.addEventListener("input", () => {
+    const q = input.value.toLowerCase();
+    list.querySelectorAll(".card").forEach(card => {
+      const email = card.querySelector("b")?.innerText.toLowerCase() || "";
+      card.style.display = email.includes(q) ? "" : "none";
+    });
+  });
+}
+attachCandidateSearch();
+attachWhitelistSearch();
 
-    const match = name.includes(q) || code.includes(q);
+
+/* Overview search */
+$("#ovPublicSearch")?.addEventListener("input",e=>{
+  const q=e.target.value.toLowerCase();
+  $$("[data-ov-card]").forEach(c=>{
+    if(c.dataset.type!=="public") return;
+    c.style.display=(c.dataset.name.includes(q)||c.dataset.code.includes(q))?"":"none";
+  });
+});
+$("#ovPrivateSearch")?.addEventListener("input",e=>{
+  const q=e.target.value.toLowerCase();
+  $$("[data-ov-card]").forEach(c=>{
+    if(c.dataset.type!=="private") return;
+    c.style.display=c.dataset.name.includes(q)?"":"none";
+  });
+});
+
+/* ======================================================
+   COUNTDOWN ENGINE (SINGLE INTERVAL)
+====================================================== */
+function format(ms){
+  if(ms<=0) return "00:00:00";
+  const s=Math.floor(ms/1000);
+  return [
+    Math.floor(s/3600),
+    Math.floor((s%3600)/60),
+    s%60
+  ].map(v=>String(v).padStart(2,"0")).join(":");
+}
+
+function updateCountdowns(){
+  const now=Date.now();
+
+  $$("[data-election-card]").forEach(card=>{
+    const start=card.dataset.start?Date.parse(card.dataset.start):null;
+    const end=card.dataset.end?Date.parse(card.dataset.end):null;
+    const note=card.querySelector(".election-state-note");
+    const timer=card.querySelector(".countdown-timer");
+
+    if(!start&&!end){
+      note.textContent="No schedule set";
+      timer.textContent="";
+      return;
+    }
+    if(start&&now<start){
+      note.textContent="Election not started";
+      timer.textContent="Starts in: "+format(start-now);
+      return;
+    }
+    if(end&&now<end){
+      note.textContent="Election running";
+      timer.textContent="Ends in: "+format(end-now);
+      return;
+    }
+    note.textContent="Election ended";
+    timer.textContent="Ended";
+  });
+
+  $$("[data-ov-card]").forEach(card=>{
+    const start=card.dataset.start?Date.parse(card.dataset.start):null;
+    const end=card.dataset.end?Date.parse(card.dataset.end):null;
+    const timer=card.querySelector(".countdown-timer");
+    if(!timer) return;
+    if(start&&now<start) timer.textContent="Starts in: "+format(start-now);
+    else if(end&&now<end) timer.textContent="Ends in: "+format(end-now);
+    else timer.textContent="Ended";
+  });
+  updateStatusChips();
+
+}
+
+let timer=null;
+function startCountdown(){
+  if(timer) return;
+  updateCountdowns();
+  timer=setInterval(updateCountdowns,1000);
+}
+document.addEventListener("visibilitychange",()=>{
+  document.hidden?clearInterval(timer):startCountdown();
+});
+startCountdown();
+/* ======================================================
+   STATUS RESOLVER (single source of truth)
+====================================================== */
+function getElectionStatus(card){
+  const now = Date.now();
+  const start = card.dataset.start ? Date.parse(card.dataset.start) : null;
+  const end   = card.dataset.end   ? Date.parse(card.dataset.end)   : null;
+
+  if(start && now < start) return "upcoming";
+  if(end && now > end) return "ended";
+  if(start && end && now >= start && now <= end) return "running";
+  return "unknown";
+}
+
+/* ======================================================
+   ELECTIONS FILTER
+====================================================== */
+function applyElectionFilters(){
+  const q = $("#electionSearch")?.value.toLowerCase() || "";
+  const type = $("#electionTypeFilter")?.value || "all";
+  const status = $("#electionStatusFilter")?.value || "all";
+
+  $$("[data-election-card]").forEach(card=>{
+    const name = card.querySelector("h3")?.innerText.toLowerCase() || "";
+    const eType = card.dataset.type;
+    const eStatus = getElectionStatus(card);
+
+    const match =
+      name.includes(q) &&
+      (type === "all" || eType === type) &&
+      (status === "all" || eStatus === status);
 
     card.style.display = match ? "" : "none";
   });
-});
+}
 
-/* PRIVATE search → ONLY name */
-document.getElementById("searchPrivate")?.addEventListener("keyup", e=>{
-  const q = e.target.value.toLowerCase();
+["electionSearch","electionTypeFilter","electionStatusFilter"]
+  .forEach(id=>$("#"+id)?.addEventListener("input",applyElectionFilters));
+/* ======================================================
+   OVERVIEW FILTER
+====================================================== */
+function applyResultsFilters(){
+  const q = $("#resultsSearch")?.value.toLowerCase() || "";
+  const type = $("#resultsTypeFilter")?.value || "all";
+  const status = $("#resultsStatusFilter")?.value || "all";
 
-  document.querySelectorAll(".private-item").forEach(card=>{
-
+  $$("[data-result-card]").forEach(card => {
     const name = card.querySelector("b")?.innerText.toLowerCase() || "";
+    const eType = card.dataset.type;
+    const eStatus = getElectionStatus(card);
 
-    card.style.display = name.includes(q) ? "" : "none";
+    const match =
+      name.includes(q) &&
+      (type === "all" || eType === type) &&
+      (status === "all" || eStatus === status);
+
+    card.style.display = match ? "" : "none";
   });
+}
+
+["resultsSearch","resultsTypeFilter","resultsStatusFilter"]
+  .forEach(id => $("#"+id)?.addEventListener("input", applyResultsFilters));
+
+function applyOverviewFilters(){
+  const q = $("#overviewSearch")?.value.toLowerCase() || "";
+  const type = $("#overviewTypeFilter")?.value || "all";
+  const status = $("#overviewStatusFilter")?.value || "all";
+
+  $$("[data-ov-card]").forEach(card=>{
+    const name = card.dataset.name || "";
+    const eType = card.dataset.type || "";
+    const eStatus = getElectionStatus(card);
+
+    const match =
+      name.includes(q) &&
+      (type === "all" || eType === type) &&
+      (status === "all" || eStatus === status);
+
+    card.style.display = match ? "" : "none";
+  });
+}
+
+["overviewSearch","overviewTypeFilter","overviewStatusFilter"]
+  .forEach(id=>$("#"+id)?.addEventListener("input",applyOverviewFilters));
+/* ======================================================
+   MOBILE NAV AUTO-HIDE ON SCROLL
+====================================================== */
+(function(){
+  const nav = document.querySelector(".mobile-nav");
+  if(!nav) return;
+
+  let lastY = window.scrollY;
+  let ticking = false;
+
+  function onScroll(){
+    if(window.innerWidth > 768) return; // mobile only
+
+    const currentY = window.scrollY;
+    const delta = currentY - lastY;
+
+    // Ignore tiny scrolls
+    if(Math.abs(delta) < 8) return;
+
+    if(delta > 0){
+      // scrolling down → hide
+      nav.classList.add("hidden");
+    }else{
+      // scrolling up → show
+      nav.classList.remove("hidden");
+    }
+
+    lastY = currentY;
+  }
+
+  window.addEventListener("scroll", () => {
+    if(!ticking){
+      window.requestAnimationFrame(() => {
+        onScroll();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive:true });
+})();
+/* ======================================================
+   BUTTON LOADING HANDLER
+====================================================== */
+function enableButtonLoading(){
+  document.querySelectorAll("form").forEach(form=>{
+    form.addEventListener("submit",e=>{
+      const btn = form.querySelector("button[type='submit'], .btn-primary");
+      if(!btn) return;
+
+      btn.classList.add("loading");
+      btn.disabled = true;
+    });
+  });
+
+  document.querySelectorAll(".btn").forEach(btn=>{
+    if(btn.type === "submit") return;
+
+    btn.addEventListener("click",()=>{
+      if(btn.dataset.noLoading) return;
+      btn.classList.add("loading");
+    });
+  });
+}
+
+enableButtonLoading();
+
+/* ======================================================
+   RESTORE LAST VIEW ON REFRESH
+====================================================== */
+document.addEventListener("DOMContentLoaded", () => {
+  const modalStateRaw = localStorage.getItem("admin_modal");
+  const savedView = localStorage.getItem("admin_active_view");
+
+  // 1️⃣ Modal restoration has TOP priority
+  if (modalStateRaw) {
+    const { type, electionId, electionName } = JSON.parse(modalStateRaw);
+
+    currentViewIndex = VIEW_ORDER.indexOf("elections");
+    switchView("elections");
+
+    // wait for view animation/layout
+    setTimeout(() => {
+      if (type === "candidates") {
+        openManageCandidates(electionId, electionName);
+      }
+      if (type === "whitelist") {
+        openWhitelist(electionId, electionName);
+      }
+    }, 200);
+
+    return; // ⛔ STOP further view logic
+  }
+
+  // 2️⃣ Restore last active view
+  if (savedView && VIEW_ORDER.includes(savedView)) {
+    currentViewIndex = VIEW_ORDER.indexOf(savedView);
+    switchView(savedView);
+    return;
+  }
+
+  // 3️⃣ Final fallback
+  currentViewIndex = 0;
+  switchView("dashboard");
 });
 
-/* ================================
-   TIME-AWARE FORM PROTECTION
-   (Prevents confusion when backend blocks)
-================================ */
-
-// Parse ISO or blank
-function parseTime(v){
-  try { return v ? new Date(v) : null; }
-  catch { return null; }
+function rememberModal(type, electionId, electionName){
+  localStorage.setItem("admin_modal", JSON.stringify({
+    type,
+    electionId,
+    electionName
+  }));
 }
+function handleResultAccess(id, type, start, end){
+  const fakeCard = document.createElement("div");
+  fakeCard.dataset.start = start;
+  fakeCard.dataset.end = end;
 
-function markElectionState(card){
+  const status = getElectionStatus(fakeCard);
 
-  const start = parseTime(card.dataset.start);
-  const end   = parseTime(card.dataset.end);
-  const now   = new Date();
-
-  const addBtn = card.querySelector(".btn-add-candidate");
-  const noteBox = card.querySelector(".election-state-note");
-
-  if(!addBtn || !noteBox) return;
-
-  // default enabled
-  addBtn.disabled = false;
-  noteBox.innerHTML = "";
-
-  if(end && now > end){
-    addBtn.disabled = true;
-    noteBox.innerHTML =
-      "<span style='color:#f87171'>Election already ended — candidate changes are locked.</span>";
+  // 🔒 Private election → only AFTER end
+  if(type === "private" && status !== "ended"){
+    showAlert("This private election is not finished yet.");
     return;
   }
 
-  if(start && now < start){
-    noteBox.innerHTML =
-      "<span style='color:#facc15'>Election not started yet — you may still add candidates.</span>";
+  // ⏳ Public election → only AFTER start
+  if(type === "public" && status === "upcoming"){
+    showAlert("This public election has not started yet.");
     return;
   }
+
+  // ✅ Allowed
+  window.location.href = `/admin/results/${id}`;
+}
+function updateHeaderActions(viewId){
+  const actions = document.getElementById("header-actions");
+  if(!actions) return;
+
+  // reset
+  actions.innerHTML = "";
+
+  // Dashboard / Elections → New Election
+  if(viewId === "dashboard" || viewId === "elections" || viewId === "overview"){
+    actions.innerHTML = `
+      <button class="btn btn-primary"
+        onclick="openModal('createElectionModal')">
+        + New Election
+      </button>
+    `;
+  }
+  if(viewId === "profile"){
+    actions.innerHTML = `
+<button class="btn btn-danger" onclick="openLogoutConfirm()">
+  Logout
+</button>
+
+
+
+    `;
+  }
+  // Results → View All Results
+  if(viewId === "results"){
+    actions.innerHTML = `
+      <a href="/admin/results">
+        <button class="btn btn-primary">
+          View All Results
+        </button>
+      </a>
+    `;
+  }
+}
+function toggleEdit(field){
+  const input = document.getElementById("profile" + field + "Input");
+  if(!input) return;
+
+  // Always show input (no toggle back)
+  input.style.display = "block";
+
+  // Show Save button when ANY edit happens
+  const saveBtn = document.getElementById("saveProfileBtn");
+  if(saveBtn) saveBtn.style.display = "inline-flex";
 }
 
-/* ================================
-   CLIENT-SIDE SAFETY CHECKS
-================================ */
 
-document.querySelectorAll("form[action='/admin/add-candidate']").forEach(form=>{
+let lastProfileDraft = null;
 
-  form.addEventListener("submit", e=>{
+function saveProfile(){
+  const nameEl = document.getElementById("profileNameInput");
+  const userEl = document.getElementById("profileUsernameInput");
+  const mobEl  = document.getElementById("profileMobileInput");
+  const waEl   = document.getElementById("profileWhatsappInput");
+  const saveBtn = document.getElementById("saveProfileBtn");
 
-    const name = form.querySelector("input[name='name']");
-    if(!name || !name.value.trim()){
-      alert("Candidate name is required");
-      e.preventDefault();
+  if(!nameEl || !userEl || !mobEl || !waEl){
+    showAlert("Profile inputs not found");
+    return;
+  }
+
+  const name = nameEl.value.trim();
+  const username = userEl.value.trim();
+  const mobile = mobEl.value.trim();
+  const whatsapp = waEl.value.trim();
+
+  // Save draft BEFORE request
+  lastProfileDraft = { name, username, mobile, whatsapp };
+
+  fetch("/admin/profile/update",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(lastProfileDraft)
+  })
+  .then(r => r.json())
+  .then(res => {
+
+    /* ❌ FAILURE */
+    if(!res.success){
+      showAlert(res.message || "Profile update failed");
+      restoreProfileDraft();
+
+      // Keep inputs visible
+      ["Name","Username","Mobile","Whatsapp"].forEach(f=>{
+        const i = document.getElementById("profile"+f+"Input");
+        if(i) i.style.display = "block";
+      });
+
+      // Keep Save button visible
+      if(saveBtn) saveBtn.style.display = "inline-flex";
       return;
     }
 
-    const card = form.closest("[data-election-card]");
+    /* ✅ SUCCESS */
+    document.getElementById("profileName").textContent = name;
+    document.getElementById("profileUsername").textContent = username;
+    document.getElementById("profileMobile").textContent = mobile || "Not set";
+    document.getElementById("profileWhatsapp").textContent = whatsapp || "Not set";
+
+    // Hide inputs
+    ["Name","Username","Mobile","Whatsapp"].forEach(f=>{
+      const i = document.getElementById("profile"+f+"Input");
+      if(i) i.style.display = "none";
+    });
+
+    // Hide Save button
+    if(saveBtn) saveBtn.style.display = "none";
+
+    showAlert("Profile updated successfully");
+  })
+  .catch(err=>{
+    console.error(err);
+    showAlert("Network error while saving profile");
+    restoreProfileDraft();
+
+    if(saveBtn) saveBtn.style.display = "inline-flex";
+  });
+}
+
+function restoreProfileDraft(){
+  if(!lastProfileDraft) return;
+
+  const nameEl = document.getElementById("profileNameInput");
+  const userEl = document.getElementById("profileUsernameInput");
+  const mobEl  = document.getElementById("profileMobileInput");
+  const waEl   = document.getElementById("profileWhatsappInput");
+
+  if(nameEl) nameEl.value = lastProfileDraft.name;
+  if(userEl) userEl.value = lastProfileDraft.username;
+  if(mobEl)  mobEl.value  = lastProfileDraft.mobile;
+  if(waEl)   waEl.value   = lastProfileDraft.whatsapp;
+}
+function handleDashboardAlert(action, id, name, start, end){
+  // Always go to elections view first
+  currentViewIndex = VIEW_ORDER.indexOf("elections");
+  switchView("elections");
+
+  setTimeout(() => {
+    if(action === "candidates"){
+      rememberModal("candidates", id, name);
+      openManageCandidates(id, name, start, end);
+    }
+
+    if(action === "whitelist"){
+      rememberModal("whitelist", id, name);
+      openWhitelist(id, name, start, end);
+    }
+
+    if(action === "scroll"){
+      const card = document.querySelector(
+        `[data-election-card][onclick*="'${id}'"]`
+      );
+      if(card){
+        card.scrollIntoView({ behavior:"smooth", block:"center" });
+        card.style.boxShadow = "0 0 0 2px var(--yellow)";
+        setTimeout(()=>card.style.boxShadow="",1200);
+      }
+    }
+  }, 250);
+}
+/* ======================================================
+   STATUS CHIP ENGINE (AUTO-UPDATE)
+====================================================== */
+function updateStatusChips(){
+  $$("[data-status-chip]").forEach(chip=>{
+    const card = chip.closest("[data-start]");
     if(!card) return;
 
-    const end = parseTime(card.dataset.end);
-    const now = new Date();
+    const status = getElectionStatus(card);
 
-    if(end && now > end){
-      alert("Election already ended — candidates cannot be added.");
-      e.preventDefault();
+    chip.className = "status-chip"; // reset
+
+    if(status === "upcoming"){
+      chip.textContent = "UPCOMING";
+      chip.classList.add("status-upcoming");
+    }
+    else if(status === "running"){
+      chip.textContent = "RUNNING";
+      chip.classList.add("status-running");
+    }
+    else if(status === "ended"){
+      chip.textContent = "ENDED";
+      chip.classList.add("status-ended");
     }
   });
-});
+}
+function openLogoutConfirm(){
+  const m = document.getElementById("logoutConfirmModal");
+  if(!m) return;
 
-/* ================================
-   MODALS
-================================ */
-
-function closeModals(){
-  document.querySelectorAll(".modal").forEach(m=>m.style.display="none");
+  m.style.display = "flex";
+  document.body.style.overflow = "hidden";
 }
 
-function openEditElection(id,name,start,end){
-  document.getElementById("editElectionId").value=id;
-  document.getElementById("editElectionName").value=name;
-  document.getElementById("editElectionStart").value=start || "";
-  document.getElementById("editElectionEnd").value=end || "";
-  document.getElementById("editElectionModal").style.display="flex";
+function closeLogoutConfirm(){
+  const m = document.getElementById("logoutConfirmModal");
+  if(!m) return;
+
+  m.style.display = "none";
+  document.body.style.overflow = "auto";
 }
 
-function openEditCandidate(id,name,party,desc){
-  document.getElementById("editCandidateId").value=id;
-  document.getElementById("editCandidateName").value=name;
-  document.getElementById("editCandidateParty").value=party || "";
-  document.getElementById("editCandidateDesc").value=desc || "";
-  document.getElementById("editCandidateModal").style.display="flex";
+function confirmLogout(){
+  localStorage.removeItem("admin_active_view");
+  localStorage.removeItem("admin_modal");
+  window.location.href = "/logout";
 }
-
-window.onclick = e=>{
-  if(e.target.classList.contains("modal")) closeModals();
-};
-
-function formatRemaining(ms){
-  if (ms <= 0) return "00:00:00";
-
-  const s = Math.floor(ms / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-
-  return [
-    String(h).padStart(2,"0"),
-    String(m).padStart(2,"0"),
-    String(sec).padStart(2,"0")
-  ].join(":");
-}
-
-function updateElectionCountdowns(){
-
-  const now = new Date();
-
-  document.querySelectorAll("[data-election-card]").forEach(card => {
-
-    const start = card.dataset.start ? new Date(card.dataset.start) : null;
-    const end   = card.dataset.end   ? new Date(card.dataset.end)   : null;
-
-    const note  = card.querySelector(".election-state-note");
-    const timer = card.querySelector(".countdown-timer");
-    const btn   = card.querySelector(".btn-add-candidate");
-
-    // Safety check — missing timer fields
-    if(!start && !end){
-      note.textContent = "No election schedule set";
-      if(timer) timer.textContent = "";
-      return;
-    }
-
-    // Countdown to start (if exists)
-    if(start && now < start){
-      const remaining = start - now;
-      note.textContent = "Election has not started yet";
-      if(timer) timer.textContent = "Starts in: " + formatRemaining(remaining);
-
-      // candidate adding should still be allowed BEFORE start
-      if(btn){
-        btn.disabled = false;
-        btn.classList.remove("btn-gray");
-      }
-      return;
-    }
-
-    // Countdown until end
-    if(end && now < end){
-      const remaining = end - now;
-      note.textContent = "Election running";
-      if(timer) timer.textContent = "Ends in: " + formatRemaining(remaining);
-
-      // allow editing while running
-      if(btn){
-        btn.disabled = false;
-        btn.classList.remove("btn-gray");
-      }
-      return;
-    }
-
-    // Election ended — auto-lock
-    note.textContent = "Election ended — candidate changes locked";
-    if(timer) timer.textContent = "Ended";
-
-    if(btn){
-      btn.disabled = true;
-      btn.classList.add("btn-gray");
-    }
-  });
-  document.querySelectorAll("[data-ov-card]").forEach(card => {
-
-    const start = card.dataset.start ? new Date(card.dataset.start) : null;
-    const end   = card.dataset.end   ? new Date(card.dataset.end)   : null;
-
-    const timer = card.querySelector(".countdown-timer");
-
-    if(!start && !end){
-      timer.textContent = "";
-      return;
-    }
-
-    if(start && now < start){
-      timer.textContent = "Starts in: " + formatRemaining(start - now);
-      return;
-    }
-
-    if(end && now < end){
-      timer.textContent = "Ends in: " + formatRemaining(end - now);
-      return;
-    }
-
-    timer.textContent = "Ended";
-  });
-
-}
-
-// Initial run
-updateElectionCountdowns();
-
-// Auto-refresh every second
-setInterval(updateElectionCountdowns, 1000);
-
-function confirmDeleteCandidate(){
-  const id = document.getElementById("editCandidateId").value;
-
-  if(!id) return;
-
-  if(confirm("Delete this candidate?\n\nThis action is only allowed if:\n• Election has not ended\n• Candidate has zero votes")){
-    window.location = `/admin/candidate/delete/${id}`;
-  }
-}
-function confirmDeleteElection(){
-  const id = document.getElementById("editElectionId").value;
-
-  if(!id) return;
-
-  const msg =
-"Do you really want to delete this election?\n\n" +
-"Allowed ONLY if:\n" +
-"• Election has NOT ended\n" +
-"• No votes exist\n\n" +
-"Otherwise — use FORCE DELETE instead.";
-
-  if(confirm(msg)){
-    window.location = `/admin/election/delete/${id}`;
-  }
-}
-function confirmForceDeleteElection(){
-  const id = document.getElementById("editElectionId").value;
-
-  if(!id) return;
-
-  const msg =
-"⚠ WARNING ⚠\n\n" +
-"Force delete will permanently remove:\n" +
-"• Election\n" +
-"• All candidates\n" +
-"• All votes\n\n" +
-"This cannot be undone.\n\n" +
-"Are you absolutely sure?";
-
-  if(confirm(msg)){
-    window.location = `/admin/election/force-delete/${id}`;
-  }
-}
-/* CANDIDATE SEARCH (name + party) */
-document.getElementById("mcSearchInput")?.addEventListener("keyup", e=>{
-  const q = e.target.value.toLowerCase();
-
-  document.querySelectorAll("#mcList .cand-card").forEach(card=>{
-    const text = card.innerText.toLowerCase();
-    card.style.display = text.includes(q) ? "" : "none";
-  });
-});
-
-/* WHITELIST SEARCH (email only) */
-document.getElementById("wlSearchInput")?.addEventListener("keyup", e=>{
-  const q = e.target.value.toLowerCase();
-
-  document.querySelectorAll("#wlList .cand-card").forEach(card=>{
-    const email = card.querySelector("b")?.innerText.toLowerCase() || "";
-    card.style.display = email.includes(q) ? "" : "none";
-  });
-});
-/* ===== Overview Search Filters ===== */
-
-/* PUBLIC: name + public code */
-document.getElementById("ovPublicSearch")?.addEventListener("keyup", e=>{
-  const q = e.target.value.toLowerCase();
-
-  document.querySelectorAll("[data-ov-card]").forEach(card=>{
-    if(card.dataset.type !== "public") return;
-
-    const name = card.dataset.name || "";
-    const code = card.dataset.code || "";
-
-    card.style.display =
-      (name.includes(q) || code.includes(q)) ? "" : "none";
-  });
-});
-
-/* PRIVATE: name only */
-document.getElementById("ovPrivateSearch")?.addEventListener("keyup", e=>{
-  const q = e.target.value.toLowerCase();
-
-  document.querySelectorAll("[data-ov-card]").forEach(card=>{
-    if(card.dataset.type !== "private") return;
-
-    const name = card.dataset.name || "";
-
-    card.style.display =
-      name.includes(q) ? "" : "none";
-  });
-});
 
 </script>
 

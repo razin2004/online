@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Admin Dashboard — Online Voting System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+/* =====================================================
+   DESIGN TOKENS
+===================================================== */
+:root{
+  --bg-main:#020617;
+  --bg-card:rgba(15,23,42,.95);
+  --bg-soft:rgba(2,6,23,.9);
+
+  --border-soft:rgba(148,163,184,.15);
+
+  --blue:#38bdf8;
+  --green:#22c55e;
+  --yellow:#f59e0b;
+  --red:#ef4444;
+  --gray:#64748b;
+
+  --text-main:#e5e7eb;
+  --text-muted:#94a3b8;
+  --text-soft:#cbd5e1;
+
+  --radius-xl:18px;
+  --radius-lg:14px;
+  --radius-md:10px;
+
+  --shadow-soft:0 18px 40px rgba(0,0,0,.55);
+  --shadow-strong:0 30px 70px rgba(0,0,0,.65);
+
+  --ease:cubic-bezier(.4,0,.2,1);
+  --fast:.15s;
+  --mid:.28s;
+}
+
+/* =====================================================
+   RESET
+===================================================== */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Inter","Segoe UI",Arial,sans-serif;
+}
+
+html,body{
+  height:100%;
+}
+
+body{
+  background:#020617;
+  color:var(--text-main);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* =====================================================
+   DESKTOP HEADER
+===================================================== */
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 26px;
+  background:rgba(2,6,23,.92);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border-soft);
+}
+
+.topbar h2{
+  font-size:18px;
+  font-weight:700;
+}
+
+.topbar small{
+  font-size:12px;
+  color:var(--text-muted);
+}
+
+/* =====================================================
+   DESKTOP CONTAINER
+===================================================== */
+.desktop-container{
+  width:1250px;
+  max-width:95%;
+  margin:22px auto 40px;
+  display:flex;
+  flex-direction:column;
+  gap:24px;
+}
+
+/* =====================================================
+   CARDS
+===================================================== */
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-xl);
+  padding:18px;
+  box-shadow:var(--shadow-soft);
+  transition:transform var(--mid) var(--ease),
+             box-shadow var(--mid) var(--ease);
+}
+
+@media (min-width:901px){
+  .card:hover{
+    transform:translateY(-2px);
+    box-shadow:var(--shadow-strong);
+  }
+}
+
+.section-title{
+  font-size:14px;
+  font-weight:600;
+  color:var(--text-soft);
+  margin-bottom:10px;
+}
+
+/* =====================================================
+   GRID
+===================================================== */
+.grid-2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+/* =====================================================
+   INPUTS
+===================================================== */
+input,select,textarea{
+  width:100%;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  border:1px solid rgba(148,163,184,.25);
+  background:var(--bg-soft);
+  color:var(--text-main);
+  margin-top:6px;
+  outline:none;
+  transition:border var(--fast),
+             box-shadow var(--fast);
+}
+
+input::placeholder{color:var(--text-muted);}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 2px rgba(56,189,248,.25);
+}
+
+textarea{min-height:90px;}
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+button{
+  padding:9px 14px;
+  border:none;
+  border-radius:var(--radius-md);
+  cursor:pointer;
+  font-weight:600;
+  transition:transform var(--fast),
+             filter var(--fast);
+}
+
+button:hover{filter:brightness(1.1);}
+button:active{transform:scale(.97);}
+
+.btn-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8);}
+.btn-green{background:linear-gradient(135deg,#22c55e,#15803d);}
+.btn-yellow{background:linear-gradient(135deg,#f59e0b,#b45309);}
+.btn-red{background:linear-gradient(135deg,#ef4444,#b91c1c);}
+.btn-gray{background:linear-gradient(135deg,#64748b,#475569);}
+
+/* =====================================================
+   BADGES & META
+===================================================== */
+.badge{
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:600;
+}
+
+.badge-public{background:#065f46;}
+.badge-private{background:#1e3a8a;}
+
+.note{
+  font-size:12px;
+  color:var(--text-muted);
+  margin-top:6px;
+}
+
+/* =====================================================
+   CANDIDATE / RESULT CARDS
+===================================================== */
+.cand-card{
+  background:rgba(2,6,23,.9);
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:var(--radius-lg);
+  padding:12px;
+}
+
+.cand-top{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.cand-photo,
+.no-photo{
+  width:60px;
+  height:60px;
+  border-radius:var(--radius-md);
+}
+
+.cand-photo{
+  object-fit:cover;
+  border:1px solid rgba(148,163,184,.25);
+}
+
+.no-photo{
+  border:1px dashed rgba(148,163,184,.35);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:10px;
+  color:var(--text-muted);
+}
+
+.party{font-size:12px;color:#93c5fd;}
+.votes{font-size:12px;color:var(--text-soft);}
+
+.cand-actions{
+  margin-top:10px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+/* =====================================================
+   MODALS (SAFE — no contain hacks)
+===================================================== */
+.modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,0,.75);
+  backdrop-filter:blur(6px);
+  z-index:900;
+}
+
+.modal-box{
+  width:440px;
+  max-width:95%;
+  max-height:85vh;
+  overflow-y:auto;
+  background:var(--bg-main);
+  border:1px solid rgba(148,163,184,.25);
+  border-radius:var(--radius-xl);
+  padding:18px;
+  box-shadow:0 40px 90px rgba(0,0,0,.7);
+}
+
+/* =====================================================
+   MOBILE HEADER (THIN & FIXED)
+===================================================== */
+.mobile-admin-header{
+  display:none;
+}
+
+@media (max-width:900px){
+  body{overflow:hidden;}
+
+  .topbar{display:none;}
+
+  .mobile-admin-header{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    height:56px;
+    padding:6px 12px;
+    position:fixed;
+    top:0;left:0;right:0;
+    background:rgba(2,6,23,.96);
+    border-bottom:1px solid var(--border-soft);
+    z-index:1000;
+  }
+
+  .mah-title{
+    font-size:13px;
+    font-weight:700;
+    text-align:center;
+    line-height:1.1;
+  }
+
+  .mobile-dots{
+    display:flex;
+    justify-content:center;
+    gap:6px;
+    height:8px;
+    margin-top:4px;
+  }
+
+  .dot{
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:#475569;
+  }
+
+  .dot.active{
+    background:var(--blue);
+    transform:scale(1.4);
+  }
+}
+
+/* =====================================================
+   MOBILE SLIDER
+===================================================== */
+@media (max-width:900px){
+
+  .mobile-container{
+    margin-top:56px;
+    height:calc(100dvh - 56px);
+    overflow:hidden;
+  }
+
+  .mobile-slider{
+    display:flex;
+    width:300%;
+    height:100%;
+    transition:transform .45s var(--ease);
+  }
+
+  .mobile-panel{
+    width:100%;
+    flex-shrink:0;
+    overflow-y:auto;
+    padding:12px 12px 26px;
+  }
+
+  .grid-2,
+  .row{
+    grid-template-columns:1fr;
+  }
+}
+
+/* =====================================================
+   SCROLLBAR (ONLY WHERE NEEDED)
+===================================================== */
+.mobile-panel::-webkit-scrollbar,
+.modal-box::-webkit-scrollbar{
+  width:6px;
+}
+.mobile-panel::-webkit-scrollbar-thumb,
+.modal-box::-webkit-scrollbar-thumb{
+  background:#334155;
+  border-radius:6px;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<!-- =====================================================
+   MOBILE HEADER (THIN — NO LAYOUT JUMP)
+===================================================== -->
+<header class="mobile-admin-header">
+  <div class="mah-title" id="mobileHeaderTitle">Admin Dashboard</div>
+  <div class="mobile-dots">
+    <span class="dot active" data-dot="0"></span>
+    <span class="dot" data-dot="1"></span>
+    <span class="dot" data-dot="2"></span>
+  </div>
+</header>
+
+<!-- =====================================================
+   DESKTOP HEADER
+===================================================== -->
+<header class="topbar">
+  <div>
+    <h2>Admin Dashboard</h2>
+    <small>Secure Election Management</small>
+  </div>
+
+  <button class="btn-blue" onclick="openModal('createElectionModal')">
+    + Create Election
+  </button>
+</header>
+
+<!-- =====================================================
+   DESKTOP CONTENT
+===================================================== -->
+<main class="desktop-container">
+
+<!-- ================= OVERVIEW ================= -->
+<section>
+
+<div class="grid-2">
+
+  <!-- SUMMARY -->
+  <div class="card">
+    <div class="section-title">Elections Summary</div>
+
+    <div class="grid-2">
+      <div class="cand-card">
+        <b>Total Elections</b>
+        <div class="votes">{{ elections|length }}</div>
+      </div>
+      <div class="cand-card">
+        <b>Public Elections</b>
+        <div class="votes">
+          {{ elections|selectattr("election_type","equalto","public")|list|length }}
+        </div>
+      </div>
+      <div class="cand-card">
+        <b>Private Elections</b>
+        <div class="votes">
+          {{ elections|selectattr("election_type","equalto","private")|list|length }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="card">
+    <div class="section-title">Election Status</div>
+
+    <div class="grid-2">
+      <div class="cand-card">
+        <b>Running</b>
+        <div class="votes">{{ elections|selectattr("is_running")|list|length }}</div>
+      </div>
+      <div class="cand-card">
+        <b>Upcoming</b>
+        <div class="votes">{{ elections|selectattr("is_upcoming")|list|length }}</div>
+      </div>
+      <div class="cand-card">
+        <b>Ended</b>
+        <div class="votes">{{ elections|selectattr("is_ended")|list|length }}</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- OVERVIEW LIST -->
+<div class="card">
+  <div class="section-title">Election Overview</div>
+  <p class="note">Search and track elections in real-time.</p>
+
+  <div class="row">
+    <input id="ovPublicSearch" placeholder="Search public elections…">
+    <input id="ovPrivateSearch" placeholder="Search private elections…">
+  </div>
+
+  <div class="grid-2" style="margin-top:14px">
+
+    <!-- PUBLIC -->
+    <div>
+      <h4 class="note">Public Elections</h4>
+      {% for e in elections if e.election_type=="public" %}
+      <div class="cand-card"
+           data-ov-card
+           data-type="public"
+           data-name="{{ e.name|lower }}"
+           data-code="{{ e.public_code|lower if e.public_code }}"
+           data-start="{{ e.start_time }}"
+           data-end="{{ e.end_time }}">
+        <b>{{ e.name }}</b>
+        <span class="badge badge-public">PUBLIC</span>
+        <div class="countdown-timer"></div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- PRIVATE -->
+    <div>
+      <h4 class="note">Private Elections</h4>
+      {% for e in elections if e.election_type=="private" %}
+      <div class="cand-card"
+           data-ov-card
+           data-type="private"
+           data-name="{{ e.name|lower }}"
+           data-start="{{ e.start_time }}"
+           data-end="{{ e.end_time }}">
+        <b>{{ e.name }}</b>
+        <span class="badge badge-private">PRIVATE</span>
+        <div class="countdown-timer"></div>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+
+</section>
+
+<!-- ================= ELECTION MANAGEMENT ================= -->
+<section>
+
+<div class="grid-2">
+
+<!-- PUBLIC -->
+<div>
+  <div class="card">
+    <div class="section-title">Public Elections</div>
+    <input id="searchPublic" placeholder="Search public elections…">
+  </div>
+
+  {% for e in elections if e.election_type=="public" %}
+  <div class="card public-item"
+       data-election-card
+       data-start="{{ e.start_time }}"
+       data-end="{{ e.end_time }}">
+
+    <b>{{ e.name }}</b>
+    <span class="badge badge-public">PUBLIC</span>
+
+    <p class="election-state-note"></p>
+    <p class="countdown-timer"></p>
+
+    <div class="cand-actions">
+      <button class="btn-yellow"
+        onclick="openEditElection('{{ e.id }}','{{ e.name }}','{{ e.start_time }}','{{ e.end_time }}')">
+        Edit
+      </button>
+
+      <button class="btn-blue"
+        onclick="openManageCandidates('{{ e.id }}','{{ e.name }}')">
+        Manage Candidates
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- PRIVATE -->
+<div>
+  <div class="card">
+    <div class="section-title">Private Elections</div>
+    <input id="searchPrivate" placeholder="Search private elections…">
+  </div>
+
+  {% for e in elections if e.election_type=="private" %}
+  <div class="card private-item"
+       data-election-card
+       data-start="{{ e.start_time }}"
+       data-end="{{ e.end_time }}">
+
+    <b>{{ e.name }}</b>
+    <span class="badge badge-private">PRIVATE</span>
+
+    <p class="election-state-note"></p>
+    <p class="countdown-timer"></p>
+
+    <div class="cand-actions">
+      <button class="btn-yellow"
+        onclick="openEditElection('{{ e.id }}','{{ e.name }}','{{ e.start_time }}','{{ e.end_time }}')">
+        Edit
+      </button>
+
+      <button class="btn-blue"
+        onclick="openManageCandidates('{{ e.id }}','{{ e.name }}')">
+        Candidates
+      </button>
+
+      <button class="btn-blue"
+        onclick="openWhitelist('{{ e.id }}','{{ e.name }}')">
+        Whitelist
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+</div>
+
+</section>
+
+<!-- ================= PROFILE ================= -->
+<section>
+  <div class="card">
+    <div class="section-title">Admin Profile</div>
+    <p><b>Name:</b> {{ admin.name }}</p>
+    <p><b>Username:</b> {{ admin.username }}</p>
+    <p><b>Admin Code:</b> {{ admin.admin_code }}</p>
+    <p class="note">Share this code only with private voters.</p>
+
+    <a href="/logout">
+      <button class="btn-red">Logout</button>
+    </a>
+  </div>
+</section>
+
+</main>
+
+<!-- =====================================================
+   MOBILE CONTENT — SLIDER (SAME DATA, SAME IDS)
+===================================================== -->
+<main class="mobile-container">
+<div class="mobile-slider" id="mobileSlider">
+
+<section class="mobile-panel" data-panel="overview">
+
+<div class="grid-2">
+
+  <!-- SUMMARY -->
+  <div class="card">
+    <div class="section-title">Elections Summary</div>
+
+    <div class="grid-2">
+      <div class="cand-card">
+        <b>Total Elections</b>
+        <div class="votes">{{ elections|length }}</div>
+      </div>
+      <div class="cand-card">
+        <b>Public Elections</b>
+        <div class="votes">
+          {{ elections|selectattr("election_type","equalto","public")|list|length }}
+        </div>
+      </div>
+      <div class="cand-card">
+        <b>Private Elections</b>
+        <div class="votes">
+          {{ elections|selectattr("election_type","equalto","private")|list|length }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="card">
+    <div class="section-title">Election Status</div>
+
+    <div class="grid-2">
+      <div class="cand-card">
+        <b>Running</b>
+        <div class="votes">{{ elections|selectattr("is_running")|list|length }}</div>
+      </div>
+      <div class="cand-card">
+        <b>Upcoming</b>
+        <div class="votes">{{ elections|selectattr("is_upcoming")|list|length }}</div>
+      </div>
+      <div class="cand-card">
+        <b>Ended</b>
+        <div class="votes">{{ elections|selectattr("is_ended")|list|length }}</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- OVERVIEW LIST -->
+<div class="card">
+  <div class="section-title">Election Overview</div>
+  <p class="note">Search and track elections in real-time.</p>
+
+  <div class="row">
+    <input id="ovPublicSearch" placeholder="Search public elections…">
+    <input id="ovPrivateSearch" placeholder="Search private elections…">
+  </div>
+
+  <div class="grid-2" style="margin-top:14px">
+
+    <!-- PUBLIC -->
+    <div>
+      <h4 class="note">Public Elections</h4>
+      {% for e in elections if e.election_type=="public" %}
+      <div class="cand-card"
+           data-ov-card
+           data-type="public"
+           data-name="{{ e.name|lower }}"
+           data-code="{{ e.public_code|lower if e.public_code }}"
+           data-start="{{ e.start_time }}"
+           data-end="{{ e.end_time }}">
+        <b>{{ e.name }}</b>
+        <span class="badge badge-public">PUBLIC</span>
+        <div class="countdown-timer"></div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- PRIVATE -->
+    <div>
+      <h4 class="note">Private Elections</h4>
+      {% for e in elections if e.election_type=="private" %}
+      <div class="cand-card"
+           data-ov-card
+           data-type="private"
+           data-name="{{ e.name|lower }}"
+           data-start="{{ e.start_time }}"
+           data-end="{{ e.end_time }}">
+        <b>{{ e.name }}</b>
+        <span class="badge badge-private">PRIVATE</span>
+        <div class="countdown-timer"></div>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+</section>
+
+<section class="mobile-panel" data-panel="elections">
+<div class="grid-2">
+
+<!-- PUBLIC -->
+<div>
+  <div class="card">
+    <div class="section-title">Public Elections</div>
+    <input id="searchPublic" placeholder="Search public elections…">
+  </div>
+
+  {% for e in elections if e.election_type=="public" %}
+  <div class="card public-item"
+       data-election-card
+       data-start="{{ e.start_time }}"
+       data-end="{{ e.end_time }}">
+
+    <b>{{ e.name }}</b>
+    <span class="badge badge-public">PUBLIC</span>
+
+    <p class="election-state-note"></p>
+    <p class="countdown-timer"></p>
+
+    <div class="cand-actions">
+      <button class="btn-yellow"
+        onclick="openEditElection('{{ e.id }}','{{ e.name }}','{{ e.start_time }}','{{ e.end_time }}')">
+        Edit
+      </button>
+
+      <button class="btn-blue"
+        onclick="openManageCandidates('{{ e.id }}','{{ e.name }}')">
+        Manage Candidates
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- PRIVATE -->
+<div>
+  <div class="card">
+    <div class="section-title">Private Elections</div>
+    <input id="searchPrivate" placeholder="Search private elections…">
+  </div>
+
+  {% for e in elections if e.election_type=="private" %}
+  <div class="card private-item"
+       data-election-card
+       data-start="{{ e.start_time }}"
+       data-end="{{ e.end_time }}">
+
+    <b>{{ e.name }}</b>
+    <span class="badge badge-private">PRIVATE</span>
+
+    <p class="election-state-note"></p>
+    <p class="countdown-timer"></p>
+
+    <div class="cand-actions">
+      <button class="btn-yellow"
+        onclick="openEditElection('{{ e.id }}','{{ e.name }}','{{ e.start_time }}','{{ e.end_time }}')">
+        Edit
+      </button>
+
+      <button class="btn-blue"
+        onclick="openManageCandidates('{{ e.id }}','{{ e.name }}')">
+        Candidates
+      </button>
+
+      <button class="btn-blue"
+        onclick="openWhitelist('{{ e.id }}','{{ e.name }}')">
+        Whitelist
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+</div>
+
+</section>
+
+<section class="mobile-panel" data-panel="profile">
+<div class="card">
+    <div class="section-title">Admin Profile</div>
+    <p><b>Name:</b> {{ admin.name }}</p>
+    <p><b>Username:</b> {{ admin.username }}</p>
+    <p><b>Admin Code:</b> {{ admin.admin_code }}</p>
+    <p class="note">Share this code only with private voters.</p>
+
+    <a href="/logout">
+      <button class="btn-red">Logout</button>
+    </a>
+  </div>
+</section>
+
+</div>
+</main>
+
+<!-- =====================================================
+   MODALS (UNCHANGED FROM WORKING VERSION)
+===================================================== -->
+<!-- ================= MODALS ================= -->
+
+<!-- EDIT ELECTION -->
+<div id="editElectionModal" class="modal">
+  <div class="modal-box">
+    <h3>Edit Election</h3>
+
+    <form method="POST" action="/admin/election/update">
+      <input type="hidden" id="editElectionId" name="election_id">
+
+      <label>Name</label>
+      <input id="editElectionName" name="name" required>
+
+      <label>Start Time</label>
+      <input type="datetime-local" id="editElectionStart" name="start_time">
+
+      <label>End Time</label>
+      <input type="datetime-local" id="editElectionEnd" name="end_time">
+
+      <button class="btn-green">Save Changes</button>
+
+      <a id="deleteElectionLink">
+      <button type="button" class="btn-red"
+              onclick="confirmDeleteElection()">
+        Delete Election
+      </button>
+
+      <button type="button" class="btn-yellow"
+              onclick="confirmForceDeleteElection()">
+        Force Delete (Remove All Votes)
+      </button>
+
+</a>
+
+      </a>
+
+      <button type="button" class="btn-gray" onclick="closeModals()">
+        Cancel
+      </button>
+
+    </form>
+  </div>
+</div>
+
+<!-- EDIT CANDIDATE -->
+<div id="editCandidateModal" class="modal editor-modal">
+  <div class="modal-box">
+    <h3>Edit Candidate</h3>
+
+    <form method="POST" action="/admin/candidate/update" enctype="multipart/form-data">
+      <input type="hidden" id="editCandidateId" name="candidate_id">
+
+      <label>Name (not editable)</label>
+      <input id="editCandidateName" disabled>
+
+      <label>Party</label>
+      <input id="editCandidateParty" name="party">
+
+      <label>Description</label>
+      <textarea id="editCandidateDesc" name="description"></textarea>
+
+      <label>Change Photo</label>
+      <input type="file" name="photo">
+
+      <button class="btn-green">Save Changes</button>
+
+      <a id="deleteCandidateLink">
+        <button type="button" class="btn-red"
+          onclick="confirmDeleteCandidate()">
+          Delete Candidate
+        </button>
+      </a>
+
+      <button type="button" class="btn-gray" onclick="closeModals()">
+        Cancel
+      </button>
+
+    </form>
+  </div>
+</div>
+<div id="manageCandidatesModal" class="modal manage-modal">
+  <div class="modal-box">
+
+    <h3 id="mcTitle">Manage Candidates</h3>
+
+    <!-- ADD FORM (top) -->
+    <h4>Add New Candidate</h4>
+
+    <form method="POST"
+          action="/admin/add-candidate"
+          enctype="multipart/form-data">
+
+      <input type="hidden" id="mcElectionId" name="election_id">
+
+      <label>Name</label>
+      <input name="name" required>
+
+      <label>Party</label>
+      <input name="party">
+
+      <label>Photo</label>
+      <input type="file" name="photo" accept="image/*">
+
+      <label>Description</label>
+      <textarea name="description"></textarea>
+
+      <button class="btn-green">Add Candidate</button>
+    </form>
+
+    <hr style="margin:10px 0">
+
+    <!-- SEARCH NOW BELOW ADD FORM -->
+    <h4>Existing Candidates</h4>
+    <input id="mcSearchInput"
+           placeholder="Search candidate name or party...">
+
+    <div id="mcList"></div>
+
+    <button type="button"
+            class="btn-gray"
+            onclick="closeModals()">Close</button>
+
+  </div>
+</div>
+
+<div id="whitelistModal" class="modal">
+  <div class="modal-box">
+
+    <h3 id="wlTitle">Whitelist Access</h3>
+
+    <!-- ADD FORM (top) -->
+    <h4>Add Emails</h4>
+
+    <form method="POST" action="/admin/whitelist/bulk-add" id="wlForm">
+      <input type="hidden" id="wlElectionId" name="election_id">
+
+      <textarea id="wlInput" name="emails"
+        placeholder="Paste emails — one per line or comma separated"></textarea>
+
+      <!-- DUPLICATE WARNING -->
+      <p id="wlDuplicateInfo" class="note"></p>
+
+      <button class="btn-blue" id="wlSubmitBtn">Add to Whitelist</button>
+    </form>
+
+
+    <hr style="margin:10px 0">
+
+    <!-- SEARCH BELOW ADD FORM -->
+    <h4>Existing Whitelist</h4>
+    <input id="wlSearchInput"
+           placeholder="Search email...">
+
+    <div id="wlList"></div>
+
+    <button type="button"
+            class="btn-gray"
+            onclick="closeModals()">Close</button>
+
+  </div>
+</div>
+<!-- ================= CREATE ELECTION MODAL ================= -->
+<div id="createElectionModal" class="modal">
+  <div class="modal-box">
+
+    <h3>Create New Election</h3>
+    <p class="note">Define election type and schedule carefully.</p>
+
+    <form method="POST" action="/admin/create-election">
+
+      <label>Election Name</label>
+      <input name="name" required>
+
+      <label>Election Type</label>
+      <select name="type" required>
+        <option value="public">Public</option>
+        <option value="private">Private</option>
+      </select>
+
+      <label>Election Duration</label>
+      <div class="row">
+        <input type="datetime-local" name="start_time">
+        <input type="datetime-local" name="end_time">
+      </div>
+
+      <p class="note">
+        • Private elections MUST have start & end time<br>
+        • Public elections may run without schedule
+      </p>
+
+      <button class="btn-blue">Create Election</button>
+      <button type="button" class="btn-gray" onclick="closeModals()">Cancel</button>
+    </form>
+
+  </div>
+</div>
+
+</div>
+
+<script>
+/* =====================================================
+   CORE SELECTORS & HELPERS
+===================================================== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const isMobile = () => window.innerWidth < 900;
+
+/* =====================================================
+   SCROLL LOCK (MODALS)
+===================================================== */
+function lockScroll(){ document.body.style.overflow = "hidden"; }
+function unlockScroll(){ document.body.style.overflow = ""; }
+
+/* =====================================================
+   MODALS — BACKEND SAFE
+===================================================== */
+function openModal(id){
+  const modal = document.getElementById(id);
+  if(!modal) return;
+  modal.style.display = "flex";
+  lockScroll();
+}
+
+function closeModals(){
+  $$(".modal").forEach(m => m.style.display = "none");
+  unlockScroll();
+}
+
+window.addEventListener("click", e=>{
+  if(e.target.classList.contains("modal")) closeModals();
+});
+
+/* =====================================================
+   EDIT / MANAGE / WHITELIST (UNCHANGED ROUTES)
+===================================================== */
+function openEditElection(id,name,start,end){
+  $("#editElectionId").value = id;
+  $("#editElectionName").value = name;
+  $("#editElectionStart").value = start || "";
+  $("#editElectionEnd").value = end || "";
+  openModal("editElectionModal");
+}
+
+function openManageCandidates(eid, name){
+  $("#mcElectionId").value = eid;
+  $("#mcTitle").innerText = "Manage Candidates — " + name;
+
+  fetch(`/admin/api/candidates/${eid}`)
+    .then(r=>r.json())
+    .then(data=>{
+      const list = $("#mcList");
+      if(!data.candidates.length){
+        list.innerHTML = "<p class='note'>No candidates added.</p>";
+        return;
+      }
+
+      list.innerHTML = data.candidates.map(c=>`
+        <div class="cand-card">
+          <div class="cand-top">
+            ${c.photo
+              ? `<img src="/static/uploads/${c.photo}" class="cand-photo">`
+              : `<div class="no-photo">No Photo</div>`}
+            <div>
+              <b>${c.name}</b>
+              <div class="party">${c.party || "Independent"}</div>
+              <div class="votes">Votes: <b>${c.votes}</b></div>
+            </div>
+          </div>
+          <div class="cand-actions">
+            <button class="btn-gray"
+              onclick="openEditCandidate('${c.id}','${c.name}','${c.party||""}','${c.description||""}')">
+              Edit
+            </button>
+            <a href="/admin/candidate/delete/${c.id}"
+               onclick="return confirm('Delete candidate ${c.name}?')">
+              <button class="btn-red" ${c.votes>0?"disabled":""}>Delete</button>
+            </a>
+          </div>
+        </div>
+      `).join("");
+    });
+
+  openModal("manageCandidatesModal");
+}
+
+function openWhitelist(eid, name){
+  $("#wlElectionId").value = eid;
+  $("#wlTitle").innerText = "Whitelist — " + name;
+
+  fetch(`/admin/api/whitelist/${eid}`)
+    .then(r=>r.json())
+    .then(data=>{
+      const list = $("#wlList");
+      if(!data.whitelist.length){
+        list.innerHTML = "<p class='note'>No whitelist entries.</p>";
+        return;
+      }
+
+      list.innerHTML = data.whitelist
+        .sort((a,b)=>a.email.localeCompare(b.email))
+        .map(w=>`
+          <div class="cand-card">
+            <b>${w.email}</b>
+            <div class="cand-actions">
+              <a href="/admin/whitelist/remove/${w.id}"
+                 onclick="return confirm('Remove ${w.email}?')">
+                <button class="btn-red">Remove</button>
+              </a>
+            </div>
+          </div>
+        `).join("");
+    });
+
+  openModal("whitelistModal");
+}
+
+/* =====================================================
+   SEARCH — CACHED & FAST
+===================================================== */
+function attachSearch(inputId, selector){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+
+  const items = $$(selector).map(el=>({
+    el,
+    text: el.innerText.toLowerCase()
+  }));
+
+  input.addEventListener("input",()=>{
+    const q = input.value.toLowerCase();
+    items.forEach(i=>{
+      i.el.style.display = i.text.includes(q) ? "" : "none";
+    });
+  });
+}
+
+attachSearch("searchPublic",".public-item");
+attachSearch("searchPrivate",".private-item");
+attachSearch("mcSearchInput","#mcList .cand-card");
+attachSearch("wlSearchInput","#wlList .cand-card");
+
+/* =====================================================
+   OVERVIEW SEARCH (STRICT RULES)
+===================================================== */
+$("#ovPublicSearch")?.addEventListener("input",e=>{
+  const q = e.target.value.toLowerCase();
+  $$("[data-ov-card]").forEach(card=>{
+    if(card.dataset.type!=="public") return;
+    card.style.display =
+      (card.dataset.name||"").includes(q) ||
+      (card.dataset.code||"").includes(q) ? "" : "none";
+  });
+});
+
+$("#ovPrivateSearch")?.addEventListener("input",e=>{
+  const q = e.target.value.toLowerCase();
+  $$("[data-ov-card]").forEach(card=>{
+    if(card.dataset.type!=="private") return;
+    card.style.display =
+      (card.dataset.name||"").includes(q) ? "" : "none";
+  });
+});
+
+/* =====================================================
+   COUNTDOWN ENGINE (SINGLE TIMER)
+===================================================== */
+function formatRemaining(ms){
+  if(ms<=0) return "00:00:00";
+  const s = Math.floor(ms/1000);
+  return [
+    Math.floor(s/3600),
+    Math.floor((s%3600)/60),
+    s%60
+  ].map(v=>String(v).padStart(2,"0")).join(":");
+}
+
+function updateCountdowns(){
+  const now = Date.now();
+
+  $$("[data-election-card]").forEach(card=>{
+    const start = card.dataset.start ? Date.parse(card.dataset.start) : null;
+    const end   = card.dataset.end   ? Date.parse(card.dataset.end)   : null;
+    const note  = card.querySelector(".election-state-note");
+    const timer = card.querySelector(".countdown-timer");
+    if(!note||!timer) return;
+
+    if(!start && !end){
+      note.textContent = "No election schedule set";
+      timer.textContent = "";
+    }else if(start && now < start){
+      note.textContent = "Election has not started yet";
+      timer.textContent = "Starts in: "+formatRemaining(start-now);
+    }else if(end && now < end){
+      note.textContent = "Election running";
+      timer.textContent = "Ends in: "+formatRemaining(end-now);
+    }else{
+      note.textContent = "Election ended";
+      timer.textContent = "Ended";
+    }
+  });
+
+  $$("[data-ov-card]").forEach(card=>{
+    const start = card.dataset.start ? Date.parse(card.dataset.start) : null;
+    const end   = card.dataset.end   ? Date.parse(card.dataset.end)   : null;
+    const timer = card.querySelector(".countdown-timer");
+    if(!timer) return;
+
+    if(start && now < start)
+      timer.textContent = "Starts in: "+formatRemaining(start-now);
+    else if(end && now < end)
+      timer.textContent = "Ends in: "+formatRemaining(end-now);
+    else
+      timer.textContent = "Ended";
+  });
+}
+
+let countdownTimer=null;
+function startCountdowns(){
+  if(countdownTimer) return;
+  updateCountdowns();
+  countdownTimer=setInterval(updateCountdowns,1000);
+}
+function stopCountdowns(){
+  clearInterval(countdownTimer);
+  countdownTimer=null;
+}
+document.addEventListener("visibilitychange",()=>{
+  document.hidden ? stopCountdowns() : startCountdowns();
+});
+startCountdowns();
+
+/* =====================================================
+   DELETE CONFIRMATIONS (SAFE)
+===================================================== */
+function confirmDeleteCandidate(){
+  const id=$("#editCandidateId")?.value;
+  if(id && confirm("Delete this candidate?"))
+    location.href=`/admin/candidate/delete/${id}`;
+}
+function confirmDeleteElection(){
+  const id=$("#editElectionId")?.value;
+  if(id && confirm("Delete this election?"))
+    location.href=`/admin/election/delete/${id}`;
+}
+function confirmForceDeleteElection(){
+  const id=$("#editElectionId")?.value;
+  if(id && confirm("Force delete election?"))
+    location.href=`/admin/election/force-delete/${id}`;
+}
+
+/* =====================================================
+   MOBILE SLIDER + DOTS + TITLE
+===================================================== */
+(function mobileSlider(){
+  if(!isMobile()) return;
+
+  const slider=$("#mobileSlider");
+  const title=$("#mobileHeaderTitle");
+  const dots=$$(".mobile-dots .dot");
+  if(!slider||!title||dots.length!==3) return;
+
+  const TITLES=["Admin Dashboard","Elections","Profile"];
+  let index=0;
+
+  function goTo(i){
+    if(i===index) return;
+    slider.style.transform=`translateX(-${i*100}%)`;
+    dots.forEach(d=>d.classList.remove("active"));
+    dots[i].classList.add("active");
+
+    title.classList.add("title-exit");
+    setTimeout(()=>{
+      title.textContent=TITLES[i];
+      title.classList.remove("title-exit");
+      title.classList.add("title-enter");
+    },150);
+
+    index=i;
+  }
+
+  dots.forEach((d,i)=>d.addEventListener("click",()=>goTo(i)));
+  window.__goToPanel=goTo;
+  goTo(0);
+})();
+
+/* =====================================================
+   MOBILE SWIPE (INERTIA SAFE)
+===================================================== */
+(function swipe(){
+  if(!isMobile()||!window.__goToPanel) return;
+  const slider=$("#mobileSlider");
+  let startX=0,dx=0,drag=false,idx=0;
+
+  slider.addEventListener("touchstart",e=>{
+    drag=true;startX=e.touches[0].clientX;
+    slider.style.transition="none";
+  },{passive:true});
+
+  slider.addEventListener("touchmove",e=>{
+    if(!drag) return;
+    dx=e.touches[0].clientX-startX;
+    slider.style.transform=
+      `translateX(calc(${-idx*100}% + ${dx}px))`;
+  },{passive:true});
+
+  slider.addEventListener("touchend",()=>{
+    drag=false;
+    slider.style.transition="";
+    if(Math.abs(dx)>60) idx+=dx<0?1:-1;
+    idx=Math.max(0,Math.min(2,idx));
+    window.__goToPanel(idx);
+    dx=0;
+  });
+})();
+</script>
+</body>
+
+</html>

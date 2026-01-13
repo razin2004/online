@@ -7,6 +7,10 @@
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI, Arial;}
+html, body{
+  height:100%;
+  overflow:hidden;   /* 🔒 page never scrolls */
+}
 
 body{
   min-height:100vh;
@@ -164,16 +168,465 @@ h1{font-size:24px;margin-bottom:6px;}
   cursor:pointer;
 }
 
+.gray{background:#4b5563;}
+.gray:hover{background:#6b7280;}
 .green{background:#22c55e;}
 .green:hover{background:#16a34a;}
 
-.gray{background:#4b5563;}
-.gray:hover{background:#6b7280;}
+.reset-panel{left:-300%;}
+.wrapper.reset .login-panel{left:300%;}
+.wrapper.reset .reset-panel{left:0;}
+/* =====================================================
+   MOBILE & TABLET OVERRIDES (NON-DESTRUCTIVE)
+   ===================================================== */
+
+@media (max-width: 900px) {
+
+  body{
+    align-items:flex-start;
+    padding:12px;
+  }
+
+  .wrapper{
+    width:100%;
+    height:auto;
+    min-height:100vh;
+    border-radius:14px;
+  }
+
+  /* STACK PANELS INSTEAD OF SIDE-BY-SIDE */
+  .panel{
+    position:relative;
+    width:100%;
+    height:auto;
+    padding:22px 18px;
+    left:0 !important;
+    transition:none;
+  }
+
+  /* DISABLE SLIDING MECHANISM SAFELY */
+  .wrapper.register .login-panel,
+  .wrapper.voter .login-panel,
+  .wrapper.reset .login-panel{
+    display:none;
+  }
+
+  .register-panel,
+  .voter-panel,
+  .reset-panel{
+    display:none;
+  }
+
+  .wrapper.register .register-panel,
+  .wrapper.voter .voter-panel,
+  .wrapper.reset .reset-panel{
+    display:block;
+  }
+
+  /* HIDE RIGHT STATIC WELCOME PANEL */
+  .welcome{
+    display:none;
+  }
+
+  /* BUTTONS — BETTER TOUCH TARGETS */
+  .btn,
+  .reset-btn{
+    padding:14px;
+    font-size:15px;
+    border-radius:12px;
+  }
+
+  /* INPUTS */
+  .field input{
+    padding:13px;
+    font-size:15px;
+  }
+
+  /* OPTION BOXES */
+  .option-box{
+    padding:16px;
+    font-size:15px;
+  }
+
+}
+@media (max-width: 600px){
+  .reset-overlay{
+    align-items:flex-start;
+    padding-top:30px;
+  }
+
+  .reset-box{
+    width:92%;
+    max-width:420px;
+  }
+}
+/* =====================================================
+   PREMIUM MOBILE VISUAL LAYER
+   ===================================================== */
+@media (max-width: 900px){
+  .panel{
+    max-height: calc(100vh - 120px); /* header-safe */
+  }
+}
+@media (max-width: 900px){
+
+  body{
+    background:linear-gradient(180deg,#020617,#0b1220);
+  }
+
+  .wrapper{
+    background:transparent;
+    border:none;
+    box-shadow:none;
+  }
+
+  .panel{
+    background:linear-gradient(
+      180deg,
+      rgba(15,23,42,.95),
+      rgba(2,6,23,.95)
+    );
+    border-radius:18px;
+    margin-bottom:16px;
+    box-shadow:0 25px 60px rgba(0,0,0,.55);
+  }
+
+.panel{
+  overflow-y:auto;
+  overscroll-behavior:contain; /* prevents scroll chaining */
+  -webkit-overflow-scrolling:touch;
+}
+
+  h1{
+    font-size:20px;
+    line-height:1.2;
+  }
+
+  .sub{
+    font-size:13px;
+    line-height:1.4;
+  }
+
+}
+/* =====================================================
+   MOBILE BOTTOM-SHEET OTP STYLE
+   ===================================================== */
+
+@media (max-width: 600px){
+
+  .reset-overlay{
+    align-items:flex-end;
+    padding:0;
+  }
+
+  .reset-box{
+    width:100%;
+    max-width:none;
+    border-radius:18px 18px 0 0;
+    animation:slideUp .35s ease;
+  }
+
+  @keyframes slideUp{
+    from{transform:translateY(100%);}
+    to{transform:translateY(0);}
+  }
+
+}
+/* =====================================================
+   MICRO INTERACTIONS (MOBILE ONLY)
+   ===================================================== */
+
+@media (max-width: 900px){
+
+  .btn,
+  .option-box,
+  .reset-btn{
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+
+  .btn:active,
+  .reset-btn:active,
+  .option-box:active{
+    transform:scale(.97);
+    box-shadow:0 12px 30px rgba(0,0,0,.4);
+  }
+
+}
+@media (max-width: 900px){
+
+  hr{
+    margin:22px 0;
+    border:0;
+    height:1px;
+    background:linear-gradient(
+      to right,
+      transparent,
+      rgba(255,255,255,.15),
+      transparent
+    );
+  }
+
+}
+@media (max-width: 900px){
+
+  .field label{
+    font-size:12px;
+    letter-spacing:.3px;
+  }
+
+  .field input{
+    margin-top:6px;
+  }
+
+}
+/* =====================================================
+   PREMIUM MOBILE HEADER (REPLACES DESKTOP WELCOME)
+   ===================================================== */
+
+.mobile-header{
+  display:none;
+}
+
+@media (max-width: 900px){
+
+  .mobile-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    margin-bottom:14px;
+
+    background:linear-gradient(
+      180deg,
+      rgba(15,23,42,.95),
+      rgba(2,6,23,.95)
+    );
+
+    border-radius:16px;
+    box-shadow:0 18px 45px rgba(0,0,0,.55);
+  }
+
+  .mh-left,
+  .mh-right{
+    width:48px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+
+  .mh-center{
+    text-align:center;
+    flex:1;
+  }
+
+  .mh-title{
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:.4px;
+  }
+
+  .mh-sub{
+    font-size:11px;
+    color:#9ca3af;
+    margin-top:2px;
+  }
+
+  .mh-badge{
+    font-size:11px;
+    padding:4px 8px;
+    border-radius:999px;
+    background:rgba(34,197,94,.15);
+    color:#22c55e;
+    border:1px solid rgba(34,197,94,.35);
+  }
+
+  .mh-dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:#22c55e;
+    box-shadow:0 0 0 4px rgba(34,197,94,.15);
+  }
+
+}
+/* =====================================================
+   FIX MOBILE HEADER ALIGNMENT (TOP-ANCHORED)
+   ===================================================== */
+
+@media (max-width: 900px){
+
+  body{
+    display:block;            /* stop centering layout */
+    padding:12px;
+    padding-top:84px;         /* space for fixed header */
+  }
+
+  .mobile-header{
+    position:fixed;
+    top:12px;
+    left:12px;
+    right:12px;
+    z-index:10000;
+  }
+
+  .wrapper{
+    margin-top:0;             /* ensure clean flow */
+  }
+
+}
+/* =====================================================
+   KEEP MOBILE HEADER FIXED & ALWAYS VISIBLE
+   ===================================================== */
+
+@media (max-width: 900px){
+
+  body{
+    overflow-y:hidden;
+  }
+
+  .mobile-header{
+    position:fixed;
+    top:12px;
+    left:12px;
+    right:12px;
+    z-index:20000;
+  }
+
+  /* content scrolls UNDER header */
+  #wrap{
+    margin-top:0;
+  }
+
+}
+/* =====================================================
+   CENTER VOTER OTP POPUPS (MOBILE & DESKTOP)
+   ===================================================== */
+
+#publicOtpOverlay,
+#privateOtpOverlay{
+  align-items:center !important;
+}
+
+@media (max-width: 600px){
+
+  #publicOtpOverlay .reset-box,
+  #privateOtpOverlay .reset-box{
+    width:92%;
+    max-width:420px;
+    border-radius:16px;
+    animation:fadeScale .25s ease;
+  }
+
+  @keyframes fadeScale{
+    from{
+      opacity:0;
+      transform:scale(.95);
+    }
+    to{
+      opacity:1;
+      transform:scale(1);
+    }
+  }
+
+}
+/* =====================================================
+   MOBILE HEADER TITLE ANIMATION
+   ===================================================== */
+
+.mh-title{
+  position: relative;
+  display: inline-block;
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+.mh-title.fade-out{
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.mh-title.fade-in{
+  opacity: 1;
+  transform: translateY(0);
+}
+/* =====================================================
+   MOBILE HEADER TITLE — DIRECTION AWARE
+   ===================================================== */
+
+.mh-title{
+  position: relative;
+  display: inline-block;
+  transition: opacity .28s ease, transform .28s ease;
+  will-change: transform, opacity;
+}
+
+.mh-title.exit-left{
+  opacity: 0;
+  transform: translateX(-12px);
+}
+
+.mh-title.exit-right{
+  opacity: 0;
+  transform: translateX(12px);
+}
+
+.mh-title.enter{
+  opacity: 1;
+  transform: translateX(0);
+}
+/* =====================================================
+   MOBILE HEADER — BREADCRUMB DOTS
+   ===================================================== */
+
+.mh-dots{
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  margin-top:6px;
+}
+
+.mh-dots span{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:rgba(255,255,255,.25);
+  transition:
+    transform .25s ease,
+    background .25s ease,
+    box-shadow .25s ease;
+}
+
+.mh-dots span.active{
+  background:#22c55e;
+  transform:scale(1.25);
+  box-shadow:0 0 0 4px rgba(34,197,94,.18);
+}
 
 </style>
 </head>
 
 <body>
+<!-- ========== MOBILE HEADER (MEDIA VIEW ONLY) ========== -->
+<div class="mobile-header">
+  <div class="mh-left">
+    <span class="mh-badge">🔐 Secure</span>
+  </div>
+
+  <div class="mh-center">
+    <div class="mh-title">Online Voting System</div>
+    <div class="mh-sub">Verified • One Vote Per User</div>
+    <div class="mh-dots">
+      <span data-panel="login"></span>
+      <span data-panel="register"></span>
+      <span data-panel="voter"></span>
+      <span data-panel="reset"></span>
+    </div>
+  </div>
+
+
+  <div class="mh-right">
+    <span class="mh-dot"></span>
+  </div>
+</div>
 
 {% set messages = get_flashed_messages(with_categories=True) %}
 {% set open_panel = request.args.get('panel', 'login') %}
@@ -226,8 +679,17 @@ h1{font-size:24px;margin-bottom:6px;}
             {{ msg }}
           </div>
         {% endif %}
+
+        {% if cat == "admin_login_success" %}
+          <div id="loginSuccess"
+              style="background:#022c22;border:1px solid #22c55e;
+              padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
+            {{ msg }}
+          </div>
+        {% endif %}
       {% endfor %}
     {% endif %}
+
 
     <form method="POST" action="/admin/login">
 
@@ -331,8 +793,6 @@ h1{font-size:24px;margin-bottom:6px;}
     </form>
   </div>
 
-
-
   <!-- ========== VOTER LOGIN PANEL ========== -->
 
   <div class="panel voter-panel">
@@ -358,6 +818,53 @@ h1{font-size:24px;margin-bottom:6px;}
     </p>
 
   </div>
+  <div class="panel reset-panel">
+
+  <h1>Reset Password</h1>
+
+  {% if not session.get("otp_reset_verified") %}
+
+    <p class="sub">Enter your registered admin email to receive OTP.</p>
+
+    <form method="POST" action="/admin/forgot-password">
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" name="email" required>
+      </div>
+
+      <button class="btn blue">Send OTP</button>
+
+      <p style="margin-top:10px;font-size:12px;">
+        <a href="javascript:void(0)"
+          id="resetBackLogin"
+          style="color:#7dd3fc;">
+          Back to Login
+        </a>
+
+      </p>
+    </form>
+
+  {% else %}
+
+    <p class="sub">OTP verified. Create a new password.</p>
+
+    <form method="POST" action="/admin/reset-password">
+      <div class="field">
+        <label>New Password</label>
+        <input type="password" name="password" required>
+      </div>
+
+      <div class="field">
+        <label>Confirm Password</label>
+        <input type="password" name="confirm" required>
+      </div>
+
+      <button class="btn green">Save New Password</button>
+    </form>
+
+  {% endif %}
+
+</div>
 
   <!-- RIGHT STATIC PANEL -->
   <div class="welcome">
@@ -367,46 +874,7 @@ h1{font-size:24px;margin-bottom:6px;}
     </p>
   </div>
 
-<!-- ========== FORGOT PASSWORD RESET PANEL ========== -->
 
-<div id="resetOverlay" class="reset-overlay">
-
-  <div class="reset-box">
-
-    <div class="reset-title">Reset Admin Password</div>
-    <div class="reset-sub">
-      Enter your registered admin email — an OTP will be sent to verify identity.
-    </div>
-
-    <form method="POST" action="/admin/forgot-password">
-
-      <div class="field">
-        <label>Email Address</label>
-        <input type="email" name="email" required>
-      </div>
-
-      <button class="reset-btn green">Send Reset OTP</button>
-    </form>
-<button id="closeReset"
-        style="
-          background:none;
-          border:none;
-          color:#809dd1;
-          font-size:12px;
-          margin-top:6px;
-          cursor:pointer;
-          text-decoration:underline;
-        ">
-  Back to Login
-</button>
-
-
-    <p style="margin-top:6px;font-size:11px;color:#9ca3af;">
-      For security reasons, the system will not confirm whether an email exists.
-    </p>
-  </div>
-
-</div>
 
 </div>
 
@@ -503,109 +971,300 @@ h1{font-size:24px;margin-bottom:6px;}
   </div>
 </div>
 
-
 <script>
+let wrap;
+let publicOtpOverlay;
+let privateOtpOverlay;
 
-// ---------- Forgot Password Panel ----------
+document.addEventListener("DOMContentLoaded", () => {
 
-const resetOverlay = document.getElementById("resetOverlay");
+  wrap = document.getElementById("wrap");
+  publicOtpOverlay  = document.getElementById("publicOtpOverlay");
+  privateOtpOverlay = document.getElementById("privateOtpOverlay");
 
-document.getElementById("openReset").onclick = ()=>{
-  resetOverlay.style.display="flex";
-};
+  // rest of your code unchanged
 
-document.getElementById("closeReset").onclick = ()=>{
-  resetOverlay.style.display="none";
-};
 
-const wrap = document.getElementById("wrap");
+  /* =====================================================
+     ADMIN / MAIN PANEL CONTROLS
+  ===================================================== */
 
-// panel switching
-document.getElementById("openVoter").onclick   = ()=> wrap.className="wrapper voter";
-document.getElementById("openRegister").onclick= ()=> wrap.className="wrapper register";
+  document.getElementById("openReset")?.addEventListener("click", () => {
+    wrap.className = "wrapper reset";
+    sessionStorage.setItem("active_panel", "reset");
+  });
 
-document.getElementById("backLogin1").onclick  =
-document.getElementById("backLogin2").onclick  =
-()=> wrap.className="wrapper";
+  document.getElementById("resetBackLogin")?.addEventListener("click", () => {
+    wrap.className = "wrapper";
+    sessionStorage.removeItem("active_panel");
+  });
 
-// voter panel toggles
-// ==== VOTER OTP MODALS ====
+  document.getElementById("openRegister")?.addEventListener("click", () => {
+    wrap.className = "wrapper register";
+    sessionStorage.setItem("active_panel", "register");
+  });
 
-const publicOtpOverlay  = document.getElementById("publicOtpOverlay");
-const privateOtpOverlay = document.getElementById("privateOtpOverlay");
+  document.getElementById("openVoter")?.addEventListener("click", () => {
+    wrap.className = "wrapper voter";
+    sessionStorage.setItem("active_panel", "voter");
+  });
 
-document.getElementById("optPublic").onclick = ()=>{
-  publicOtpOverlay.style.display = "flex";
-};
+  document.getElementById("backLogin1")?.addEventListener("click", () => {
+    wrap.className = "wrapper";
+    sessionStorage.removeItem("active_panel");
+  });
 
-document.getElementById("optPrivate").onclick = ()=>{
-  privateOtpOverlay.style.display = "flex";
-};
+  document.getElementById("backLogin2")?.addEventListener("click", () => {
+    wrap.className = "wrapper";
+    sessionStorage.removeItem("active_panel");
+  });
 
-function closePublicOtp(){
-  publicOtpOverlay.style.display = "none";
+  /* =====================================================
+     VOTER OTP POPUPS
+  ===================================================== */
+
+  document.getElementById("optPublic")?.addEventListener("click", () => {
+    publicOtpOverlay.style.display = "flex";
+  });
+
+  document.getElementById("optPrivate")?.addEventListener("click", () => {
+    privateOtpOverlay.style.display = "flex";
+  });
+
+  window.closePublicOtp = () => {
+    publicOtpOverlay.style.display = "none";
+  };
+
+  window.closePrivateOtp = () => {
+    privateOtpOverlay.style.display = "none";
+  };
+
+  /* =====================================================
+     PANEL MEMORY (SESSION STORAGE)
+  ===================================================== */
+
+  const savedPanel = sessionStorage.getItem("active_panel");
+  if (savedPanel) {
+    wrap.className = "wrapper " + savedPanel;
+  }
+
+  // server-forced panel (after redirects)
+  const serverPanel = "{{ open_panel }}";
+  if (serverPanel === "voter") {
+    wrap.className = "wrapper voter";
+    sessionStorage.setItem("active_panel", "voter");
+  }
+  if (serverPanel === "register") {
+    wrap.className = "wrapper register";
+    sessionStorage.setItem("active_panel", "register");
+  }
+  if (serverPanel === "reset") {
+    wrap.className = "wrapper reset";
+    sessionStorage.setItem("active_panel", "reset");
+  }
+
+  /* =====================================================
+     AUTO-OPEN OTP POPUP ON ERROR
+  ===================================================== */
+
+  const last_error = "{{ messages[-1][0] if messages else '' }}";
+
+  // ✅ Password reset success → force admin login panel
+if (document.getElementById("loginSuccess")) {
+  sessionStorage.removeItem("active_panel");
+  wrap.className = "wrapper";
 }
 
-function closePrivateOtp(){
-  privateOtpOverlay.style.display = "none";
-}
+  if (last_error === "voter_public_error") {
+    publicOtpOverlay.style.display = "flex";
+  }
 
-// ===== AUTO-HIDE SYSTEM MESSAGES (3.5 seconds) =====
-setTimeout(() => {
+  if (last_error === "voter_private_error") {
+    privateOtpOverlay.style.display = "flex";
+  }
 
-  document.querySelectorAll(
-    "div[style*='background:#7f1d1d'], \
-     div[style*='background:#334155'], \
-     div[style*='background:#2c0a0a'], \
-     div[style*='background:#022c22']"
-  ).forEach(el => el.remove());
+  /* =====================================================
+     AUTO-HIDE FLASH MESSAGES
+  ===================================================== */
 
-}, 3500);
+  setTimeout(() => {
+    document.querySelectorAll(
+      "div[style*='background:#7f1d1d'], \
+       div[style*='background:#334155'], \
+       div[style*='background:#2c0a0a'], \
+       div[style*='background:#022c22']"
+    ).forEach(el => el.remove());
+  }, 3000);
+/* =====================================================
+   RESET SCROLL WHEN SWITCHING PANELS (MOBILE FIX)
+   ===================================================== */
 
-/* ===== PANEL MEMORY SYSTEM ===== */
+/* =====================================================
+   HARD RESET SCROLL WHEN SWITCHING PANELS (MOBILE SAFE)
+   ===================================================== */
 
-// apply stored panel on load
-const savedPanel = sessionStorage.getItem("active_panel");
-if(savedPanel){
-  wrap.className = "wrapper " + savedPanel;
-}
+const resetAllScroll = () => {
+  // reset panel-level scroll (desktop & fallback)
+  document.querySelectorAll(".panel").forEach(p => {
+    p.scrollTop = 0;
+  });
 
-// store panel whenever user switches
-document.getElementById("openVoter").onclick = ()=>{
-  wrap.className="wrapper voter";
-  sessionStorage.setItem("active_panel","voter");
+  // reset page-level scroll (mobile)
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: "instant" in window ? "instant" : "auto"
+  });
+
+  // iOS Safari fallback
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
 };
 
-document.getElementById("openRegister").onclick = ()=>{
-  wrap.className="wrapper register";
-  sessionStorage.setItem("active_panel","register");
+// reset scroll on all panel switch actions
+[
+  "openRegister",
+  "openVoter",
+  "openReset",
+  "backLogin1",
+  "backLogin2",
+  "resetBackLogin"
+].forEach(id => {
+  document.getElementById(id)?.addEventListener("click", () => {
+    setTimeout(resetAllScroll, 0);
+  });
+});
+
+// reset scroll on initial / server-forced panel
+setTimeout(resetAllScroll, 0);
+
+/* =====================================================
+   MOBILE HEADER TITLE — DIRECTION AWARE ANIMATION
+   ===================================================== */
+
+if (window.innerWidth < 900) {
+
+  const header = document.querySelector(".mobile-header");
+  const title  = header?.querySelector(".mh-title");
+
+  if (header && title) {
+
+    const panelOrder = {
+      login: 0,
+      register: 1,
+      voter: 2,
+      reset: 3
+    };
+
+    let currentIndex = panelOrder[
+      wrap.classList.contains("register") ? "register" :
+      wrap.classList.contains("voter")    ? "voter" :
+      wrap.classList.contains("reset")    ? "reset" :
+      "login"
+    ];
+
+    const getPanelName = () => {
+      if (wrap.classList.contains("register")) return "register";
+      if (wrap.classList.contains("voter"))    return "voter";
+      if (wrap.classList.contains("reset"))    return "reset";
+      return "login";
+    };
+
+    const panelTitles = {
+      login:    "Online Voting System",
+      register: "Admin Registration",
+      voter:    "Voter Access",
+      reset:    "Password Reset"
+    };
+
+    const updateHeader = () => {
+      const panel = getPanelName();
+      const nextIndex = panelOrder[panel];
+      const newTitle  = panelTitles[panel];
+
+      if (title.textContent === newTitle) return;
+
+      const direction =
+        nextIndex > currentIndex ? "exit-left" : "exit-right";
+
+      // animate out
+      title.classList.remove("enter");
+      title.classList.add(direction);
+
+      setTimeout(() => {
+        title.textContent = newTitle;
+
+        title.classList.remove("exit-left", "exit-right");
+        title.classList.add("enter");
+
+        currentIndex = nextIndex;
+      }, 180);
+    };
+
+    // initial sync
+    title.classList.add("enter");
+    updateHeader();
+
+    // observe panel class changes
+    const observer = new MutationObserver(updateHeader);
+    observer.observe(wrap, {
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+
+  }
+  /* =====================================================
+   MOBILE HEADER — BREADCRUMB DOTS SYNC
+   ===================================================== */
+
+const dots = header.querySelectorAll(".mh-dots span");
+
+const updateDots = () => {
+  const panel =
+    wrap.classList.contains("register") ? "register" :
+    wrap.classList.contains("voter")    ? "voter" :
+    wrap.classList.contains("reset")    ? "reset" :
+    "login";
+
+  dots.forEach(dot => {
+    dot.classList.toggle(
+      "active",
+      dot.dataset.panel === panel
+    );
+  });
 };
 
-document.getElementById("backLogin1").onclick =
-document.getElementById("backLogin2").onclick = ()=>{
-  wrap.className="wrapper";
-  sessionStorage.setItem("active_panel","");
-};
+// initial
+updateDots();
 
-// when OTP / redirects bring custom panel — keep it
-if("{{ open_panel }}" === "voter"){
-  sessionStorage.setItem("active_panel","voter");
-}
-if("{{ open_panel }}" === "register"){
-  sessionStorage.setItem("active_panel","register");
-}
-// reopen popup when validation error occurs
-const last_error = "{{ messages[-1][0] if messages else '' }}";
+// sync with panel changes
+const dotsObserver = new MutationObserver(updateDots);
+dotsObserver.observe(wrap, {
+  attributes:true,
+  attributeFilter:["class"]
+});
 
-if(last_error === "voter_public_error"){
-  publicOtpOverlay.style.display = "flex";
 }
 
-if(last_error === "voter_private_error"){
-  privateOtpOverlay.style.display = "flex";
+});
+
+/* =====================================================
+   PREMIUM MOBILE FEEL (SAFE POLISH)
+   ===================================================== */
+
+if (window.innerWidth < 900) {
+
+  // subtle vibration on important taps (supported devices only)
+  document.querySelectorAll(".btn, .option-box").forEach(el=>{
+    el.addEventListener("click",()=>{
+      navigator.vibrate?.(8);
+    });
+  });
+
 }
 
 </script>
+
 
 </body>
 </html>

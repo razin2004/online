@@ -123,6 +123,11 @@ def save_uploaded_file(file):
 
     return filename
 
+def clear_reset_session():
+    session.pop("otp_reset_verified", None)
+    session.pop("reset_email", None)
+    session.pop("otp_context", None)
+
 # -------------------------------------------------
 # DATABASE MODELS
 # -------------------------------------------------
@@ -133,6 +138,7 @@ class Admin(db.Model):
     name = db.Column(db.String(120))
     username = db.Column(db.String(80), unique=True)
     mobile = db.Column(db.String(20))
+    whatsapp = db.Column(db.String(120))  
     email = db.Column(db.String(120), unique=True)
 
     password = db.Column(db.String(200))
@@ -212,9 +218,8 @@ with app.app_context():
 
 @app.route("/")
 def index():
-    session.pop("otp_reset_verified", None)
-    session.pop("reset_email", None)
     return render_template("login.html")
+
 
 # -------------------------------------------------
 # ADMIN LOGIN
@@ -443,11 +448,10 @@ def admin_reset_verify():
     session["otp_reset_verified"] = True
 
     flash("OTP verified — create your new password", "otp_success")
-    return redirect("/verify-otp?context=reset")
+    return redirect("/?panel=reset")
 # -------------------------------------------------
 # ADMIN RESET — UPDATE PASSWORD
 # -------------------------------------------------
-
 @app.route("/admin/reset-password", methods=["POST"])
 def admin_reset_password():
 
@@ -456,7 +460,6 @@ def admin_reset_password():
         return redirect("/")
 
     email = session.get("reset_email")
-
     admin = Admin.query.filter_by(email=email).first()
 
     if not admin:
@@ -468,18 +471,62 @@ def admin_reset_password():
 
     if password != confirm:
         flash("Passwords do not match", "otp_error")
-        return redirect("/verify-otp?context=reset")
+        return redirect("/?panel=reset")
 
     admin.password = generate_password_hash(password)
     db.session.commit()
 
-    # cleanup session
+    # ✅ CLEANUP SESSION
     session.pop("otp_reset_verified", None)
     session.pop("reset_email", None)
     session.pop("otp_context", None)
 
-    flash("Password updated successfully — login again", "otp_success")
-    return redirect("/?panel=login")
+    # ✅ SUCCESS MESSAGE (correct category)
+    flash("Password updated successfully. Please login.", "admin_login_success")
+
+    return redirect("/")
+
+from flask import jsonify
+
+@app.route("/admin/profile/update", methods=["POST"])
+def admin_profile_update():
+
+    if not require_admin_login():
+        return jsonify(success=False, message="Unauthorized"), 403
+
+    admin = Admin.query.get(session["admin_id"])
+    if not admin:
+        return jsonify(success=False, message="Admin not found"), 404
+
+    data = request.get_json() or {}
+
+    name = (data.get("name") or "").strip()
+    username = (data.get("username") or "").strip()
+    mobile = (data.get("mobile") or "").strip()
+    whatsapp = (data.get("whatsapp") or "").strip()
+
+    # ---- basic validation ----
+    if not name or not username:
+        return jsonify(success=False, message="Name and username are required")
+
+    # ---- username uniqueness ----
+    existing = Admin.query.filter(
+        Admin.username == username,
+        Admin.id != admin.id
+    ).first()
+
+    if existing:
+        return jsonify(success=False, message="Username already in use")
+
+    # ---- update fields ----
+    admin.name = name
+    admin.username = username
+    admin.mobile = mobile or None
+    admin.whatsapp = whatsapp or None
+
+    db.session.commit()
+
+    return jsonify(success=True)
 
 @app.route("/admin/reset-resend")
 def admin_reset_resend():
@@ -595,10 +642,12 @@ def voter_private_login():
 @app.route("/voter/otp", methods=["GET", "POST"])
 def voter_verify():
 
-    # prevent admin reset state leaking into voter login
-    session.pop("otp_reset_verified", None)
-    session.pop("reset_email", None)
-    session.pop("otp_context", None)
+    # only clear reset context if this is NOT a reset flow
+    if session.get("otp_context") != "admin_reset":
+        session.pop("otp_reset_verified", None)
+        session.pop("reset_email", None)
+        session.pop("otp_context", None)
+
 
     if request.method == "GET":
         return render_template("otp.html",context="voter")
@@ -1555,5 +1604,10 @@ def logout():
     return redirect("/")
 
 # -------------------------------------------------
-if __name__ == "__main__": 
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False
+    )

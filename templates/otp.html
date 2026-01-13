@@ -100,13 +100,13 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
 
 
 
-  {# =========================
-     OTP ENTRY FORM
-     ========================= #}
+{# =========================
+   OTP ENTRY FORM
+   ========================= #}
 
-  {% if not session.get('otp_reset_verified') %}
+{% if not session.get('otp_reset_verified') %}
 
-  <form method="POST" id="otpForm"
+<form method="POST" id="otpForm"
   action="{% if session.get('otp_context') == 'admin_reset' %}
             /admin/reset-verify
           {% elif context == 'voter' %}
@@ -115,97 +115,100 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
             /verify-otp
           {% endif %}">
 
-    {% if email %}<input type="hidden" name="email" value="{{ email }}">{% endif %}
-    {% if admin_code %}<input type="hidden" name="admin_code" value="{{ admin_code }}">{% endif %}
+  <div class="field">
+    <label>Enter 6-Digit OTP Code</label>
+    <input type="text"
+           name="otp"
+           maxlength="6"
+           class="otp-input"
+           inputmode="numeric"
+           pattern="[0-9]*"
+           required>
+  </div>
 
-    <div class="field">
-      <label>Enter 6-Digit OTP Code</label>
-      <input type="text"
-             name="otp"
-             maxlength="6"
-             class="otp-input"
-             inputmode="numeric"
-             pattern="[0-9]*"
-             required>
-    </div>
+  <button class="btn primary" id="verifyBtn">
+    Verify OTP
+  </button>
 
-    <button class="btn primary" id="verifyBtn">
-      Verify OTP
-    </button>
+  <p class="link-text" id="resendBox">
+    Resend OTP in <span id="timer">30</span>s
+  </p>
 
-    <p class="link-text" id="resendBox">
-      Resend OTP in <span id="timer">30</span>s
+  {% if session.get('otp_context') == 'admin_reset' %}
+    <p class="link-text">
+      <a id="resendLink" href="/admin/reset-resend" style="display:none;">
+        Resend OTP
+      </a>
     </p>
 
-    {% if session.get('otp_context') == 'admin_reset' %}
-      <p class="link-text">
-        <a id="resendLink" href="/admin/reset-resend" style="display:none;">Resend OTP</a>
-      </p>
-
-    {% elif context == 'voter' %}
-      <p class="link-text">
-        <a id="resendLink" href="/voter/resend-otp" style="display:none;">Resend OTP</a>
-      </p>
-
-    {% else %}
-      <p class="link-text">
-        <a id="resendLink" href="/admin/register-resend" style="display:none;">Resend OTP</a>
-      </p>
-    {% endif %}
-    </form>
-
+  {% elif context == 'voter' %}
+    <p class="link-text">
+      <a id="resendLink" href="/voter/resend-otp" style="display:none;">
+        Resend OTP
+      </a>
+    </p>
 
   {% else %}
-
-
-
-  {# =========================
-     PASSWORD RESET MODE
-     (OTP already verified)
-     ========================= #}
-
-  <h2>✔ OTP Verified</h2>
-  <p class="sub">Create your new secure password below.</p>
-
-  <form method="POST" action="/admin/reset-password">
-
-    <input type="hidden" name="email" value="{{ email }}">
-
-    <div class="field">
-      <label>New Password</label>
-      <input type="password" name="password" required>
-    </div>
-
-    <div class="field">
-      <label>Confirm Password</label>
-      <input type="password" name="confirm" required>
-    </div>
-
-    <button class="btn primary">
-      Update Password
-    </button>
-  </form>
-
+    <p class="link-text">
+      <a id="resendLink" href="/admin/register-resend" style="display:none;">
+        Resend OTP
+      </a>
+    </p>
   {% endif %}
 
-  <div class="divider"></div>
+</form>
 
+<div class="divider"></div>
 
-  {% if session.get('otp_context') == "admin_register" %}
-    <p class="link-text">Back to <a href="/?panel=register">Admin Registration</a></p>
+{% if session.get('otp_context') == "admin_register" %}
+  <p class="link-text">
+    Back to <a href="/?panel=register">Admin Registration</a>
+  </p>
 
-  {% elif session.get('otp_context') == "admin_reset" %}
-    <p class="link-text">Return to <a href="/">Admin Login</a></p>
+{% elif session.get('otp_context') == "admin_reset" %}
+  <p class="link-text">
+    Return to <a href="/">Admin Login</a>
+  </p>
 
-  {% elif session.get('otp_context') == "voter_public" %}
-    <p class="link-text">Back to <a href="/?panel=voter">Public Voter Login</a></p>
+{% elif session.get('otp_context') == "voter_public" %}
+  <p class="link-text">
+    Back to <a href="/?panel=voter">Public Voter Login</a>
+  </p>
 
-  {% elif session.get('otp_context') == "voter_private" %}
-    <p class="link-text">Back to <a href="/?panel=voter">Private Voter Login</a></p>
+{% elif session.get('otp_context') == "voter_private" %}
+  <p class="link-text">
+    Back to <a href="/?panel=voter">Private Voter Login</a>
+  </p>
 
-  {% else %}
-    <p class="link-text">Return to <a href="/">Login Page</a></p>
-  {% endif %}
+{% else %}
+  <p class="link-text">
+    Return to <a href="/">Login Page</a>
+  </p>
+{% endif %}
+
+{% else %}
+
+{# PASSWORD RESET CONFIRMATION STATE #}
+
+<h2>✔ OTP Verified</h2>
+<p class="sub">Create your new secure password.</p>
+
+<form method="POST" action="/admin/reset-password">
+
+  <div class="field">
+    <label>New Password</label>
+    <input type="password" name="password" required>
+  </div>
+
+  <div class="field">
+    <label>Confirm Password</label>
+    <input type="password" name="confirm" required>
+  </div>
+
+  <button class="btn primary">Update Password</button>
+</form>
+
+{% endif %}
 
 </div>
 
