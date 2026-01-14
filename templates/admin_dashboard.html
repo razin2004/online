@@ -1032,6 +1032,14 @@ input:focus,select:focus,textarea:focus{
   font-size:13px;
   padding:8px 16px;
 }
+/* ======================================================
+   MOBILE BOTTOM SAFE SPACE (FIX)
+====================================================== */
+@media (max-width: 768px){
+  .view-container{
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  }
+}
 
 
 </style>
