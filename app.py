@@ -1037,7 +1037,8 @@ def admin_dashboard():
         flash("Voters cannot access admin panel")
         return redirect("/voter/dashboard")
 
-    admin = Admin.query.get(session.get("admin_id"))
+    admin = db.session.get(Admin, session.get("admin_id"))
+
     elections = Election.query.filter_by(admin_id=admin.id).all()
     from datetime import datetime
 
@@ -1213,7 +1214,7 @@ def admin_result_detail(eid):
 
     # PRIVATE — block viewing before end time
     if election.election_type == "private" and not ended:
-        flash("Private election results unlock only after end time")
+        flash("Private election results unlock only end time")
         return redirect("/admin/results")
 
     candidates = Candidate.query.filter_by(election_id=election.id).all()

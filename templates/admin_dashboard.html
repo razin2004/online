@@ -42,6 +42,7 @@
 
   --blur:blur(14px);
   --mobile-nav-height: 70px;
+  --bottom-safe-gap: 50px;
 }
 input,
 select,
@@ -168,15 +169,21 @@ body{
   .top-header{padding:0 16px}
 }
 @media (max-width:768px){
+/* Bottom scroll spacer */
+.bottom-spacer{
+  height: calc(
+    var(--mobile-nav-height)
+    + env(safe-area-inset-bottom)
+    + 24px
+  );
+  flex-shrink: 0;
+}
+
+}
+@media (max-width:768px){
   .view-container{
     padding:14px;
-    padding-bottom: calc(
-      var(--mobile-nav-height)
-      + env(safe-area-inset-bottom)
-      + 12px   /* ✅ sweet spot */
-    );
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    padding-bottom:14px; /* 🔑 NORMAL padding only */
   }
 }
 
@@ -1325,6 +1332,7 @@ input:focus,select:focus,textarea:focus{
       </button>
     </div>
   </div>
+  <div class="bottom-spacer"></div>
 </section>
 
 
@@ -1389,6 +1397,7 @@ input:focus,select:focus,textarea:focus{
       
     </div>
   </div>
+  <div class="bottom-spacer"></div>
 </section>
 
 <!-- ================= ELECTIONS ================= -->
@@ -1487,6 +1496,7 @@ input:focus,select:focus,textarea:focus{
     </div>
     {% endfor %}
   </div>
+  <div class="bottom-spacer"></div>
 </section>
 
 <!-- ================= RESULTS ================= -->
