@@ -600,6 +600,28 @@ h1{font-size:24px;margin-bottom:6px;}
   transform:scale(1.25);
   box-shadow:0 0 0 4px rgba(34,197,94,.18);
 }
+/* =====================================================
+   MOBILE PANEL SAFE BOTTOM SPACE
+===================================================== */
+@media (max-width: 900px){
+  .panel::after{
+    content:"";
+    display:block;
+    height:48px;
+  }
+}
+@media (max-width: 900px){
+  .panel{
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 900px){
+  .panel{
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
 
 </style>
 </head>

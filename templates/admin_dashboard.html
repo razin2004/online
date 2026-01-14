@@ -174,7 +174,7 @@ body{
   height: calc(
     var(--mobile-nav-height)
     + env(safe-area-inset-bottom)
-    + 35px
+    + 45px
   );
   flex-shrink: 0;
 }
@@ -2273,25 +2273,42 @@ function applyOverviewFilters(){
     lastY = container.scrollTop;
 
     container.addEventListener("scroll", () => {
-      if(!ticking){
-        window.requestAnimationFrame(() => {
-          const currentY = container.scrollTop;
-          const delta = currentY - lastY;
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const currentY = container.scrollTop;
 
-          if(Math.abs(delta) > 6){
-            if(delta > 0){
-              nav.classList.add("hidden");   // scrolling down
-            }else{
-              nav.classList.remove("hidden"); // scrolling up
-            }
-            lastY = currentY;
-          }
-
+        // ✅ iOS elastic scroll guard
+        if (currentY <= 0) {
+          nav.classList.remove("hidden");
+          lastY = 0;
           ticking = false;
-        });
-        ticking = true;
-      }
-    }, { passive:true });
+          return;
+        }
+
+        if (currentY >= container.scrollHeight - container.clientHeight - 1) {
+          nav.classList.add("hidden");
+          lastY = currentY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentY - lastY;
+
+        if (Math.abs(delta) > 8) {   // 🔑 slightly higher threshold
+          if (delta > 0) {
+            nav.classList.add("hidden");
+          } else {
+            nav.classList.remove("hidden");
+          }
+          lastY = currentY;
+        }
+
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+
   }
 
   // attach to active view
