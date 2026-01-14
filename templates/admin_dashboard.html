@@ -2253,39 +2253,55 @@ function applyOverviewFilters(){
   const nav = document.querySelector(".mobile-nav");
   if(!nav) return;
 
-  let lastY = window.scrollY;
+  let lastY = 0;
   let ticking = false;
 
-  function onScroll(){
-    if(window.innerWidth > 768) return; // mobile only
+  function attachScroll(container){
+    if(!container) return;
 
-    const currentY = window.scrollY;
-    const delta = currentY - lastY;
+    lastY = container.scrollTop;
 
-    // Ignore tiny scrolls
-    if(Math.abs(delta) < 8) return;
+    container.addEventListener("scroll", () => {
+      if(!ticking){
+        window.requestAnimationFrame(() => {
+          const currentY = container.scrollTop;
+          const delta = currentY - lastY;
 
-    if(delta > 0){
-      // scrolling down → hide
-      nav.classList.add("hidden");
-    }else{
-      // scrolling up → show
-      nav.classList.remove("hidden");
-    }
+          if(Math.abs(delta) > 6){
+            if(delta > 0){
+              nav.classList.add("hidden");   // scrolling down
+            }else{
+              nav.classList.remove("hidden"); // scrolling up
+            }
+            lastY = currentY;
+          }
 
-    lastY = currentY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive:true });
   }
 
-  window.addEventListener("scroll", () => {
-    if(!ticking){
-      window.requestAnimationFrame(() => {
-        onScroll();
-        ticking = false;
-      });
-      ticking = true;
+  // attach to active view
+  function bindActiveView(){
+    const active = document.querySelector(".view-container.active");
+    if(active){
+      attachScroll(active);
     }
-  }, { passive:true });
+  }
+
+  // initial bind
+  bindActiveView();
+
+  // rebind on view change
+  const _switchView = window.switchView;
+  window.switchView = function(viewId){
+    _switchView(viewId);
+    setTimeout(bindActiveView, 50);
+  };
 })();
+
 /* ======================================================
    BUTTON LOADING HANDLER
 ====================================================== */
