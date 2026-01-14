@@ -75,6 +75,11 @@ body{
   overflow-y:auto;
   -webkit-font-smoothing:antialiased;
 }
+@media (max-width:768px){
+  body{
+    overflow: hidden;
+  }
+}
 
 /* ======================================================
    SCROLLBAR (GLOBAL)
@@ -160,27 +165,19 @@ body{
 @media(max-width:768px){
   .sidebar{display:none}
   .mobile-nav{display:flex}
-
+  .top-header{padding:0 16px}
+}
+@media (max-width:768px){
   .view-container{
     padding:14px;
     padding-bottom: calc(
       var(--mobile-nav-height)
       + env(safe-area-inset-bottom)
-      + 30px
+      + 12px   /* ✅ sweet spot */
     );
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  .view-container::after{
-  content:"";
-  display:block;
-  height: calc(
-    var(--mobile-nav-height)
-    + env(safe-area-inset-bottom)
-    + 20px
-  );
-}
-
-
-  .top-header{padding:0 16px}
 }
 
 @media (max-width: 768px){
