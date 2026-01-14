@@ -175,7 +175,7 @@ body{
   height: calc(
     var(--mobile-nav-height)
     + env(safe-area-inset-bottom)
-    + 40px
+    + 20px
   );
 }
 
@@ -822,6 +822,9 @@ input:focus,select:focus,textarea:focus{
   .top-header{
     height:58px;
     padding:0 14px;
+    position:sticky;
+    top:0;
+    isolation:isolate; 
   }
 
   #view-title{
