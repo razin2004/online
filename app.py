@@ -2,6 +2,7 @@ import os
 import random
 import smtplib
 import string
+import requests
 from datetime import datetime, timedelta
 
 from flask import (
@@ -36,17 +37,44 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 SMTP_EMAIL = "control.your.voting@gmail.com"
 SMTP_PASSWORD = "sydpdtgkauovfiee"
+# -------------------------------------------------
+# PROMAILER — BYPASS RENDER SMTP BLOCK
+# -------------------------------------------------
 
+# 1. Get your API Key from https://www.promailer.xyz/
+# 2. Add PROMAIL_API_KEY to Render Environment Variables
+PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
 
 def send_otp_email(to, subject, text):
+    """
+    Sends email via HTTP API (Port 443) instead of SMTP (Port 587)
+    to bypass Render's firewall restrictions.
+    """
+    if not PROMAIL_API_KEY:
+        print("ERROR: PROMAIL_API_KEY is not set in Environment Variables")
+        return False
+
+    url = "https://www.promailer.xyz/api/v1/send"
+    
+    # Construct the payload for ProMailer
+    payload = {
+        "apiKey": PROMAIL_API_KEY,
+        "to": to,
+        "subject": subject,
+        "content": text  # ProMailer uses 'content' for the body
+    }
+
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
-            message = f"Subject: {subject}\n\n{text}"
-            smtp.sendmail(SMTP_EMAIL, to, message)
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code == 200:
+            print(f"OTP Sent Successfully to {to}")
+            return True
+        else:
+            print(f"ProMailer Error: {response.status_code} - {response.text}")
+            return False
     except Exception as e:
-        print("SMTP ERROR:", e)
+        print("ProMailer Connection Error:", e)
+        return False
 
 
 def generate_otp():
