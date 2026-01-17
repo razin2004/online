@@ -33,48 +33,50 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # -------------------------------------------------
 # SMTP — GMAIL OTP SETUP
 # -------------------------------------------------
-
-
-SMTP_EMAIL = "control.your.voting@gmail.com"
-SMTP_PASSWORD = "sydpdtgkauovfiee"
-# -------------------------------------------------
-# PROMAILER — BYPASS RENDER SMTP BLOCK
-# -------------------------------------------------
-
 # 1. Get your API Key from https://www.promailer.xyz/
 # 2. Add PROMAIL_API_KEY to Render Environment Variables
 PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
-
-def send_otp_email(to, subject, text):
-    """
-    Sends email via HTTP API (Port 443) instead of SMTP (Port 587)
-    to bypass Render's firewall restrictions.
-    """
+def send_otp_email(to, subject, html, text=None):
     if not PROMAIL_API_KEY:
-        print("ERROR: PROMAIL_API_KEY is not set in Environment Variables")
+        print("ERROR: PROMAIL_API_KEY missing")
         return False
 
-    url = "https://www.promailer.xyz/api/v1/send"
-    
-    # Construct the payload for ProMailer
-    payload = {
-        "apiKey": PROMAIL_API_KEY,
-        "to": to,
-        "subject": subject,
-        "content": text  # ProMailer uses 'content' for the body
+    url = "https://mailserver.automationlounge.com/api/v1/messages/send"
+
+    headers = {
+        "Authorization": f"Bearer {PROMAIL_API_KEY}",
+        "Content-Type": "application/json"
     }
 
+    payload = {
+        "to": to,
+        "subject": subject,
+        "html": html
+    }
+
+    # optional plain text fallback
+    if text:
+        payload["text"] = text
+
     try:
-        response = requests.post(url, json=payload, timeout=10)
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=10
+        )
+
+        print("ProMailer status:", response.status_code)
+        print("ProMailer response:", response.text)
+
         if response.status_code == 200:
-            print(f"OTP Sent Successfully to {to}")
             return True
-        else:
-            print(f"ProMailer Error: {response.status_code} - {response.text}")
-            return False
-    except Exception as e:
-        print("ProMailer Connection Error:", e)
         return False
+
+    except Exception as e:
+        print("ProMailer Exception:", e)
+        return False
+
 
 
 def generate_otp():
@@ -322,9 +324,11 @@ def admin_register():
 
     send_otp_email(
         email,
-        "Admin Registration OTP",
-        f"Your OTP is {otp}"
+        "Your OTP Code",
+        f"<h2>Your OTP is {otp}</h2><p>Valid for 5 minutes.</p>",
+        text=f"Your OTP is {otp}"
     )
+
 
     # ---- prepare admin (not saved yet) ----
     session["pending_admin"] = {
@@ -393,7 +397,12 @@ def verify_otp():
     send_otp_email(
         new_admin.email,
         "Admin Account Created",
-        f"Username: {new_admin.username}\nAdmin Code: {new_admin.admin_code}"
+        f"""
+        <h2>Welcome {new_admin.name}</h2>
+        <p><b>Username:</b> {new_admin.username}</p>
+        <p><b>Admin Code:</b> {new_admin.admin_code}</p>
+        """,
+        text=f"Username: {new_admin.username}, Admin Code: {new_admin.admin_code}"
     )
 
     # cleanup
