@@ -1,344 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>{{ election.name }} — Admin Result Summary</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ election.name }} — Admin Result</title>
+    <style>
+        :root {
+            --bg: #020617;
+            --card-bg: rgba(15, 23, 42, 0.7);
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #3b82f6;
+            --success: #22c55e;
+            --warning: #eab308;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass: blur(16px);
+        }
 
-<style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        
+        body { 
+            background: var(--bg); 
+            background-image: radial-gradient(circle at 50% -20%, #1e293b 0%, #020617 80%);
+            color: var(--text-main); 
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
 
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial;}
+        /* STICKY TOPBAR */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 5%;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: var(--glass);
+            border-bottom: 1px solid var(--border);
+        }
 
-body{
-  min-height:100vh;
-  background:radial-gradient(circle at top,#020617,#020617 60%,#000);
-  color:#e5e7eb;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
+        .topbar-brand .title { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; }
+        .topbar-brand .sub { font-size: 0.75rem; color: var(--text-dim); }
 
-/* ===== TOP HEADER ===== */
+        .btn-nav {
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-nav:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4); }
 
-.topbar{
-  width:100%;
-  padding:22px 28px;
-  background:rgba(2,6,23,.9);
-  border-bottom:1px solid #1f2937;
-  backdrop-filter:blur(8px);
-}
+        .container { width: 1100px; max-width: 92%; margin: 30px auto; }
 
-.title{
-  font-size:22px;
-  font-weight:700;
-}
+        /* GLASS CARDS */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
 
-.subtext{
-  color:#9ca3af;
-  font-size:13px;
-}
+        .section-header { margin-bottom: 20px; border-left: 4px solid var(--accent); padding-left: 15px; }
+        .section-header h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
 
+        /* SUMMARY GRID */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .stat-item { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 16px; border: 1px solid var(--border); }
+        .stat-label { font-size: 0.8rem; color: var(--text-dim); display: block; }
+        .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--text-main); }
 
-/* ===== CONTAINER ===== */
+        /* CANDIDATE GRID */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
 
-.container{
-  width:1200px;
-  max-width:95%;
-  margin-top:18px;
-}
+        .cand-card {
+            position: relative;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 16px;
+            transition: 0.3s;
+        }
+        .cand-card:hover { border-color: rgba(255,255,255,0.2); background: rgba(30, 41, 59, 0.8); }
 
+        .cand-card.winner { border-color: var(--success); box-shadow: 0 0 20px rgba(34, 197, 94, 0.15); }
+        .cand-card.tie { border-color: var(--warning); }
 
-/* ===== GLASS CARD ===== */
+        .cand-photo { width: 80px; height: 80px; border-radius: 14px; object-fit: cover; background: #0f172a; }
 
-.card{
-  background:linear-gradient(180deg,rgba(15,23,42,.92),rgba(2,6,23,.92));
-  border:1px solid rgba(148,163,184,.18);
-  border-radius:18px;
-  padding:18px;
-  margin-top:16px;
-  box-shadow:
-    0 30px 60px rgba(0,0,0,.5),
-    inset 0 0 8px rgba(255,255,255,.05);
-  transition:.25s;
-}
+        .cand-info { flex: 1; }
+        .cand-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+        
+        /* PROGRESS UI */
+        .vote-meta { display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 12px; margin-bottom: 6px; }
+        .progress-track { width: 100%; height: 8px; background: #0f172a; border-radius: 10px; overflow: hidden; }
+        .progress-fill { 
+            height: 100%; width: 0%; 
+            background: linear-gradient(90deg, var(--accent), #60a5fa); 
+            transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
 
-.card:hover{
-  border-color:rgba(148,163,184,.35);
-}
+        .badge {
+            position: absolute; top: -10px; right: 20px;
+            padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+        }
+        .bg-win { background: var(--success); color: #052e16; }
+        .bg-tie { background: var(--warning); color: #422006; }
 
-.section-title{
-  font-weight:700;
-  margin-bottom:6px;
-}
-
-.note{
-  color:#9ca3af;
-  font-size:12px;
-}
-
-
-/* ===== GRID ===== */
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-  gap:14px;
-  margin-top:10px;
-}
-
-
-/* ===== CANDIDATE CARD ===== */
-
-.cand-card{
-  background:linear-gradient(180deg,#020617,#020617,#0a0f1e);
-  border:1px solid rgba(51,65,85,.6);
-  border-radius:16px;
-  padding:14px;
-  transition:.25s;
-}
-
-.cand-card:hover{
-  transform:scale(1.01);
-  border-color:#64748b;
-}
-
-/* Winner (only when voting ended) */
-.cand-card.winner{
-  border-color:#22c55e;
-  box-shadow:
-    0 0 30px rgba(34,197,94,.35),
-    inset 0 0 10px rgba(34,197,94,.25);
-}
-
-/* Tie state */
-.cand-card.tie{
-  border-color:#eab308;
-  box-shadow:
-    0 0 30px rgba(234,179,8,.35),
-    inset 0 0 10px rgba(234,179,8,.25);
-}
-
-
-/* ===== PHOTO ===== */
-
-.cand-photo{
-  width:95px;
-  height:95px;
-  border-radius:14px;
-  border:1px solid #334155;
-  object-fit:cover;
-  margin-bottom:8px;
-}
-
-
-/* ===== BADGES ===== */
-
-.badge{
-  padding:6px 10px;
-  border-radius:10px;
-  font-size:12px;
-  margin-top:4px;
-  display:inline-block;
-}
-
-.badge-win{
-  background:#022c22;
-  color:#22c55e;
-  border:1px solid #22c55e;
-}
-
-.badge-tie{
-  background:#422006;
-  color:#facc15;
-  border:1px solid #eab308;
-}
-
-
-/* ===== BAR UI ===== */
-
-.bar-box{
-  margin-top:10px;
-  background:rgba(2,6,23,.85);
-  border:1px solid #334155;
-  border-radius:12px;
-  padding:8px;
-}
-
-.bar-track{
-  width:100%;
-  height:12px;
-  background:#0f172a;
-  border-radius:12px;
-  overflow:hidden;
-}
-
-/* animated bar */
-
-.bar-fill{
-  height:100%;
-  width:0%;
-  background:linear-gradient(90deg,#22c55e,#4ade80);
-  box-shadow:0 0 12px rgba(74,222,128,.6);
-  transition:width .9s ease;
-}
-
-.vote-label{
-  margin-top:6px;
-  font-size:13px;
-}
-
-
-/* ===== BUTTON ===== */
-
-button{
-  padding:10px 15px;
-  border-radius:12px;
-  border:none;
-  font-weight:600;
-  cursor:pointer;
-}
-
-.btn-blue{background:#2563eb;}
-.btn-blue:hover{background:#1d4ed8;}
-</style>
+        /* MOBILE OPTIMIZATION */
+        @media (max-width: 600px) {
+            .results-grid { grid-template-columns: 1fr; }
+            .summary-grid { grid-template-columns: 1fr 1fr; }
+            .topbar { padding: 12px 15px; }
+            .title { font-size: 1rem; }
+            .cand-photo { width: 60px; height: 60px; }
+        }
+    </style>
 </head>
-
-
-
 <body>
 
-<div class="topbar">
-  <div class="title">Admin — Election Result</div>
-
-  {% if ended %}
-    <div class="subtext">Final certified result (voting ended)</div>
-  {% else %}
-    <div class="subtext">Early preview — Winner hidden until voting ends</div>
-  {% endif %}
-</div>
-
-
+<nav class="topbar">
+    <div class="topbar-brand">
+        <div class="title">Admin Panel</div>
+        <div class="sub">{{ election.name }}</div>
+    </div>
+    <a href="/admin/dashboard" class="btn-nav">Dashboard</a>
+</nav>
 
 <div class="container">
 
-
-<!-- ===== ELECTION SUMMARY ===== -->
-<div class="card">
-
-  <div class="section-title">Election Details</div>
-
-  <p><b>Name:</b> {{ election.name }}</p>
-
-  <p><b>Type:</b>
-    {% if election.election_type == "public" %} Public Election
-    {% else %} Private Election
-    {% endif %}
-  </p>
-
-  <p><b>Total Votes:</b> {{ total_votes }}</p>
-
-  <p class="note">
-    {% if ended %}
-      Winners are automatically declared based on highest votes.
-    {% else %}
-      Winner display is disabled while voting is active.
-    {% endif %}
-  </p>
-
-</div>
-
-
-
-
-<!-- ===== RESULTS GRID ===== -->
-<div class="card">
-
-  <div class="section-title">Candidate Results</div>
-
-  {% set tie_count = result | selectattr('winner') | list | length %}
-
-  {% if ended and tie_count > 1 %}
-    <p class="note">⚠ Tie detected — {{ tie_count }} candidates share top votes.</p>
-  {% endif %}
-
-
-  <div class="grid">
-
-  {% for r in result %}
-
-    <div class="cand-card
-      {% if ended and r.winner and tie_count == 1 %}winner{% endif %}
-      {% if ended and r.winner and tie_count > 1 %}tie{% endif %}
-    ">
-
-      {% if r.photo %}
-        <img src="/static/uploads/{{ r.photo }}" class="cand-photo">
-      {% endif %}
-
-      <p><b>{{ r.name }}</b></p>
-
-
-      {% if ended %}
-        {% if r.winner and tie_count == 1 %}
-          <span class="badge badge-win">Winner</span>
-        {% elif r.winner and tie_count > 1 %}
-          <span class="badge badge-tie">Tie Winner</span>
-        {% endif %}
-      {% endif %}
-
-
-      <div class="bar-box">
-
-        <div class="bar-track">
-          <div class="bar-fill"
-               data-count="{{ r.count }}"
-               data-total="{{ total_votes }}">
-          </div>
+    <div class="glass-card">
+        <div class="section-header"><h2>Election Insight</h2></div>
+        <div class="summary-grid">
+            <div class="stat-item">
+                <span class="stat-label">Status</span>
+                <span class="stat-value" style="color: {{ '#22c55e' if ended else '#eab308' }}">
+                    {{ 'Voting Ended' if ended else 'Live Preview' }}
+                </span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Total Participation</span>
+                <span class="stat-value">{{ total_votes }} <small style="font-size: 0.8rem; color: var(--text-dim)">Votes</small></span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Election Type</span>
+                <span class="stat-value" style="text-transform: capitalize;">{{ election.election_type }}</span>
+            </div>
         </div>
-
-        <div class="vote-label">
-          Votes — <b>{{ r.count }}</b>
-          <span class="pct"></span>
-        </div>
-
-      </div>
-
     </div>
 
-  {% endfor %}
+    <div class="glass-card">
+        <div class="section-header"><h2>Candidate Rankings</h2></div>
+        
+        {% set tie_count = result | selectattr('winner') | list | length %}
+        
+        <div class="results-grid">
+            {% for r in result %}
+            <div class="cand-card 
+                {% if ended and r.winner and tie_count == 1 %}winner{% endif %}
+                {% if ended and r.winner and tie_count > 1 %}tie{% endif %}">
+                
+                {% if ended and r.winner %}
+                    <span class="badge {{ 'bg-win' if tie_count == 1 else 'bg-tie' }}">
+                        {{ 'Winner' if tie_count == 1 else 'Tie' }}
+                    </span>
+                {% endif %}
 
-  </div>
+                <img src="/static/uploads/{{ r.photo if r.photo else 'default.png' }}" class="cand-photo">
+                
+                <div class="cand-info">
+                    <div class="cand-name">{{ r.name }}</div>
+                    
+                    <div class="vote-meta">
+                        <span class="vote-count"><b>{{ r.count }}</b> votes</span>
+                        <span class="vote-pct" id="pct-{{ loop.index }}">0%</span>
+                    </div>
+
+                    <div class="progress-track">
+                        <div class="progress-fill" 
+                             data-count="{{ r.count }}" 
+                             data-total="{{ total_votes }}"
+                             id="bar-{{ loop.index }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 10px;">
+        <a href="/admin/results" style="color: var(--text-dim); font-size: 0.9rem; text-decoration: none;">
+            &larr; Back to Results List
+        </a>
+    </div>
 
 </div>
-
-
-
-<!-- ===== NAV ===== -->
-<div class="card">
-  <a href="/admin/results">
-    <button class="btn-blue">Back to Results List</button>
-  </a>
-</div>
-
-
-</div>
-
-
 
 <script>
-/* Compute vote percentage + animate bars */
-document.querySelectorAll(".bar-fill").forEach(bar => {
+    window.addEventListener('load', () => {
+        const total = parseInt("{{ total_votes }}") || 0;
+        
+        document.querySelectorAll('.progress-fill').forEach(bar => {
+            const count = parseInt(bar.dataset.count);
+            const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+            
+            // Animate bar
+            setTimeout(() => {
+                bar.style.width = pct + "%";
+            }, 200);
 
-  const c = parseInt(bar.dataset.count);
-  const t = parseInt(bar.dataset.total);
-
-  const pct = t > 0 ? Math.round((c / t) * 100) : 0;
-
-  bar.style.width = pct + "%";
-
-  const label = bar.closest(".bar-box").querySelector(".pct");
-  label.innerHTML = " — " + pct + "%";
-});
+            // Update percentage text
+            const labelId = bar.id.replace('bar-', 'pct-');
+            document.getElementById(labelId).innerText = pct + "%";
+        });
+    });
 </script>
 
 </body>

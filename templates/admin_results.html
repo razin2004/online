@@ -1,277 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Admin — Election Results</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Admin — Election Results</title>
+    <style>
+        :root {
+            --bg: #020617;
+            --card-bg: rgba(15, 23, 42, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass: blur(12px);
+        }
 
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial;}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; padding-bottom: 40px; }
 
-body{
-  background:#020617;
-  color:#e5e7eb;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
+        /* NAVIGATION */
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(11, 18, 32, 0.5);
+            backdrop-filter: var(--glass);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-.container{
-  width:1150px;
-  max-width:95%;
-  margin-top:18px;
-}
+        .btn-dash {
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
 
-/* CARD */
-.card{
-  background:#0b1220;
-  border:1px solid #1f2937;
-  border-radius:16px;
-  padding:16px;
-  margin-top:12px;
-  box-shadow:0 18px 38px rgba(0,0,0,.45);
-}
+        .container { width: 1000px; max-width: 95%; margin: 20px auto; }
 
-.section-title{
-  font-size:18px;
-  font-weight:700;
-  margin-bottom:6px;
-}
+        /* FILTER AREA */
+        .filter-card {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
 
-.note{
-  color:#9ca3af;
-  font-size:12px;
-}
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
 
-/* FILTER BAR */
-.filter-bar{
-  display:grid;
-  grid-template-columns:2fr 1fr 1fr;
-  gap:10px;
-  margin-top:8px;
-}
+        input, select {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            outline: none;
+        }
 
-input, select{
-  padding:9px;
-  border-radius:10px;
-  border:1px solid #334155;
-  background:#020617;
-  color:#e5e7eb;
-}
+        /* PREMIUM TABLE (Desktop) */
+        .results-container { overflow-x: auto; }
+        .desktop-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
 
-/* TABLE */
-.table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
-  font-size:14px;
-}
+        .desktop-table th { padding: 15px; text-align: left; color: var(--text-dim); font-size: 13px; text-transform: uppercase; }
+        .desktop-table tr { background: var(--card-bg); transition: 0.2s; }
+        .desktop-table td { padding: 16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .desktop-table td:first-child { border-left: 1px solid var(--border); border-radius: 12px 0 0 12px; }
+        .desktop-table td:last-child { border-right: 1px solid var(--border); border-radius: 0 12px 12px 0; }
 
-.table th,.table td{
-  border:1px solid #1f2937;
-  padding:10px;
-  text-align:center;
-}
+        /* MOBILE CARDS (Hidden on Desktop) */
+        .mobile-card {
+            display: none;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
 
-.table th{
-  background:#020617;
-}
+        /* STATUS COLORS */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-pub { background: #065f46; color: #34d399; }
+        .badge-pri { background: #1e3a8a; color: #93c5fd; }
+        
+        .btn-open { background: var(--accent); border: none; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+        .btn-locked { background: #334155; color: #94a3b8; border: none; padding: 8px 16px; border-radius: 8px; cursor: not-allowed; }
 
-/* BADGES */
-.badge{
-  padding:6px 10px;
-  border-radius:10px;
-  font-size:12px;
-}
+        /* MODAL POPUP */
+        .modal-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: #1e293b; border: 1px solid var(--accent);
+            padding: 30px; border-radius: 20px; max-width: 400px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-content h3 { color: #ef4444; margin-bottom: 10px; }
+        .modal-content p { color: #cbd5e1; margin-bottom: 20px; }
 
-.badge-public{background:#065f46;}
-.badge-private{background:#1e3a8a;}
-
-.ok{color:#22c55e;}
-.warn{color:#eab308;}
-.block{color:#ef4444;}
-
-/* BUTTONS */
-.btn{
-  padding:8px 12px;
-  border-radius:10px;
-  border:none;
-  cursor:pointer;
-  font-weight:600;
-}
-
-.btn-blue{background:#2563eb;}
-.btn-blue:hover{background:#1d4ed8;}
-
-.btn-gray{background:#6b7280;}
-.btn-gray:hover{background:#4b5563;}
-</style>
+        /* RESPONSIVE LOGIC */
+        @media (max-width: 768px) {
+            .filter-grid { grid-template-columns: 1fr; }
+            .desktop-table { display: none; }
+            .mobile-card { display: block; }
+            .nav-header h2 { font-size: 18px; }
+        }
+    </style>
 </head>
-
-
 <body>
 
+<nav class="nav-header">
+    <h2>Election Central</h2>
+    <a href="/admin/dashboard" class="btn-dash">Dashboard</a>
+</nav>
+
 <div class="container">
+    <div class="filter-card">
+        <div class="section-title">Results Overview</div>
+        <div class="filter-grid">
+            <input id="searchBox" placeholder="Search elections...">
+            <select id="filterType">
+                <option value="">All Types</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+            </select>
+            <select id="filterStatus">
+                <option value="">All Status</option>
+                <option value="available">Available</option>
+                <option value="locked">Locked</option>
+            </select>
+        </div>
+    </div>
 
+    <div class="results-container">
+        <table class="desktop-table">
+            <thead>
+                <tr>
+                    <th>Election</th>
+                    <th>Type</th>
+                    <th>Votes</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in elections %}
+                <tr class="result-row" data-name="{{ e.name|lower }}" data-type="{{ e.type }}" data-status="{{ 'available' if e.can_open else 'locked' }}">
+                    <td><strong>{{ e.name }}</strong></td>
+                    <td><span class="badge {{ 'badge-pub' if e.type == 'public' else 'badge-pri' }}">{{ e.type.upper() }}</span></td>
+                    <td>{{ e.total_votes }}</td>
+                    <td>
+                        {% if e.can_open %}
+                            <a href="/admin/results/{{ e.id }}"><button class="btn-open">Open</button></a>
+                        {% else %}
+                            <button class="btn-locked" onclick="showReason('{{ e.reason }}')">Locked</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-<!-- HEADER -->
-<div class="card">
-  <div class="section-title">Admin — Election Results</div>
-
-  <p class="note">
-    Results visibility rules:
-    <br>• Public elections may show results before end time (if enabled)
-    <br>• Private elections show results only after end time
-    <br>• Admin controls visibility toggle
-  </p>
-
-
-  <!-- FILTER BAR -->
-  <div class="filter-bar">
-
-    <input id="searchBox" placeholder="Search election name...">
-
-    <select id="filterType">
-      <option value="">All Types</option>
-      <option value="public">Public</option>
-      <option value="private">Private</option>
-    </select>
-
-    <select id="filterStatus">
-      <option value="">All Status</option>
-      <option value="upcoming">Not Started</option>
-      <option value="running">Running</option>
-      <option value="available">Result Visible</option>
-      <option value="hidden">Hidden</option>
-      <option value="locked">Time Locked</option>
-    </select>
-
-  </div>
+        {% for e in elections %}
+        <div class="mobile-card result-row" data-name="{{ e.name|lower }}" data-type="{{ e.type }}" data-status="{{ 'available' if e.can_open else 'locked' }}">
+            <div style="display:flex; justify-content: space-between; margin-bottom: 10px;">
+                <span class="badge {{ 'badge-pub' if e.type == 'public' else 'badge-pri' }}">{{ e.type.upper() }}</span>
+                <span style="color: var(--text-dim)">{{ e.total_votes }} votes</span>
+            </div>
+            <h3 style="margin-bottom: 15px;">{{ e.name }}</h3>
+            {% if e.can_open %}
+                <a href="/admin/results/{{ e.id }}" style="text-decoration:none;"><button class="btn-open" style="width:100%">Open Result</button></a>
+            {% else %}
+                <button class="btn-locked" style="width:100%" onclick="showReason('{{ e.reason }}')">Result Locked</button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
 </div>
 
-
-
-
-
-<!-- RESULTS TABLE -->
-<div class="card">
-
-<table class="table">
-
-<tr>
-  <th>Election</th>
-  <th>Type</th>
-  <th>Votes</th>
-  <th>Status</th>
-  <th>Action</th>
-</tr>
-
-
-{% for e in elections %}
-
-<tr class="result-row"
- data-name="{{ e.name | lower }}"
- data-type="{{ e.type }}"
- data-status="
-  {% if not e.ended %}running
-  {% elif e.ended and e.visible %}available
-  {% elif e.ended and not e.visible %}hidden
-  {% elif e.type == 'private' and not e.ended %}locked
-  {% endif %}
- ">
-
-  <td>{{ e.name }}</td>
-
-  <td>
-    {% if e.type == "public" %}
-      <span class="badge badge-public">PUBLIC</span>
-    {% else %}
-      <span class="badge badge-private">PRIVATE</span>
-    {% endif %}
-  </td>
-
-  <td>{{ e.total_votes }}</td>
-
-
-  <td>
-
-    {% if not e.ended and e.type == "public" and e.visible %}
-      <span class="ok">Live Preview Enabled</span>
-
-    {% elif not e.ended and e.type == "private" %}
-      <span class="warn">Locked Until End</span>
-
-    {% elif e.ended and not e.visible %}
-      <span class="block">Hidden</span>
-
-    {% elif e.ended and e.visible %}
-      <span class="ok">Result Visible</span>
-
-    {% else %}
-      <span class="warn">Running</span>
-    {% endif %}
-
-  </td>
-
-
-  <td>
-    {% if e.visible %}
-      <a href="/admin/results/{{ e.id }}">
-        <button class="btn btn-blue">Open Result</button>
-      </a>
-    {% else %}
-      <button class="btn btn-gray" disabled>Not Available</button>
-    {% endif %}
-  </td>
-
-</tr>
-
-{% endfor %}
-
-</table>
-
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h3>Access Restricted</h3>
+        <p id="reasonText"></p>
+        <button class="btn-open" onclick="closeModal()">Understood</button>
+    </div>
 </div>
-
-
-</div>
-
-
-
 
 <script>
-/* LIVE SEARCH + FILTER */
+    function showReason(msg) {
+        document.getElementById('reasonText').innerText = msg;
+        document.getElementById('modalOverlay').style.display = 'flex';
+    }
 
-const searchBox   = document.getElementById("searchBox");
-const filterType  = document.getElementById("filterType");
-const filterStatus= document.getElementById("filterStatus");
+    function closeModal() {
+        document.getElementById('modalOverlay').style.display = 'none';
+    }
 
-function applyFilters(){
+    // Filter Logic
+    const searchBox = document.getElementById("searchBox");
+    const filterType = document.getElementById("filterType");
+    const filterStatus = document.getElementById("filterStatus");
 
-  const q = searchBox.value.toLowerCase();
-  const type = filterType.value;
-  const status = filterStatus.value;
+    function applyFilters(){
+        const q = searchBox.value.toLowerCase();
+        const type = filterType.value;
+        const status = filterStatus.value;
 
-  document.querySelectorAll(".result-row").forEach(row=>{
+        document.querySelectorAll(".result-row").forEach(row => {
+            const name = row.dataset.name;
+            const t = row.dataset.type;
+            const s = row.dataset.status;
+            let show = true;
+            if(q && !name.includes(q)) show = false;
+            if(type && t !== type) show = false;
+            if(status && s !== status) show = false;
+            row.style.display = show ? "" : "none";
+        });
+    }
 
-    const name = row.dataset.name;
-    const t = row.dataset.type;
-    const s = row.dataset.status.trim();
-
-    let show = true;
-
-    if(q && !name.includes(q)) show = false;
-    if(type && t !== type) show = false;
-    if(status && s !== status) show = false;
-
-    row.style.display = show ? "" : "none";
-  });
-
-}
-
-searchBox.onkeyup = applyFilters;
-filterType.onchange = applyFilters;
-filterStatus.onchange = applyFilters;
+    searchBox.onkeyup = applyFilters;
+    filterType.onchange = applyFilters;
+    filterStatus.onchange = applyFilters;
 </script>
-
 </body>
 </html>

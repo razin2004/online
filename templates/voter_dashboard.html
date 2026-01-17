@@ -2,465 +2,646 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Voter Dashboard — Online Voting System</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voter Central | Secure Vote Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial;}
+/* ================= DESIGN TOKENS ================= */
+:root{
+  --bg:#020617;
+  --panel:#0f172a;
+  --border:rgba(148,163,184,.15);
+  --blue:#38bdf8;
+  --indigo:#6366f1;
+  --green:#10b981;
+  --red:#ef4444;
+  --yellow:#facc15;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+  --radius-xl:24px;
+  --radius-lg:18px;
+}
+
+*{
+  margin:0;padding:0;box-sizing:border-box;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
 
 body{
-  background:#020617;
-  color:#e5e7eb;
+  background:
+    radial-gradient(at 0% 0%,rgba(56,189,248,.08),transparent 50%),
+    radial-gradient(at 100% 0%,rgba(99,102,241,.08),transparent 50%),
+    var(--bg);
+  color:var(--text);
+  min-height:100vh;
+}
+
+/* ================= HEADER ================= */
+.header{
+  position:sticky;top:0;z-index:1000;
+  background:rgba(2,6,23,.88);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  padding:14px 18px;
+}
+
+.header-inner{
+  max-width:1200px;
+  margin:0 auto;
   display:flex;
-  flex-direction:column;
   align-items:center;
+  justify-content:space-between;
 }
 
-.container{
-  width:1180px;
-  max-width:96%;
-  margin-top:18px;
+.brand h2{
+  font-size:1.1rem;
+  font-weight:800;
+}
+.brand span{color:var(--blue);}
+
+.header-right{
+  display:flex;
+  align-items:center;
+  gap:14px;
 }
 
-/* CARD BLOCK */
-.card{
-  background:#0b1220;
-  border:1px solid #1f2937;
-  border-radius:18px;
-  padding:18px;
-  margin-top:12px;
-  box-shadow:0 26px 48px rgba(0,0,0,.45);
+/* Email positioning */
+.header-email{
+  font-size:.8rem;
+  color:var(--muted);
 }
 
-.section-title{
-  font-size:18px;
+
+@media(max-width:600px){
+  .header-inner{
+    flex-direction:row;          /* keep row */
+    align-items:center;
+  }
+
+  .brand{
+    display:flex;
+    flex-direction:column;       /* title + email stacked */
+  }
+
+  .header-right{
+    margin-left:auto;            /* push logout to right */
+  }
+}
+
+
+.logout-btn{
+  background:rgba(239,68,68,.15);
+  border:1px solid rgba(239,68,68,.3);
+  color:#f87171;
+  padding:8px 16px;
+  border-radius:12px;
   font-weight:700;
-  color:#f9fafb;
+  text-decoration:none;
 }
 
-.subtext{color:#9ca3af;font-size:12px;}
+/* ================= CONTAINER ================= */
+.container{
+  max-width:1200px;
+  margin:0 auto;
+  padding:24px 18px 120px;
+}
 
-/* FILTER BAR */
-.filter-bar{
-  margin-top:8px;
+/* ================= CARDS ================= */
+.glass-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  padding:24px;
+  box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+
+/* ================= TOP SECTION ================= */
+.top-shelf{
+  display:grid;
+  grid-template-columns:1.6fr 1fr;
+  gap:20px;
+  margin-bottom:28px;
+}
+
+@media(max-width:850px){
+  .top-shelf{grid-template-columns:1fr;}
+}
+
+/* ================= ADMIN BAR ================= */
+.admin-hero{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+}
+
+.admin-details h4{
+  color:var(--muted);
+  font-size:.7rem;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+
+.admin-details h3{
+  font-size:1.4rem;
+  font-weight:800;
+}
+
+.whatsapp-link{
+  width:56px;height:56px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:26px;
+  text-decoration:none;
+  box-shadow:0 10px 24px rgba(34,197,94,.35);
+}
+
+/* ================= RESULTS CARD ================= */
+.results-box{
+  background:linear-gradient(135deg,var(--blue),var(--indigo));
+  color:#020617;
+}
+
+.results-box h3{font-weight:800;}
+.results-box p{font-size:.85rem;margin:10px 0 14px;opacity:.9;}
+
+.btn-white{
+  background:#fff;
+  color:#000;
+  padding:10px 20px;
+  border-radius:12px;
+  font-weight:800;
+  text-decoration:none;
+}
+
+/* ================= FILTER ================= */
+.search-area{margin-bottom:24px;}
+
+.filter-grid{
   display:grid;
   grid-template-columns:2fr 1fr 1fr;
-  gap:10px;
+  gap:12px;
+  margin-top:12px;
 }
 
-input, select{
-  padding:10px;
-  border-radius:10px;
-  border:1px solid #334155;
-  background:#020617;
-  color:#e5e7eb;
+@media(max-width:600px){
+  .filter-grid{grid-template-columns:1fr;}
+}
+.meta-row{
+  font: 0.5em sans-serif;
+  display:flex;
+  gap:14px;
+  font-size:.75rem;
+  color:var(--muted);
+  margin:2px 0 1.5px;
 }
 
-/* GRID */
+input,select{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  color:var(--text);
+}
+
+/* ================= GRID ================= */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
-  gap:14px;
-  margin-top:10px;
+  gap:20px;
 }
 
-/* ELECTION CARD */
+/* ================= ELECTION CARD ================= */
 .election-card{
-  padding:14px;
-  border-radius:14px;
-  background:#020617;
-  border:1px solid #334155;
-  transition:.25s;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:22px;
+  display:flex;
+  flex-direction:column;
 }
 
-.election-card:hover{
-  border-color:#64748b;
-  transform:scale(1.01);
+.card-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  margin-bottom:10px;
 }
 
-.election-name{
-  font-size:15px;
-  font-weight:600;
+.type-tag{
+  font-size:10px;
+  font-weight:800;
+  padding:4px 10px;
+  border-radius:8px;
+  text-transform:uppercase;
 }
 
-/* BADGES */
-.badge{
-  padding:6px 9px;
-  border-radius:10px;
-  font-size:11px;
-  margin-left:6px;
+.tag-public{background:rgba(56,189,248,.12);color:var(--blue);}
+.tag-private{background:rgba(99,102,241,.12);color:var(--indigo);}
+
+.voted-stamp{
+  color:var(--green);
+  font-size:.7rem;
+  font-weight:800;
 }
 
-.badge-public{background:#047857;}
-.badge-private{background:#1e3a8a;}
-.badge-ok{background:#16a34a;}
-.badge-locked{background:#6b7280;}
-
-/* INFO */
-.info-line{
-  margin-top:4px;
-  font-size:12px;
-  color:#a1a1aa;
+.status-chip{
+  display:inline-block;
+  padding:5px 12px;
+  border-radius:8px;
+  font-size:.75rem;
+  font-weight:800;
+  margin:10px 0;
 }
 
-.time-line{
-  margin-top:6px;
-  font-size:12px;
+.status-upcoming{background:rgba(250,204,21,.15);color:var(--yellow);}
+.status-running{background:rgba(16,185,129,.15);color:var(--green);}
+.status-ended{background:rgba(148,163,184,.15);color:var(--muted);}
+
+.time-counter{
+  background:rgba(0,0,0,.25);
+  padding:12px;
+  border-radius:12px;
+  font-family:ui-monospace,monospace;
+  font-size:.85rem;
+  margin-bottom:16px;
+  border-left:3px solid var(--blue);
 }
 
-/* BUTTONS */
-.btn{
-  padding:9px 12px;
-  border:none;
-  border-radius:10px;
-  margin-top:10px;
-  width:150px;
-  cursor:pointer;
-  font-weight:600;
-}
-
-.btn-green{background:#16a34a;}
-.btn-green:hover{background:#15803d;}
-
-.btn-gray{background:#6b7280;}
-.btn-gray:hover{background:#4b5563;}
-
-.btn-disabled{
-  background:#6b7280;
-  cursor:not-allowed;
-}
-/* ===== PREMIUM MODAL ===== */
-
-.modal-bg{
-  position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
-  background:rgba(0,0,0,.65);
-  backdrop-filter:blur(6px);
-  display:none;
-  justify-content:center;
+.copy-box{
+  display:flex;
+  justify-content:space-between;
   align-items:center;
-  z-index:20;
-}
-
-.modal-bg.show{display:flex;}
-
-.modal-box{
-  background:linear-gradient(145deg,#0b1220,#020617);
-  border:1px solid #334155;
-  border-radius:16px;
-  padding:18px;
-  width:360px;
-  animation:pop .25s ease-out;
-}
-
-@keyframes pop{
-  from{transform:scale(.92);opacity:0;}
-  to{transform:scale(1);opacity:1;}
-}
-
-.modal-title{
-  font-size:16px;
-  font-weight:700;
-  color:#fca5a5;
-}
-
-.modal-text{
-  margin-top:6px;
-  color:#e5e7eb;
-  font-size:13px;
-  line-height:18px;
-}
-
-.modal-btn{
+  background:rgba(0,0,0,.25);
   padding:8px 12px;
   border-radius:10px;
-  border:none;
-  margin-top:12px;
+  border:1px dashed var(--border);
+  margin:10px 0;
   cursor:pointer;
-  font-weight:600;
-  width:120px;
 }
+
+.copy-box code{color:var(--blue);font-weight:800;}
+
+.primary-btn{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:none;
+  background:linear-gradient(135deg,var(--blue),var(--indigo));
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.primary-btn:disabled{
+  background:#1e293b;
+  color:var(--muted);
+}
+
+/* ================= MODAL ================= */
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(2,6,23,.9);
+  backdrop-filter:blur(10px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:3000;
+}
+
+.modal-overlay.active{display:flex;}
+
+.modal-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:32px;
+  max-width:420px;
+  text-align:center;
+}
+/* ================= NO RESULTS ================= */
+.no-results{
+  text-align:center;
+  padding:40px 24px;
+  margin-top:20px;
+  border:1px dashed var(--border);
+  background:linear-gradient(
+    180deg,
+    rgba(15,23,42,.9),
+    rgba(2,6,23,.9)
+  );
+}
+/* ================= MOBILE STICKY SEARCH ================= */
+@media (max-width: 600px){
+
+  .mobile-sticky-search{
+    position: sticky;
+    top: 72px;                 /* header height */
+    z-index: 900;
+    padding-bottom: 5px;
+  }
+
+  .mobile-sticky-search input{
+    box-shadow:
+      0 1.5px 3px rgba(127, 143, 212, 0.35),
+      0 0 0 .5px var(--border);
+  }
+}
+@media (hover:hover){
+  .election-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 25px 60px rgba(0,0,0,.45);
+    transition:.25s ease;
+  }
+}
+
 
 </style>
 </head>
 
-
-
 <body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <h2>VOTE<span>CENTRAL</span></h2>
+      <div class="header-email">{{ email }}</div>
+    </div>
+    <div class="header-right">
+      <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+  </div>
+</header>
 
 <div class="container">
 
+<div class="top-shelf">
 
+{% if admin %}
+<div class="glass-card admin-hero">
+  <div class="admin-details">
+    <h4>System Administrator</h4>
+    <h3>{{ admin.name }}</h3>
+    <p style="font-size:.85rem;color:var(--muted);line-height:1.5">
+      Admin Code:
+      <b style="color:#fff">{{ admin.admin_code }}</b><br>
+      {% if admin.mobile %}
+        Mob: <b style="color:#fff">{{ admin.mobile }}</b>
+      {% endif %}
+    </p>
 
-<!-- HEADER -->
-<div class="card">
-  <div class="section-title">Voter Dashboard</div>
-
-  <p><b>Email:</b> {{ email }}</p>
-
-  {% if session.get('voter_admin_id') %}
-    <p class="subtext">Private voter — Access to your admin’s elections + public elections.</p>
-  {% else %}
-    <p class="subtext">Public voter — Only public elections are available.</p>
-  {% endif %}
-
-  <a href="/logout">
-    <button class="btn-gray">Logout</button>
-  </a>
-</div>
-
-
-
-<!-- RESULTS NAV -->
-<div class="card">
-  <div class="section-title">Election Results</div>
-  <p class="subtext">View completed election summaries</p>
-
-  <a href="/voter/results">
-    <button class="btn-green">Open Results</button>
-  </a>
-</div>
-
-
-
-<!-- FILTER BAR -->
-<div class="card">
-
-  <div class="section-title">Available Elections</div>
-  <p class="subtext">Search & filter elections</p>
-
-  <div class="filter-bar">
-
-    <input id="searchBox" placeholder="Search election name...">
-
-    <select id="filterType">
-      <option value="">All Types</option>
-      <option value="public">Public</option>
-      <option value="private">Private</option>
-    </select>
-
-    <select id="filterStatus">
-      <option value="">All Status</option>
-      <option value="upcoming">Not Started</option>
-      <option value="running">Running</option>
-      <option value="ended">Ended</option>
-    </select>
-
+    <p style="font-size:.75rem;color:var(--muted)">
+      For any issues or queries, contact the administrator
+    </p>
   </div>
+  {% if admin.whatsapp %}
+<a href="{{ admin.whatsapp }}" target="_blank" class="whatsapp-link" title="Contact via WhatsApp">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+    <path d="M12.012 2C6.506 2 2.023 6.484 2.023 11.99c0 1.98.576 3.914 1.665 5.566L2 22l4.58-1.605a9.95 9.95 0 0 0 5.43 1.59h.004c5.506 0 9.99-4.484 9.99-9.99A9.93 9.93 0 0 0 12.012 2zm5.77 14.36c-.24.68-1.39 1.31-1.91 1.39-.48.07-1.08.1-1.75-.11-.41-.13-.94-.31-1.62-.6-2.86-1.23-4.71-4.1-4.85-4.3-.13-.2-1.16-1.54-1.16-2.94 0-1.4.73-2.09.99-2.38.26-.29.57-.36.76-.36.19 0 .38 0 .54.01.17.01.4-.07.63.48.24.57.81 1.97.88 2.11.07.14.11.31.02.5-.09.19-.14.31-.28.48-.14.17-.29.38-.42.51-.14.14-.28.29-.12.57.16.29.72 1.18 1.55 1.91 1.07.95 1.97 1.24 2.26 1.38.29.14.46.12.63-.07.17-.19.72-.84.91-1.13.19-.29.38-.24.63-.14.26.1 1.64.77 1.92.91.28.14.47.21.54.33.07.12.07.7-.17 1.38z"/>
+  </svg>
+</a>
+
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="glass-card results-box">
+  <h3>Election Results</h3>
+  <p>View analytics and winners for completed elections.</p>
+  <a href="/voter/results" class="btn-white">View Results</a>
+</div>
+
+</div>
+
+<!-- FILTER + GRID (unchanged logic) -->
+<div class="search-area">
+  <h2 style="font-size:1.5rem;font-weight:800">Active Ballots</h2>
+<div class="filter-grid">
+
+  <!-- ✅ STICKY SEARCH ONLY -->
+  <div class="mobile-sticky-search">
+    <input id="searchBox" placeholder="Search election">
+  </div>
+
+  <!-- normal scrolling filters -->
+  <select id="filterType">
+    <option value="">All Types</option>
+    <option value="public">Public</option>
+    <option value="private">Private</option>
+  </select>
+
+  <select id="filterStatus">
+    <option value="">All Status</option>
+    <option value="upcoming">Upcoming</option>
+    <option value="running">Running</option>
+    <option value="ended">Ended</option>
+  </select>
+
+</div>
+
 </div>
 
 
-
-
-
-<!-- MIXED ELECTION GRID -->
 <div class="grid">
-
 {% for e in elections %}
-
-<div class="election-card election-item"
- data-name="{{ e.name | lower }}"
- data-type="{{ e.type }}">
-
-  <div class="election-name">
-    {{ e.name }}
-
-    {% if e.type == "public" %}
-      <span class="badge badge-public">PUBLIC</span>
-    {% else %}
-      <span class="badge badge-private">PRIVATE</span>
-    {% endif %}
-  </div>
+<article class="election-card election-item"
+  data-name="{{ e.name|lower }}"
+  data-type="{{ e.type }}"
+  data-code="{{ e.public_code|lower if e.public_code else '' }}">
 
 
-  <div class="info-line">Total votes: {{ e.total_votes }}</div>
-
-
-  <div class="time-line" id="time-{{ e.id }}">⏳ Checking schedule…</div>
-
-
-  {% if not e.allowed and e.type == "private" %}
-    <span class="badge badge-locked">Your email is not approved</span>
-  {% endif %}
-
-  {% if e.voted %}
-    <span class="badge badge-ok">✔ You already voted</span>
-  {% endif %}
-
-
-  <a href="/election/{{ e.id }}"
-     class="vote-link"
-     data-candidates="{{ e.candidate_count }}">
-    <button class="btn-green"
-            id="btn-{{ e.id }}"
-            data-start="{{ e.start_time }}"
-            data-end="{{ e.end_time }}">
-      {% if e.voted %}View{% else %}Vote{% endif %}
-    </button>
-  </a>
-
+<div class="card-head">
+  <span class="type-tag {{ 'tag-public' if e.type=='public' else 'tag-private' }}">{{ e.type }}</span>
+  {% if e.voted %}<span class="voted-stamp">✓ RECORDED</span>{% endif %}
 </div>
 
+<h3>{{ e.name }}</h3>
+<div class="meta-row">
+  <span>candidates : {{ e.candidate_count }}</span>
+  <span>Votes : {{ e.total_votes }}</span>
+</div>
+
+{% if e.type=='public' and e.public_code %}
+<div class="copy-box" onclick="copyToClipboard('{{ e.public_code }}',this)">
+  <small>Election Code: <code>{{ e.public_code }}</code></small>
+  <small>Copy</small>
+</div>
+{% endif %}
+
+<div id="status-{{ e.id }}" class="status-chip"></div>
+<div id="time-{{ e.id }}" class="time-counter">Calculating…</div>
+
+{% if e.type=='private' and not e.allowed %}
+<p style="color:var(--red);font-size:.75rem;font-weight:800">
+  ⚠ You are not whitelisted for this election
+</p>
+{% endif %}
+
+<a href="/election/{{ e.id }}"
+   class="vote-link"
+   data-candidates="{{ e.candidate_count }}"
+   data-whitelisted="{{ 'yes' if e.allowed else 'no' }}"
+   data-type="{{ e.type }}">
+  <button class="primary-btn"
+    id="btn-{{ e.id }}"
+    data-start="{{ e.start_time }}"
+    data-end="{{ e.end_time }}">
+    {% if e.voted %}VIEW SELECTION{% else %}ENTER BALLOT{% endif %}
+  </button>
+</a>
+
+</article>
 {% endfor %}
-
+</div>
+<!-- NO RESULTS CARD -->
+<div id="noResultsCard" class="glass-card no-results" style="display:none">
+  <div style="font-size:42px; margin-bottom:10px">🔍</div>
+  <h3 style="font-weight:800; margin-bottom:6px">No results found</h3>
+  <p style="font-size:.85rem; color:var(--muted)">
+    Try searching by election name or public code.
+  </p>
 </div>
 
 </div>
 
-
-<div class="modal-bg" id="candidateModal">
-  <div class="modal-box">
-
-    <div class="modal-title">⚠ Voting Not Available</div>
-
-    <div class="modal-text">
-      This election currently has fewer than
-      <b>2 eligible candidates.</b><br><br>
-      The administrator must add more candidates
-      before voting can begin.
-    </div>
-
-    <button class="modal-btn btn-gray"
-            onclick="closeCandidateModal()">
-      Close
-    </button>
-
+<div class="modal-overlay" id="smartModal">
+  <div class="modal-card">
+    <h3 id="modalTitle" style="color:var(--red)">Access Restricted</h3>
+    <p id="modalText" style="color:var(--muted)"></p>
+    <button class="primary-btn" onclick="closeSmartModal()">OK</button>
   </div>
 </div>
-
-
 
 <script>
-/* ---------- SEARCH + FILTER ENGINE ---------- */
-
-const searchBox = document.getElementById("searchBox");
-const filterType = document.getElementById("filterType");
-const filterStatus = document.getElementById("filterStatus");
+/* FILTER */
+const searchBox=document.getElementById("searchBox");
+const filterType=document.getElementById("filterType");
+const filterStatus=document.getElementById("filterStatus");
 
 function applyFilters(){
+  const q = searchBox.value.toLowerCase().trim();
+  const t = filterType.value;
+  const s = filterStatus.value;
 
-  const q = searchBox.value.toLowerCase();
-  const type = filterType.value;
-  const status = filterStatus.value;
+  let visibleCount = 0;
 
-  document.querySelectorAll(".election-item").forEach(card => {
-
-    const name = card.dataset.name;
-    const t = card.dataset.type;
-    const s = card.dataset.state || "";
+  document.querySelectorAll(".election-item").forEach(card=>{
+    const name  = card.dataset.name || "";
+    const code  = card.dataset.code || "";
+    const type  = card.dataset.type;
+    const state = card.dataset.state || "";
 
     let show = true;
 
-    if(q && !name.includes(q)) show = false;
-    if(type && t !== type) show = false;
-    if(status && s !== status) show = false;
+    // ✅ match name OR public code
+    if(q && !(name.includes(q) || code.includes(q))) show = false;
+    if(t && type !== t) show = false;
+    if(s && state !== s) show = false;
 
-    card.style.display = show ? "" : "none";
+    card.style.display = show ? "flex" : "none";
+    if(show) visibleCount++;
   });
 
+  // ✅ toggle "no results" card
+  document.getElementById("noResultsCard").style.display =
+    visibleCount === 0 ? "block" : "none";
 }
 
-searchBox.onkeyup = applyFilters;
-filterType.onchange = applyFilters;
-filterStatus.onchange = applyFilters;
+searchBox.oninput=applyFilters;
+filterType.onchange=applyFilters;
+filterStatus.onchange=applyFilters;
 
+/* MODAL */
+const modal=document.getElementById("smartModal");
+function openSmartModal(t,m){
+  modal.classList.add("active");
+  document.getElementById("modalTitle").textContent=t;
+  document.getElementById("modalText").innerHTML=m;
+}
+function closeSmartModal(){modal.classList.remove("active");}
 
-
-
-
-/* ---------- MINIMUM 2 CANDIDATE POPUP RULE ---------- */
-
-/* ---------- PREMIUM MIN-CANDIDATE MODAL ---------- */
-
-const modal = document.getElementById("candidateModal");
-
-function closeCandidateModal(){
-  modal.classList.remove("show");
+/* COPY */
+function copyToClipboard(text,el){
+  navigator.clipboard.writeText(text);
+  el.innerHTML="<small style='color:var(--green)'>✓ COPIED</small>";
+  setTimeout(()=>location.reload(),1200);
 }
 
-document.querySelectorAll(".vote-link").forEach(link => {
+/* CLICK GUARD */
+document.querySelectorAll(".vote-link").forEach(link=>{
+  link.onclick=e=>{
+    const c=parseInt(link.dataset.candidates||0);
+    const w=link.dataset.whitelisted==="yes";
+    const t=link.dataset.type;
+    let msgs=[];
+    if(c<2) msgs.push("At least <b>2 candidates</b> are required.");
+    if(t==="private" && !w) msgs.push("You are <b>not whitelisted</b>.");
+    if(msgs.length){
+      e.preventDefault();
+      openSmartModal("Voting Blocked",msgs.join("<br><br>"));
+    }
+  };
+    link.addEventListener("click", ()=>{
+    const btn = link.querySelector("button");
+    btn.textContent="Loading…";
+    btn.disabled=true;
+  });
+});
 
-  link.addEventListener("click", function(evt){
+/* TIME ENGINE */
+function updateTimers(){
+  const now=Date.now();
+  document.querySelectorAll("button[id^='btn-']").forEach(btn=>{
+    const id=btn.id.split("-")[1];
+    const card=btn.closest(".election-item");
+    const chip=document.getElementById("status-"+id);
+    const label=document.getElementById("time-"+id);
+    const s=btn.dataset.start?new Date(btn.dataset.start).getTime():null;
+    const e=btn.dataset.end?new Date(btn.dataset.end).getTime():null;
 
-    const count = parseInt(this.dataset.candidates || 0);
+    function fmt(ms){
+      const h=Math.floor(ms/3600000);
+      const m=Math.floor(ms%3600000/60000);
+      const sec=Math.floor(ms%60000/1000);
+      return `${h}h ${m}m ${sec}s`;
+    }
 
-    if(count < 2){
-
-      evt.preventDefault();
-
-      modal.classList.add("show");
-
-      // Soft UX: auto-dismiss on ESC
-      document.onkeydown = e=>{
-        if(e.key==="Escape") closeCandidateModal();
-      };
+    if(!s||!e){
+      chip.textContent="RUNNING";
+      chip.className="status-chip status-running";
+      label.textContent="No time restriction";
+      card.dataset.state="running";
+      btn.disabled=false;
+    }else if(now<s){
+      chip.textContent="UPCOMING";
+      chip.className="status-chip status-upcoming";
+      label.innerHTML="Starts in <b>"+fmt(s-now)+"</b>";
+      card.dataset.state="upcoming";
+      btn.disabled=true;
+    }else if(now<=e){
+      chip.textContent="LIVE";
+      chip.className="status-chip status-running";
+      label.innerHTML="Ends in <b>"+fmt(e-now)+"</b>";
+      card.dataset.state="running";
+      btn.disabled=false;
+    }else{
+      chip.textContent="ENDED";
+      chip.className="status-chip status-ended";
+      label.textContent="Voting ended";
+      card.dataset.state="ended";
+      btn.disabled=true;
     }
   });
+}
 
-});
-
-
-
-
-
-
-/* ---------- LIVE COUNTDOWN / STATUS ENGINE ---------- */
-
-document.querySelectorAll("button[id^='btn-']").forEach(btn => {
-
-  const start = btn.dataset.start ? new Date(btn.dataset.start).getTime() : null;
-  const end   = btn.dataset.end   ? new Date(btn.dataset.end).getTime()   : null;
-
-  const label = document.getElementById("time-" + btn.id.split('-')[1]);
-  const card  = btn.closest(".election-item");
-
-  function fmt(ms){
-    let s=Math.floor(ms/1000);
-    const h=Math.floor(s/3600);s%=3600;
-    const m=Math.floor(s/60);s%=60;
-    return h+"h "+m+"m "+s+"s";
-  }
-
-  function update(){
-
-    const now = Date.now();
-
-    if(!start || !end){
-      label.innerHTML = "⏺ No schedule enforced";
-      card.dataset.state = "running";
-      applyFilters();
-      return;
-    }
-
-    if(now < start){
-      label.innerHTML = "⏳ Starts in: <b>"+fmt(start-now)+"</b>";
-      btn.disabled = true;
-      btn.classList.add("btn-disabled");
-      card.dataset.state = "upcoming";
-      applyFilters();
-      return;
-    }
-
-    if(now >= start && now <= end){
-      label.innerHTML = "🟢 Voting open — ends in <b>"+fmt(end-now)+"</b>";
-      btn.disabled = false;
-      btn.classList.remove("btn-disabled");
-      card.dataset.state = "running";
-      applyFilters();
-      return;
-    }
-
-    label.innerHTML = "🔴 Voting ended";
-    btn.disabled = true;
-    btn.classList.add("btn-disabled");
-    card.dataset.state = "ended";
-    applyFilters();
-  }
-
-  update();
-  setInterval(update, 1000);
-});
+setInterval(updateTimers,1000);
+updateTimers();
 </script>
 
 </body>

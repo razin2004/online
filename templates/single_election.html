@@ -2,513 +2,528 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>{{ election.name }} — Vote</title>
+<title>{{ election.name }} — Secure Voting</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial;}
-
+/* ================= BASE ================= */
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Inter,Arial;}
 body{
   min-height:100vh;
-  background:#020617;
+  background:radial-gradient(1200px 600px at top,#020617,#000);
   color:#e5e7eb;
   display:flex;
   flex-direction:column;
   align-items:center;
 }
 
-/* ================= TOP NAV ================= */
-
+/* ================= TOPBAR ================= */
 .topbar{
   width:100%;
   padding:18px 26px;
-  background:#020617;
+  background:linear-gradient(180deg,#020617,#020617cc);
   border-bottom:1px solid #1f2937;
   display:flex;
   justify-content:space-between;
   align-items:center;
+  backdrop-filter:blur(10px);
 }
+.title{font-size:22px;font-weight:800;letter-spacing:.3px;}
+.subtitle{color:#9ca3af;font-size:13px;opacity:.85}
 
-.title{font-size:22px;font-weight:700;}
-.subtitle{color:#9ca3af;font-size:13px;}
-
-.nav-actions{display:flex;gap:10px;}
-
-.top-btn{
-  padding:9px 12px;
-  border:none;
-  border-radius:10px;
-  font-weight:600;
-  cursor:pointer;
-}
-
-.btn-blue{background:#2563eb;}
-.btn-blue:hover{background:#1d4ed8;}
-
-.btn-red{background:#b91c1c;}
-.btn-red:hover{background:#7f1d1d;}
-
-
-/* ================= CONTAINER ================= */
-
-.container{
-  width:1150px;
-  max-width:95%;
-  margin-top:18px;
-}
-
+/* ================= LAYOUT ================= */
+.container{width:1150px;max-width:95%;margin-top:20px}
 .card{
-  background:rgba(15,23,42,.92);
+  background:linear-gradient(180deg,rgba(15,23,42,.95),rgba(2,6,23,.95));
   border:1px solid #1f2937;
-  border-radius:16px;
-  padding:18px;
-  margin-top:14px;
-  box-shadow:0 18px 40px rgba(0,0,0,.45);
-  animation:fadeUp .35s ease;
+  border-radius:20px;
+  padding:20px;
+  margin-top:16px;
+  box-shadow:0 30px 60px rgba(0,0,0,.6);
+  animation:fadeUp .4s ease;
 }
-
 @keyframes fadeUp{
-  from{opacity:0;transform:translateY(8px)}
+  from{opacity:0;transform:translateY(10px)}
   to{opacity:1;transform:translateY(0)}
 }
-
 .section-title{
-  color:#f3f4f6;
-  margin-bottom:6px;
-  font-size:16px;
-  font-weight:bold;
+  font-size:17px;
+  font-weight:700;
+  margin-bottom:10px;
 }
-
-.note{color:#9ca3af;font-size:12px;}
-
 
 /* ================= STATUS BADGES ================= */
-
 .badge{
-  padding:6px 10px;
-  border-radius:10px;
+  padding:6px 12px;
+  border-radius:999px;
   font-size:12px;
+  font-weight:700;
 }
+.badge-live{background:#064e3b;color:#6ee7b7;box-shadow:0 0 0 1px #22c55e33}
+.badge-upcoming{background:#1e3a8a;color:#bfdbfe}
+.badge-ended{background:#7c2d12;color:#fca5a5}
+.badge-locked{background:#334155;color:#cbd5e1}
 
-.badge-live{background:#064e3b;color:#6ee7b7;}
-.badge-upcoming{background:#1e3a8a;color:#bfdbfe;}
-.badge-ended{background:#7c2d12;color:#fca5a5;}
-.badge-locked{background:#444;color:#ddd;}
-
-.countdown{margin-top:6px;font-size:13px;color:#e5e7eb;}
-
-
-/* ================= GRID ================= */
-
-.grid{
+/* ================= TIME PANEL ================= */
+.time-panel{
+  margin-top:14px;
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:14px;
 }
+.time-card{
+  background:linear-gradient(180deg,#020617,#020617aa);
+  border:1px solid #334155;
+  border-radius:16px;
+  padding:14px;
+  text-align:center;
+}
+.time-label{
+  font-size:12px;
+  color:#9ca3af;
+  margin-bottom:4px;
+}
+.time-date{
+  font-size:15px;
+  font-weight:700;
+}
+.time-clock{
+  font-size:22px;
+  font-weight:800;
+  margin-top:2px;
+  color:#facc15;
+}
 
+/* ================= SECURITY ================= */
+.security-box{
+  margin-top:14px;
+  padding:12px;
+  border-radius:14px;
+  background:#020617;
+  border:1px solid #334155;
+  font-size:13px;
+  opacity:.9;
+}
 
-/* ================= CANDIDATE CARD ================= */
+/* ================= CANDIDATES ================= */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+@media(max-width:768px){.grid{grid-template-columns:1fr}}
 
 .candidate{
   background:#020617;
   border:1px solid #334155;
-  border-radius:14px;
-  padding:12px;
+  border-radius:16px;
+  padding:14px;
+  position:relative;
   transition:.2s;
 }
-
-.candidate:hover{
-  border-color:#64748b;
-  transform:scale(1.01);
-}
-
 .candidate img{
   width:100%;
-  height:180px;
+  height:170px;
+  object-fit:cover;
   border-radius:12px;
   border:1px solid #334155;
-  object-fit:cover;
-  margin-bottom:8px;
 }
+.candidate-name{font-size:16px;font-weight:700;margin-top:6px}
+.party{font-size:13px;color:#93c5fd}
+.desc{font-size:12px;color:#cbd5e1;margin-top:4px}
 
-.candidate-name{font-size:15px;font-weight:600;}
-.party{color:#93c5fd;font-size:13px;}
-.desc{color:#cbd5e1;font-size:12px;margin-top:4px;}
-
-/* highlight voted */
 .selected{
-  border:2px solid #22c55e !important;
-  box-shadow:0 0 18px rgba(34,197,94,.45);
+  border:2px solid #22c55e;
+  box-shadow:0 0 20px #22c55e55;
 }
-
-.selected-badge{
-  background:#14532d;
-  color:#86efac;
-  padding:6px 10px;
-  border-radius:10px;
-  font-size:12px;
-  display:inline-block;
-  margin-top:6px;
+.selected::after{
+  content:"✓";
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  background:#22c55e;
+  color:#022c22;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
-
 
 /* ================= BUTTONS ================= */
-
 button{
   width:100%;
-  padding:10px;
-  border:none;
-  border-radius:10px;
   margin-top:10px;
-  font-weight:600;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  font-weight:700;
   cursor:pointer;
 }
-
-.btn-green{background:#16a34a;}
-.btn-green:hover{background:#15803d;}
-
-.btn-gray{background:#6b7280;}
-.btn-gray:hover{background:#4b5563;}
-
-.btn-disabled{
-  background:#6b7280;
-  cursor:not-allowed;
-}
-
-
-/* ================= SECURITY PANEL ================= */
-
-.security-box{
-  padding:10px;
-  border-radius:12px;
-  background:#020617;
-  border:1px solid #334155;
-  margin-top:6px;
-}
-
+.btn-green{background:#16a34a;color:#fff}
+.btn-green:hover{background:#22c55e}
+.btn-gray{background:#6b7280}
+.btn-disabled{background:#334155;color:#94a3b8;cursor:not-allowed}
 
 /* ================= MODAL ================= */
-
 .modal-bg{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.6);
+  background:rgba(0,0,0,.85);
   display:flex;
-  justify-content:center;
   align-items:center;
+  justify-content:center;
   opacity:0;
   pointer-events:none;
   transition:.25s;
+  z-index:1000;
 }
-
+.modal-bg.show{opacity:1;pointer-events:auto}
 .modal{
-  background:#020617;
+  background:#0f172a;
   border:1px solid #334155;
-  border-radius:16px;
-  padding:18px;
-  width:420px;
+  border-radius:18px;
+  padding:26px;
+  width:380px;
   text-align:center;
-  transform:translateY(10px);
-  transition:.25s;
+  box-shadow:0 40px 80px rgba(0,0,0,.7);
 }
 
-.modal-bg.show{
-  opacity:1;
-  pointer-events:auto;
-}
-
-.modal-bg.show .modal{
-  transform:translateY(0);
-}
-
-.modal-btn{
-  margin-top:10px;
-  padding:9px;
-  border-radius:10px;
-  border:none;
-  cursor:pointer;
-  width:48%;
-}
 </style>
 </head>
 
-
 <body>
 
-
-<!-- ================= TOP BAR ================= -->
 <div class="topbar">
-
   <div>
     <div class="title">{{ election.name }}</div>
-    <div class="subtitle">
-      {{ election.election_type|upper }} Election — Secure Verified Voting
-    </div>
+    <div class="subtitle">{{ election.election_type|upper }} Election — Secure Verified Voting</div>
   </div>
-
   <div class="nav-actions">
-    <a href="/voter/dashboard"><button class="top-btn btn-blue">Back</button></a>
-    <a href="/logout"><button class="top-btn btn-red">Logout</button></a>
+    <a href="/voter/dashboard"><button class="top-btn btn-blue"> Back</button></a>
+
   </div>
-
 </div>
-
-
-
 
 <div class="container">
 
-
-
-<!-- ================= STATUS ================= -->
 <div class="card">
-
   <div class="section-title">Election Status</div>
-
   {% if election.start_time and election.end_time %}
-    <div id="status-badge" class="badge badge-upcoming">Checking…</div>
+    <div id="status-badge" class="badge">Checking…</div>
     <div id="countdown" class="countdown">Syncing…</div>
   {% else %}
     <div class="badge badge-locked">No schedule configured</div>
   {% endif %}
-
   <br>
+<div style="margin-top:14px;font-size:14px;">
+  <b>Total Votes:</b> {{ total_votes }}
+</div>
+{% if election.start_time or election.end_time %}
+<div class="time-panel">
 
-  <b>Total Votes:</b> {{ total_votes }} <br>
-
-  {% if election.start_time %}
-    <b>Start:</b> {{ election.start_time }} <br>
+  {% if not has_started %}
+  <!-- NOT STARTED -->
+  <div class="time-card">
+    <div class="time-label">🕒 Starts At</div>
+    <div class="time-date">{{ election.start_time[:10] }}</div>
+    <div class="time-clock">{{ election.start_time[11:16] }}</div>
+  </div>
   {% endif %}
 
-  {% if election.end_time %}
-    <b>End:</b> {{ election.end_time }}
+  {% if has_started and not has_ended %}
+  <!-- RUNNING -->
+  <div class="time-card">
+    <div class="time-label">🕒 Started At</div>
+    <div class="time-date">{{ election.start_time[:10] }}</div>
+    <div class="time-clock">{{ election.start_time[11:16] }}</div>
+  </div>
+
+  <div class="time-card">
+    <div class="time-label">⏹ Ends At</div>
+    <div class="time-date">{{ election.end_time[:10] }}</div>
+    <div class="time-clock">{{ election.end_time[11:16] }}</div>
+  </div>
   {% endif %}
 
+  {% if has_ended %}
+  <!-- ENDED -->
+  <div class="time-card">
+    <div class="time-label">⏹ Ended At</div>
+    <div class="time-date">{{ election.end_time[:10] }}</div>
+    <div class="time-clock">{{ election.end_time[11:16] }}</div>
+  </div>
+  {% endif %}
 
-    {% if voted %}
-    <div id="editWindow" class="badge badge-locked"
-        style="margin-top:10px; opacity:1; transition:.6s;">
-    You can modify your vote — <span id="editTimer">10</span>s remaining
+</div>
+{% endif %}
+
+
+  {% if voted %}
+  <div id="modificationContainer" style="margin-top:15px; border-top: 1px solid #334155; padding-top: 10px;">
+    <div id="editWindow" class="badge badge-locked">
+      🔒 Vote Status: Recorded
     </div>
+    
+{% if voted and can_change %}
+<div id="changeVoteBox" style="margin-top:8px;font-size:13px;">
+  You can change your vote within
+  <b class="timer-highlight">
+    <span id="editTimerCountdown">{{ remaining_seconds }}</span>s
+  </b>.
+  <button id="changeVoteBtn">
+    Change vote?
+  </button>
+</div>
+{% endif %}
 
-    <script>
-    const voteTime = "{{ vote_time }}";
-
-    if(voteTime){
-
-    const placed = new Date(voteTime).getTime();
-    const box = document.getElementById("editWindow");
-    const counter = document.getElementById("editTimer");
-
-    function updateTimer(){
-
-        const now = Date.now();
-        const diff = Math.floor((now - placed) / 1000);
-        const remaining = 10 - diff;
-
-        if(remaining > 0){
-        counter.textContent = remaining;
-        lockButtons();
-        }
-
-        else{
-        box.style.opacity = 0;
-        unlockButtons();
-        setTimeout(()=> box.style.display="none",600);
-        clearInterval(timer);
-        }
-    }
-
-    const timer = setInterval(updateTimer, 500);
-    updateTimer();
-
-
-    function lockButtons(){
-        document.querySelectorAll(".vote-btn").forEach(btn=>{
-        btn.disabled = true;
-        btn.classList.add("btn-disabled");
-        });
-    }
-
-    function unlockButtons(){
-        document.querySelectorAll(".vote-btn").forEach(btn=>{
-        btn.disabled = true;
-        btn.classList.add("btn-gray");
-        btn.classList.remove("btn-green");
-        });
-    }
-
-    }
-    </script>
-    {% endif %}
-
-
+  </div>
+  {% endif %}
 
   <div class="security-box">
-    🔒 End-to-end encrypted voting<br>
-    ⏱ Vote modification window: 10 seconds
+    🔒 End-to-end encrypted voting | ⏱ Modification window: {{ lock_seconds }}s
   </div>
-
 </div>
 
-
-
-
-
-<!-- ================= CANDIDATES ================= -->
 <div class="card">
-
   <div class="section-title">Select Your Candidate</div>
-
   <div class="grid">
+    {% for c in candidates %}
+    <div class="candidate {% if voted and voted.candidate_id == c.id %}selected{% endif %}" id="cand-card-{{ c.id }}">
+      {% if c.photo %}<img src="/static/uploads/{{ c.photo }}">{% endif %}
+      <div class="candidate-name">{{ c.name }}</div>
+      {% if c.party %}<div class="party">{{ c.party }}</div>{% endif %}
+      {% if c.description %}<div class="desc">{{ c.description }}</div>{% endif %}
+      
+      <div class="status-indicator" id="status-ind-{{ c.id }}">
+        {% if voted and voted.candidate_id == c.id %}
+          <div class="selected-badge">✔ Your Vote</div>
+        {% endif %}
+      </div>
 
-  {% for c in candidates %}
-
-  <div class="candidate {% if voted and voted.candidate_id == c.id %}selected{% endif %}">
-
-    {% if c.photo %}
-      <img src="/static/uploads/{{ c.photo }}">
-    {% endif %}
-
-    <div class="candidate-name">{{ c.name }}</div>
-
-    {% if c.party %}
-      <div class="party">{{ c.party }}</div>
-    {% endif %}
-
-    {% if c.description %}
-      <div class="desc">{{ c.description }}</div>
-    {% endif %}
-
-    {% if voted and voted.candidate_id == c.id %}
-      <div class="selected-badge">✔ Your Vote</div>
-    {% endif %}
-
-
-    {% if voted %}
-      <button class="btn-gray btn-disabled" disabled>Vote Locked</button>
-
-    {% else %}
-    <form method="POST" action="/vote" class="voteForm"
-          data-name="{{ c.name }}">
-
-      <input type="hidden" name="email" value="{{ email }}">
-      <input type="hidden" name="election_id" value="{{ election.id }}">
-      <input type="hidden" name="candidate_id" value="{{ c.id }}">
-      <input type="hidden" name="confirm_flag" value="yes">
-
-    <button class="btn-green vote-btn">Vote for {{ c.name }}</button>
-
-    </form>
-    {% endif %}
-
-  </div>
-
-  {% endfor %}
+      <form method="POST" action="/vote" class="voteForm" data-name="{{ c.name }}" data-id="{{ c.id }}">
+        <input type="hidden" name="email" value="{{ email }}">
+        <input type="hidden" name="election_id" value="{{ election.id }}">
+        <input type="hidden" name="candidate_id" value="{{ c.id }}">
+        <input type="hidden" name="confirm_flag" value="yes">
+        <button type="submit" class="btn-green vote-btn" {% if voted and not change_mode %}disabled style="opacity:0.5"{% endif %}>
+          Vote
+        </button>
+      </form>
+    </div>
+    {% endfor %}
   </div>
 </div>
 
+</div> 
 
-
-
-</div> <!-- container -->
-
-
-
-<!-- ================= CONFIRMATION MODAL ================= -->
 <div class="modal-bg" id="modal">
   <div class="modal">
-
     <h3 id="modalName"></h3>
-
-    <p style="margin-top:6px;">
+    <p style="margin-top:12px; font-size: 14px; color: #94a3b8;">
       Your vote will be recorded securely.<br>
-      You may change your vote within 10 seconds.
+      The window to change your mind closes soon.
     </p>
-
-    <div style="display:flex;justify-content:space-between;">
-      <button class="modal-btn btn-gray" onclick="closeModal()">Cancel</button>
-      <button class="modal-btn btn-green" id="confirmBtn">Confirm Vote</button>
+    <div style="display:flex;justify-content:space-between; margin-top: 20px; gap: 10px;">
+      <button class="btn-gray" onclick="closeModal()">Cancel</button>
+      <button class="btn-green" id="confirmBtn">Confirm Vote</button>
     </div>
-
   </div>
 </div>
-
-
+<div class="modal-bg" id="lockedModal">
+  <div class="modal">
+    <h3>Vote permanently recorded</h3>
+    <p style="margin-top:12px;font-size:14px;color:#94a3b8;">
+      Modification window is closed.<br>
+      Your vote is casted for <b id="lockedCandidateName"></b>.
+    </p>
+    <div style="margin-top:20px;">
+      <button class="btn-green" onclick="closeLockedModal()">OK</button>
+    </div>
+  </div>
+</div>
 
 
 <script>
-/* ================= SMART CONFIRMATION POPUP ================= */
-
+/* =====================================================
+   STATE (BACKEND-DRIVEN)
+===================================================== */
+const CAN_CHANGE = {{ 'true' if can_change else 'false' }};
+let remaining = {{ remaining_seconds | default(0) }};
 let activeForm = null;
+let changeMode = false;
 
-document.querySelectorAll(".voteForm").forEach(f=>{
-  f.addEventListener("submit",e=>{
+/* =====================================================
+   DOM
+===================================================== */
+const changeBox   = document.getElementById("changeVoteBox");
+const editBadge   = document.getElementById("editWindow");
+const timerSpan   = document.getElementById("editTimerCountdown");
+const voteBtns    = document.querySelectorAll(".vote-btn");
+const modal       = document.getElementById("modal");
+const modalTitle  = document.getElementById("modalName");
+const modalText   = modal.querySelector("p");
+const confirmBtn  = document.getElementById("confirmBtn");
+const changeBtn   = document.getElementById("changeVoteBtn");
+
+/* =====================================================
+   INITIAL VISIBILITY
+===================================================== */
+if (!CAN_CHANGE && changeBox) {
+  changeBox.remove();
+}
+
+/* =====================================================
+   COUNTDOWN (DISPLAY ONLY)
+===================================================== */
+if (CAN_CHANGE && remaining > 0 && timerSpan) {
+
+  const countdown = setInterval(() => {
+    remaining--;
+    timerSpan.textContent = remaining;
+
+    if (remaining <= 0) {
+      clearInterval(countdown);
+
+      changeBox?.remove();
+      editBadge.textContent = "🔒 Vote permanently recorded";
+      editBadge.className = "badge badge-locked";
+
+      voteBtns.forEach(btn => {
+        btn.disabled = true;
+        btn.textContent = "Locked";
+        btn.classList.add("btn-disabled");
+      });
+    }
+  }, 1000);
+}
+
+/* =====================================================
+   CHANGE VOTE (CONFIRMATION)
+===================================================== */
+if (changeBtn) {
+  changeBtn.onclick = () => {
+    modalTitle.textContent = "Update your vote?";
+    modalText.innerHTML =
+      "You may change your vote only within the remaining time.<br>" +
+      "<b>This action replaces your previous vote.</b>";
+
+    confirmBtn.textContent = "Update Vote";
+    modal.classList.add("show");
+
+    confirmBtn.onclick = () => {
+      modal.classList.remove("show");
+      changeMode = true;
+
+      document.querySelectorAll(".candidate")
+        .forEach(c => c.classList.remove("selected"));
+
+      document.querySelectorAll(".status-indicator")
+        .forEach(i => i.innerHTML = "");
+
+      voteBtns.forEach(btn => {
+        btn.disabled = false;
+        btn.classList.remove("btn-disabled");
+        btn.textContent = "Vote";
+      });
+    };
+  };
+}
+
+/* =====================================================
+   VOTE SUBMIT
+===================================================== */
+document.querySelectorAll(".voteForm").forEach(form => {
+  form.addEventListener("submit", e => {
     e.preventDefault();
-    activeForm = f;
+    activeForm = form;
 
-    document.getElementById("modalName").innerHTML =
-      "Confirm vote for <b>" + f.dataset.name + "</b>";
+    modalTitle.innerHTML =
+      "Confirm vote for<br><b>" + form.dataset.name + "</b>";
 
-    document.getElementById("modal").classList.add("show");
+    modalText.innerHTML =
+      "Your vote will be securely recorded.<br>" +
+      (CAN_CHANGE ? "You may still update it within the remaining time."
+                  : "This vote will be permanent.");
+
+    confirmBtn.textContent = "Confirm Vote";
+    modal.classList.add("show");
+
+    confirmBtn.onclick = () => {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Recording…";
+      activeForm.submit();
+    };
   });
 });
 
-function closeModal(){
-  document.getElementById("modal").classList.remove("show");
+/* =====================================================
+   CLOSE MODAL
+===================================================== */
+function closeModal() {
+  modal.classList.remove("show");
 }
 
-document.getElementById("confirmBtn").onclick = ()=>{
-  if(activeForm) activeForm.submit();
-};
+/* =====================================================
+   LOCKED MESSAGE FROM BACKEND
+===================================================== */
+{% with messages = get_flashed_messages() %}
+{% if "Modification window closed. Your vote is already cast." in messages %}
+  const lockedModal = document.getElementById("lockedModal");
+  const nameSpan = document.getElementById("lockedCandidateName");
+  const votedCard = document.querySelector(".candidate.selected .candidate-name");
 
+  if (votedCard) nameSpan.textContent = votedCard.textContent.trim();
+  lockedModal.classList.add("show");
+{% endif %}
+{% endwith %}
 
-/* ================= COUNTDOWN TIMER ================= */
+function closeLockedModal() {
+  document.getElementById("lockedModal").classList.remove("show");
+}
 
+/* =====================================================
+   ELECTION STATUS TIMER (UNCHANGED)
+===================================================== */
 const startTime = "{{ election.start_time }}";
 const endTime   = "{{ election.end_time }}";
 
-if(startTime && endTime){
-
+if (startTime && endTime) {
   const badge = document.getElementById("status-badge");
   const clock = document.getElementById("countdown");
-
   const start = new Date(startTime).getTime();
   const end   = new Date(endTime).getTime();
 
   function fmt(ms){
-    let s=Math.floor(ms/1000);
-    const h=Math.floor(s/3600);s%=3600;
-    const m=Math.floor(s/60);s%=60;
-    return h+"h "+m+"m "+s+"s";
+    let s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600); s %= 3600;
+    const m = Math.floor(s / 60);   s %= 60;
+    return h + "h " + m + "m " + s + "s";
   }
 
   function tick(){
     const now = Date.now();
-
-    if(now < start){
-      badge.className="badge badge-upcoming";
-      badge.innerHTML="⏳ Voting Not Started";
-      clock.innerHTML="Opens in: "+fmt(start-now);
-      return;
+    if (now < start) {
+      badge.className = "badge badge-upcoming";
+      badge.textContent = "⏳ Upcoming";
+      clock.textContent = "Starts in: " + fmt(start - now);
+    } else if (now <= end) {
+      badge.className = "badge badge-live";
+      badge.textContent = "🟢 Live";
+      clock.textContent = "Ends in: " + fmt(end - now);
+    } else {
+      badge.className = "badge badge-ended";
+      badge.textContent = "🔴 Ended";
+      clock.textContent = "Election closed";
     }
-
-    if(now >= start && now <= end){
-      badge.className="badge badge-live";
-      badge.innerHTML="🟢 Voting Active";
-      clock.innerHTML="Ends in: "+fmt(end-now);
-      return;
-    }
-
-    badge.className="badge badge-ended";
-    badge.innerHTML="🔴 Voting Ended";
-    clock.innerHTML="Closed";
   }
 
   tick();
-  setInterval(tick,1000);
+  setInterval(tick, 1000);
 }
 </script>
+
 
 </body>
 </html>

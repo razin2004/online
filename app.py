@@ -186,9 +186,9 @@ class Vote(db.Model):
     candidate_id = db.Column(db.Integer, db.ForeignKey("candidate.id"))
 
     email = db.Column(db.String(120))
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)   # 🔒 immutable
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow) 
+    
 class VoterWhitelist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     election_id = db.Column(db.Integer, db.ForeignKey("election.id"))
@@ -684,73 +684,66 @@ def voter_verify():
 # -------------------------------------------------
 # VOTER DASHBOARD
 # -------------------------------------------------
-
+# -------------------------------------------------
+# VOTER DASHBOARD
+# -------------------------------------------------
 @app.route("/voter/dashboard")
 def voter_dashboard():
 
     if not require_voter_login():
         return redirect("/")
-    # prevent admin account from entering voter area
+
     if "admin_id" in session:
         flash("Admins cannot access voter panel")
         return redirect("/admin/dashboard")
 
-
     email = session["voter_email"]
     q = request.args.get("q", "").strip().lower()
 
-    voted_set = {v.election_id for v in Vote.query.filter_by(email=email).all()}
+    voted_set = {
+        v.election_id
+        for v in Vote.query.filter_by(email=email).all()
+    }
 
-    # ---- PUBLIC LOGIN VOTER ----
+    admin = None   # ✅ IMPORTANT
+
+    # ---- PUBLIC LOGIN ----
     if "voter_admin_id" not in session:
+        elections = Election.query.filter_by(
+            election_type="public"
+        ).all()
 
-        # show only PUBLIC elections (all admins)
-        elections = Election.query.filter_by(election_type="public").all()
-
-    # ---- PRIVATE LOGIN VOTER ----
+    # ---- PRIVATE LOGIN ----
     else:
         admin_id = session["voter_admin_id"]
-
-        # show ONLY elections created by that admin
-        # (both public + private)
-        elections = Election.query.filter_by(admin_id=admin_id).all()
-
-
-
-    voted_set = {v.election_id for v in Vote.query.filter_by(email=email).all()}
+        admin = db.session.get(Admin, admin_id)   # ✅ LOAD ADMIN
+        elections = Election.query.filter_by(
+            admin_id=admin_id
+        ).all()
 
     election_list = []
 
     for e in elections:
 
-        # SEARCH FILTERING
         if q:
-
             text = (e.name or "").lower()
             code = (e.public_code or "").lower()
+            if q not in text and q not in code:
+                continue
 
-            # 🟢 PUBLIC LOGIN — search public elections only
-            if "voter_admin_id" not in session:
-                if q not in text and q not in code:
-                    continue
+        total_votes = Vote.query.filter_by(
+            election_id=e.id
+        ).count()
 
-            # 🟢 PRIVATE LOGIN — search public + own private
-            else:
-                if q not in text and q not in code:
-                    continue
-
-
-        total_votes = Vote.query.filter_by(election_id=e.id).count()
-
-        candidate_count = Candidate.query.filter_by(election_id=e.id).count()
+        candidate_count = Candidate.query.filter_by(
+            election_id=e.id
+        ).count()
 
         allowed = True
-
-        # CHECK whitelist only for private elections
         if e.election_type == "private":
             allowed = VoterWhitelist.query.filter_by(
                 election_id=e.id,
-                email=email.lower()
+                email=email
             ).first() is not None
 
         election_list.append({
@@ -762,18 +755,18 @@ def voter_dashboard():
             "total_votes": total_votes,
             "candidate_count": candidate_count,
             "voted": e.id in voted_set,
-            "allowed": allowed
-            
+            "allowed": allowed,
+            "public_code": e.public_code
         })
-
-
 
     return render_template(
         "voter_dashboard.html",
         elections=election_list,
         email=email,
+        admin=admin,        # ✅ PASS ADMIN (or None)
         search_query=q
     )
+
 
 @app.route("/voter/results")
 def voter_results_list():
@@ -844,7 +837,8 @@ def voter_results_list():
             "ended": is_ended,
 
             "visible": e.result_visible,
-            "can_view": can_view
+            "can_view": can_view,
+            "public_code": e.public_code
         })
 
     return render_template(
@@ -904,6 +898,10 @@ def voter_result_detail(eid):
         total_votes=total_votes
     )
 
+from datetime import datetime
+
+from datetime import datetime
+
 @app.route("/election/<eid>")
 def view_election(eid):
 
@@ -912,19 +910,19 @@ def view_election(eid):
 
     email = session["voter_email"]
     election = Election.query.get_or_404(eid)
+    now = datetime.utcnow()
+
     # 🚫 Block viewing private elections of other admins
     if election.election_type == "private" and "voter_admin_id" in session:
         if election.admin_id != session["voter_admin_id"]:
             flash("You are not allowed to access this election")
             return redirect("/voter/dashboard")
 
-
     # count total votes
     total_votes = Vote.query.filter_by(election_id=eid).count()
 
-    # PRIVATE — enforce whitelist BEFORE showing candidates
+    # PRIVATE — whitelist enforcement
     if election.election_type == "private":
-
         allowed = VoterWhitelist.query.filter_by(
             election_id=eid,
             email=email
@@ -934,17 +932,34 @@ def view_election(eid):
             flash("You are not allowed to view this election")
             return redirect("/voter/dashboard")
 
-        candidates = Candidate.query.filter_by(election_id=eid).all()
+    candidates = Candidate.query.filter_by(election_id=eid).all()
 
-    else:
-        # PUBLIC — everyone may view candidates
-        candidates = Candidate.query.filter_by(election_id=eid).all()
-
-    # voting status
     voted = Vote.query.filter_by(
         election_id=eid,
         email=email
     ).first()
+
+    # -----------------------------------
+    # 🗳️ CHANGE-VOTE WINDOW (45s HARD LIMIT)
+    # -----------------------------------
+    LOCK_SECONDS = 45
+    can_change = False
+    remaining_seconds = 0
+
+    if voted:
+        elapsed = (now - voted.created_at).total_seconds()
+        if elapsed < LOCK_SECONDS:
+            can_change = True
+            remaining_seconds = int(LOCK_SECONDS - elapsed)
+
+    # -----------------------------------
+    # ⏱️ ELECTION STATE (FOR UI)
+    # -----------------------------------
+    start_time = datetime.fromisoformat(election.start_time) if election.start_time else None
+    end_time   = datetime.fromisoformat(election.end_time) if election.end_time else None
+
+    has_started = start_time and now >= start_time
+    has_ended   = end_time and now > end_time
 
     return render_template(
         "single_election.html",
@@ -953,8 +968,13 @@ def view_election(eid):
         total_votes=total_votes,
         email=email,
         voted=voted,
-        vote_time=voted.timestamp if voted else None
+        can_change=can_change,
+        remaining_seconds=remaining_seconds,
+        lock_seconds=LOCK_SECONDS,
+        has_started=has_started,
+        has_ended=has_ended
     )
+
 
 
 # -------------------------------------------------
@@ -972,54 +992,67 @@ def cast_vote():
         flash("Vote not submitted — confirmation required")
         return redirect("/voter/dashboard")
 
-    election = Election.query.get(election_id)
+    election = Election.query.get_or_404(election_id)
 
-    if Candidate.query.filter_by(election_id=election_id).count() < 2:
-        flash("Minimum 2 candidates required")
+    # ---- schedule checks ----
+    if election.start_time and datetime.now() < datetime.fromisoformat(election.start_time):
+        flash("Election has not started yet")
         return redirect("/voter/dashboard")
 
+    if election.end_time and datetime.now() > datetime.fromisoformat(election.end_time):
+        flash("Election has ended")
+        return redirect("/voter/dashboard")
+
+    # ---- whitelist ----
     if election.election_type == "private":
         allowed = VoterWhitelist.query.filter_by(
             election_id=election_id,
             email=email
         ).first()
         if not allowed:
-            flash("Email not allowed for this election", "voter_error")
+            flash("You are not allowed to vote in this election")
             return redirect("/voter/dashboard")
-
-    if election.start_time and datetime.now() < datetime.fromisoformat(election.start_time):
-        flash("Election has not started yet")
-        return redirect("/voter/dashboard")
-
-    if election.end_time and datetime.now() > datetime.fromisoformat(election.end_time):
-        flash("Election ended")
-        return redirect("/voter/dashboard")
 
     existing_vote = Vote.query.filter_by(
         election_id=election_id,
         email=email
     ).first()
 
-    if existing_vote:
-        if datetime.utcnow() - existing_vote.timestamp <= timedelta(seconds=10):
-            existing_vote.candidate_id = candidate_id
-            existing_vote.timestamp = datetime.utcnow()
-            db.session.commit()
-            flash("Vote updated")
-            return redirect("/voter/dashboard")
+    # -----------------------------
+    # FIRST VOTE
+    # -----------------------------
+    if not existing_vote:
+        db.session.add(Vote(
+            election_id=election_id,
+            candidate_id=candidate_id,
+            email=email,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        ))
+        db.session.commit()
 
-        flash("You already voted")
-        return redirect("/voter/dashboard")
+        flash("Vote recorded successfully. You may change it for 45 seconds.")
+        return redirect(f"/election/{election_id}")
 
-    db.session.add(Vote(
-        election_id=election_id,
-        candidate_id=candidate_id,
-        email=email
-    ))
+    # -----------------------------
+    # MODIFY WITHIN 45 SECONDS
+    # -----------------------------
+    elapsed = (datetime.utcnow() - existing_vote.created_at).total_seconds()
 
-    db.session.commit()
-    flash("Vote cast successfully")
-    return redirect("/voter/dashboard")
+    if elapsed <= 45:
+        existing_vote.candidate_id = candidate_id
+        existing_vote.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        flash(f"Vote updated. {int(45-elapsed)} seconds remaining.")
+        return redirect(f"/election/{election_id}")
+
+    # -----------------------------
+    # LOCKED
+    # -----------------------------
+    flash("Modification window closed. Your vote is already cast.")
+    return redirect(f"/election/{election_id}")
+
 
 
 # -------------------------------------------------
@@ -1154,51 +1187,51 @@ def api_whitelist(eid):
     ]
 
     return {"whitelist": data}
-
 @app.route("/admin/results")
 def admin_results_page():
-
     if not require_admin_login():
         return redirect("/")
 
-
     admin = Admin.query.get(session["admin_id"])
-
     elections = Election.query.filter_by(admin_id=admin.id).all()
 
     result_list = []
+    now = datetime.now()
 
     for e in elections:
-
         total_votes = Vote.query.filter_by(election_id=e.id).count()
-        candidate_count = Candidate.query.filter_by(election_id=e.id).count()
-
-        # determine whether results should display
-        now = datetime.now()
+        
+        # Determine timing
         ended = False
         if e.end_time:
-            ended = now >= datetime.fromisoformat(e.end_time)
+            # Handle both string and datetime objects if necessary
+            end_dt = datetime.fromisoformat(e.end_time) if isinstance(e.end_time, str) else e.end_time
+            ended = now >= end_dt
 
-        # Winner visibility rule
-        show_winner = ended   # <-- IMPORTANT
+        # Determine accessibility and reason
+        can_open = False
+        reason = ""
+
+        if not e.result_visible:
+            reason = "This election is currently set to 'Hidden' by Admin settings."
+        elif e.election_type == 'private' and not ended:
+            reason = f"Private election results remain locked until the end time ({e.end_time})."
+        else:
+            can_open = True
 
         result_list.append({
             "id": e.id,
             "name": e.name,
             "type": e.election_type,
-            "candidate_count": candidate_count,
             "total_votes": total_votes,
             "ended": ended,
             "visible": e.result_visible,
-            "show_winner": show_winner
+            "can_open": can_open,
+            "reason": reason
         })
 
+    return render_template("admin_results.html", elections=result_list, admin=admin)
 
-    return render_template(
-        "admin_results.html",
-        elections=result_list,
-        admin=admin
-    )
 @app.route("/admin/results/<eid>")
 def admin_result_detail(eid):
 
