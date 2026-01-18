@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
+
 <meta charset="UTF-8" />
 <title>{{ election.name }} — Secure Voting</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -122,11 +124,12 @@ body{
 }
 .candidate img{
   width:100%;
-  height:170px;
+  aspect-ratio:1 / 1;
   object-fit:cover;
   border-radius:12px;
   border:1px solid #334155;
 }
+
 .candidate-name{font-size:16px;font-weight:700;margin-top:6px}
 .party{font-size:13px;color:#93c5fd}
 .desc{font-size:12px;color:#cbd5e1;margin-top:4px}
@@ -135,21 +138,9 @@ body{
   border:2px solid #22c55e;
   box-shadow:0 0 20px #22c55e55;
 }
-.selected::after{
-  content:"✓";
-  position:absolute;
-  top:12px;
-  right:12px;
-  width:26px;
-  height:26px;
-  border-radius:50%;
-  background:#22c55e;
-  color:#022c22;
-  font-weight:900;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
+
+
+
 
 /* ================= BUTTONS ================= */
 button{
@@ -189,6 +180,26 @@ button{
   text-align:center;
   box-shadow:0 40px 80px rgba(0,0,0,.7);
 }
+.modal{
+  animation:scaleIn .18s ease-out;
+}
+
+@keyframes scaleIn{
+  from{transform:scale(.94);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+
+.modal-icon{
+  width:48px;
+  height:48px;
+  margin:0 auto 14px;
+  border-radius:50%;
+  background:rgba(56,189,248,.15);
+  color:#38bdf8;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 
 </style>
 </head>
@@ -226,7 +237,15 @@ button{
   {% if not has_started %}
   <!-- NOT STARTED -->
   <div class="time-card">
-    <div class="time-label">🕒 Starts At</div>
+    <div class="time-label">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
+    <circle cx="12" cy="12" r="10"/>
+    <polyline points="12 6 12 12 16 14"/>
+  </svg>
+  Starts At
+</div>
+
     <div class="time-date">{{ election.start_time[:10] }}</div>
     <div class="time-clock">{{ election.start_time[11:16] }}</div>
   </div>
@@ -235,13 +254,28 @@ button{
   {% if has_started and not has_ended %}
   <!-- RUNNING -->
   <div class="time-card">
-    <div class="time-label">🕒 Started At</div>
+    <div class="time-label">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
+    <circle cx="12" cy="12" r="10"/>
+    <polyline points="12 6 12 12 16 14"/>
+  </svg>
+  Started At
+</div>
+
     <div class="time-date">{{ election.start_time[:10] }}</div>
     <div class="time-clock">{{ election.start_time[11:16] }}</div>
   </div>
 
   <div class="time-card">
-    <div class="time-label">⏹ Ends At</div>
+    <div class="time-label">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
+    <rect x="6" y="6" width="12" height="12"/>
+  </svg>
+  Ends At
+</div>
+
     <div class="time-date">{{ election.end_time[:10] }}</div>
     <div class="time-clock">{{ election.end_time[11:16] }}</div>
   </div>
@@ -250,7 +284,14 @@ button{
   {% if has_ended %}
   <!-- ENDED -->
   <div class="time-card">
-    <div class="time-label">⏹ Ended At</div>
+    <div class="time-label">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
+    <rect x="6" y="6" width="12" height="12"/>
+  </svg>
+  Ended At
+</div>
+
     <div class="time-date">{{ election.end_time[:10] }}</div>
     <div class="time-clock">{{ election.end_time[11:16] }}</div>
   </div>
@@ -262,9 +303,15 @@ button{
 
   {% if voted %}
   <div id="modificationContainer" style="margin-top:15px; border-top: 1px solid #334155; padding-top: 10px;">
-    <div id="editWindow" class="badge badge-locked">
-      🔒 Vote Status: Recorded
-    </div>
+<div id="editWindow" class="badge badge-locked">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
+    <rect x="3" y="11" width="18" height="11" rx="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+  Vote Status: Recorded
+</div>
+
     
 {% if voted and can_change %}
 <div id="changeVoteBox" style="margin-top:8px;font-size:13px;">
@@ -281,9 +328,22 @@ button{
   </div>
   {% endif %}
 
-  <div class="security-box">
-    🔒 End-to-end encrypted voting | ⏱ Modification window: {{ lock_seconds }}s
-  </div>
+<div class="security-box">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
+    <rect x="3" y="11" width="18" height="11" rx="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+  End-to-end encrypted voting
+  &nbsp;|&nbsp;
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px">
+    <circle cx="12" cy="12" r="10"/>
+    <polyline points="12 6 12 12 16 14"/>
+  </svg>
+  Modification window: {{ lock_seconds }}s
+</div>
+
 </div>
 
 <div class="card">
@@ -506,15 +566,37 @@ if (startTime && endTime) {
     const now = Date.now();
     if (now < start) {
       badge.className = "badge badge-upcoming";
-      badge.textContent = "⏳ Upcoming";
+      badge.innerHTML = `
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" style="margin-right:6px">
+    <circle cx="12" cy="12" r="10"/>
+    <polyline points="12 6 12 12 16 14"/>
+  </svg>
+  Upcoming
+`;
+
       clock.textContent = "Starts in: " + fmt(start - now);
     } else if (now <= end) {
       badge.className = "badge badge-live";
-      badge.textContent = "🟢 Live";
+      badge.innerHTML = `
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"
+    style="margin-right:6px">
+    <circle cx="12" cy="12" r="10"/>
+  </svg>
+  Live
+`;
+
       clock.textContent = "Ends in: " + fmt(end - now);
     } else {
       badge.className = "badge badge-ended";
-      badge.textContent = "🔴 Ended";
+      badge.innerHTML = `
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2" style="margin-right:6px">
+    <rect x="6" y="6" width="12" height="12"/>
+  </svg>
+  Ended
+`;
+
       clock.textContent = "Election closed";
     }
   }

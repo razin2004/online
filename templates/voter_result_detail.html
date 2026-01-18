@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
+
 <meta charset="UTF-8" />
 <title>{{ election.name }} — Election Result</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
 
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial;}
+*{
+  margin:0;padding:0;box-sizing:border-box;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+
 
 body{
   min-height:100vh;
@@ -198,12 +204,133 @@ button{
 }
 
 .btn-blue{
-  background:#2563eb;
+  background:linear-gradient(135deg,#38bdf8,#6366f1);
+  color:#020617;
 }
+
 .btn-blue:hover{
   background:#1d4ed8;
   transform:translateY(-1px);
 }
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.back-btn{
+  background:rgba(56,189,248,.15);
+  border:1px solid rgba(56,189,248,.35);
+  color:#38bdf8;
+  padding:8px 16px;
+  border-radius:12px;
+  font-weight:700;
+  text-decoration:none;
+}
+.back-btn:hover{
+  background:rgba(56,189,248,.25);
+}
+.cand-photo{
+  width:100%;
+  aspect-ratio:1 / 1;
+  object-fit:cover;
+  border-radius:14px;
+  border:1px solid #334155;
+  margin-bottom:10px;
+}
+.card{
+  position:relative;
+}
+.card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:18px;
+  pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
+}
+@media (prefers-reduced-motion: reduce){
+  *{
+    transition:none!important;
+  }
+}
+.summary-card{
+  background:
+    linear-gradient(180deg,rgba(15,23,42,.95),rgba(2,6,23,.95));
+}
+
+.summary-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+}
+
+.summary-header h3{
+  font-size:1.05rem;
+  font-weight:800;
+}
+
+.summary-tag{
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:.65rem;
+  font-weight:800;
+  letter-spacing:.6px;
+  background:rgba(56,189,248,.15);
+  color:#38bdf8;
+  border:1px solid rgba(56,189,248,.35);
+}
+
+.summary-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+}
+
+.summary-item{
+  background:rgba(2,6,23,.75);
+  border:1px solid #334155;
+  border-radius:14px;
+  padding:14px;
+}
+
+.summary-item .label{
+  font-size:.7rem;
+  color:#94a3b8;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+}
+
+.summary-item .value{
+  display:block;
+  margin-top:4px;
+  font-size:.95rem;
+  font-weight:800;
+  color:#f8fafc;
+}
+/* Logo base */
+.header-logo{
+  height:34px;
+}
+
+/* Desktop enhancement */
+@media (min-width: 700px){
+  .header-logo{
+    height:36px;
+    filter:drop-shadow(0 6px 16px rgba(56,189,248,.25));
+  }
+}
+
+/* Mobile focus */
+@media (max-width: 699px){
+  .header-logo{
+    height:36px;
+    margin-bottom:-10px;
+    margin-left: -14px;
+  }
+}
+
 </style>
 </head>
 
@@ -212,36 +339,56 @@ button{
 <body>
 
 <div class="topbar">
-  <div class="title">Election Result</div>
-  <div class="subtext">Secure certified voting summary</div>
+<div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">
+<img src="/static/uploads/votecentral-logo.svg" class="header-logo">
 </div>
+
+
+  <a href="/voter/results" class="back-btn">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2"
+      style="vertical-align:-2px;margin-right:6px">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+    Back
+  </a>
+</div>
+
 
 
 <div class="container">
 
 
 <!-- ===== HEADER ===== -->
-<div class="card">
+<div class="card summary-card">
 
-  <div class="section-title">Election Summary</div>
+  <div class="summary-header">
+    <h3>Election Summary</h3>
+    <span class="summary-tag">
+      {{ 'PUBLIC' if election.election_type=='public' else 'PRIVATE' }}
+    </span>
+  </div>
 
-  <p><b>Name:</b> {{ election.name }}</p>
+  <div class="summary-grid">
 
-  <p><b>Type:</b>
-    {% if election.election_type == "public" %}
-      Public Election
-    {% else %}
-      Private Election
-    {% endif %}
-  </p>
+    <div class="summary-item">
+      <span class="label">Election Name</span>
+      <span class="value">{{ election.name }}</span>
+    </div>
 
-  <p><b>Total Votes:</b> {{ total_votes }}</p>
+    <div class="summary-item">
+      <span class="label">Total Votes</span>
+      <span class="value">{{ total_votes }}</span>
+    </div>
+
+  </div>
 
   <p class="note">
-    Winners are automatically detected — multiple winners possible in tie cases.
+    Results are system-verified. Tie cases may result in multiple winners.
   </p>
 
 </div>
+
 
 
 
@@ -253,7 +400,15 @@ button{
   {% set tie_count = result | selectattr('winner') | list | length %}
 
   {% if tie_count > 1 %}
-    <p class="note">⚠ Tie detected — {{ tie_count }} candidates share top votes.</p>
+<p class="note" style="display:flex;align-items:center;gap:6px">
+  <svg width="14" height="14" viewBox="0 0 24 24"
+       fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/>
+    <circle cx="12" cy="16" r="1"/>
+  </svg>
+  Tie detected — {{ tie_count }} candidates share top votes
+</p>
   {% endif %}
 
   <div class="grid">
@@ -306,8 +461,8 @@ button{
 
 <!-- ===== NAV ===== -->
 <div class="card">
-  <a href="/voter/results">
-    <button class="btn-blue">Back to Results List</button>
+  <a href="/voter/dashboard">
+    <button class="btn-blue">Back to Dashboard</button>
   </a>
 </div>
 

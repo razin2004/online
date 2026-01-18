@@ -2,8 +2,12 @@ import os
 import random
 import smtplib
 import string
+import re
+import secrets
 import requests
 from datetime import datetime, timedelta
+from datetime import timezone
+
 
 from flask import (
     Flask, render_template, request, redirect,
@@ -29,55 +33,105 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-
-# -------------------------------------------------
-# SMTP — GMAIL OTP SETUP
-# -------------------------------------------------
-
-
 # 1. Get your API Key from https://www.promailer.xyz/
 # 2. Add PROMAIL_API_KEY to Render Environment Variables
 PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
 def send_otp_email(to, subject, html, text=None):
+    """
+    Used ONLY for OTP-related emails (admin, voter, reset, resend)
+    """
     if not PROMAIL_API_KEY:
         print("ERROR: PROMAIL_API_KEY missing")
         return False
 
-    url = "https://mailserver.automationlounge.com/api/v1/messages/send"
-
-    headers = {
-        "Authorization": f"Bearer {PROMAIL_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
     payload = {
         "to": to,
         "subject": subject,
-        "html": html
+        "html": html,
+        "from": PROMAIL_SENDER
     }
 
-    # optional plain text fallback
     if text:
         payload["text"] = text
 
     try:
-        response = requests.post(
-            url,
-            headers=headers,
+        r = requests.post(
+            PROMAIL_URL,
+            headers={
+                "Authorization": f"Bearer {PROMAIL_API_KEY}",
+                "Content-Type": "application/json"
+            },
             json=payload,
             timeout=10
         )
 
-        print("ProMailer status:", response.status_code)
-        print("ProMailer response:", response.text)
-
-        if response.status_code == 200:
+        if r.status_code == 200:
             return True
+
+        print("ProMailer error:", r.status_code, r.text)
         return False
 
     except Exception as e:
-        print("ProMailer Exception:", e)
+        print("ProMailer exception:", e)
         return False
+
+def send_vote_central_email(to_email, subject, body):
+    """
+    Used for ALL non-OTP system emails (admin code, confirmations, notices)
+    """
+
+    if not PROMAIL_API_KEY:
+        print("ERROR: PROMAIL_API_KEY missing")
+        return False
+
+    # Convert plain text body → clean HTML
+    html = body.replace("\n", "<br>")
+
+    payload = {
+        "to": to_email,
+        "subject": subject,
+        "html": f"""
+        <div style="font-family:Arial,Helvetica,sans-serif;
+                    font-size:14px;
+                    line-height:1.6;
+                    color:#111;">
+            {html}
+            <br><br>
+            <hr style="border:none;border-top:1px solid #ddd">
+            <small style="color:#666">
+                VoteCentral · Secure · Verified · One Vote Per User
+            </small>
+        </div>
+        """,
+        "text": body,
+        "from": PROMAIL_SENDER
+    }
+
+    try:
+        r = requests.post(
+            PROMAIL_URL,
+            headers={
+                "Authorization": f"Bearer {PROMAIL_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json=payload,
+            timeout=10
+        )
+
+        if r.status_code == 200:
+            return True
+
+        print("ProMailer error:", r.status_code, r.text)
+        return False
+
+    except Exception as e:
+        print("ProMailer exception:", e)
+        return False
+
+
+
+# 1. Get your API Key from https://www.promailer.xyz/
+# 2. Add PROMAIL_API_KEY to Render Environment Variables
 
 
 
@@ -87,7 +141,9 @@ def generate_otp():
 
 
 def generate_admin_code():
-    return ''.join(random.choices(string.digits, k=6))
+    chars = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(chars) for _ in range(8))
+
 
 
 def generate_public_code():
@@ -108,8 +164,8 @@ def store_new_otp(email, code, role, admin_id=None):
         code=code,
         role=role,
         admin_id=admin_id,
-        created_at=datetime.utcnow(),
-        expires_at=datetime.utcnow() + timedelta(minutes=5)
+        created_at=datetime.now(timezone.utc),
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=5)
     )
 
     db.session.add(otp_record)
@@ -160,6 +216,127 @@ def clear_reset_session():
     session.pop("otp_reset_verified", None)
     session.pop("reset_email", None)
     session.pop("otp_context", None)
+from datetime import timezone
+
+def ensure_utc(dt):
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+def admin_register_otp_email(name, otp):
+    return {
+        "subject": "VoteCentral – Verify Your Admin Account",
+        "body": f"""
+Hello {name},
+
+Thank you for registering as an administrator on VoteCentral.
+
+To complete your account setup, please verify your email address using the One-Time Password (OTP) below:
+
+Verification OTP: {otp}
+
+This OTP is valid for 5 minutes.
+For security reasons, do not share this code with anyone.
+
+If you did not initiate this registration, you may safely ignore this email.
+
+Best regards,
+VoteCentral Security Team
+Secure • Verified • One Vote Per User
+"""
+    }
+
+
+def admin_reset_otp_email(name, otp):
+    return {
+        "subject": "VoteCentral – Password Reset Verification",
+        "body": f"""
+Hello {name},
+
+We received a request to reset the password for your VoteCentral admin account.
+
+Please use the following One-Time Password (OTP) to continue:
+
+Password Reset OTP: {otp}
+
+This OTP will expire in 5 minutes.
+If you did not request this reset, please ignore this email.
+
+Regards,
+VoteCentral Support Team
+Secure • Verified • One Vote Per User
+"""
+    }
+
+def private_admin_code_email(admin_name, admin_code):
+    return {
+        "subject": "VoteCentral – Your Admin Account Is Ready",
+        "body": f"""
+Hello {admin_name},
+
+Your admin account has been successfully created on VoteCentral.
+
+As an administrator, you can now create and manage elections on the platform.
+For conducting private elections, you will use the Admin Code provided below.
+
+Admin Code: {admin_code}
+
+This Admin Code is required for voters to access your private elections.
+You may share this code only with trusted participants.
+
+Please keep this code secure. Anyone with this code can attempt to access
+private elections created under your account.
+
+If you did not create this admin account, please contact support immediately.
+
+Best regards,
+VoteCentral Team
+Secure • Verified • One Vote Per User
+"""
+    }
+
+def voter_otp_email(otp):
+    return {
+        "subject": "VoteCentral – Voting OTP Verification",
+        "body": f"""
+Hello,
+
+You are attempting to access a VoteCentral election.
+
+Please use the One-Time Password (OTP) below to continue:
+
+Voting OTP: {otp}
+
+This OTP is valid for 5 minutes.
+Do not share this code with anyone.
+
+If you did not request this, you can safely ignore this email.
+
+Regards,
+VoteCentral Voting System
+Secure • Verified • One Vote Per User
+"""
+    }
+def resend_otp_email(otp, purpose):
+    return {
+        "subject": f"VoteCentral – {purpose} OTP",
+        "body": f"""
+Hello,
+
+You requested a new OTP for {purpose.lower()}.
+
+OTP Code: {otp}
+
+This OTP is valid for 5 minutes.
+For security reasons, never share this code.
+
+Regards,
+VoteCentral Security Team
+Secure • Verified • One Vote Per User
+"""
+    }
 
 # -------------------------------------------------
 # DATABASE MODELS
@@ -244,6 +421,8 @@ class OTPStore(db.Model):
 with app.app_context():
     db.create_all()
 
+USERNAME_REGEX = re.compile(r'^(?!_)[a-z0-9_]{1,15}(?<!_)$')
+PASSWORD_REGEX = re.compile(r'^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$')
 
 # -------------------------------------------------
 # HOME / LOGIN PAGE
@@ -261,7 +440,8 @@ def index():
 @app.route("/admin/login", methods=["POST"])
 def admin_login():
 
-    username = request.form["username"]
+    username = request.form["username"].strip().lower()
+
     password = request.form["password"]
 
     admin = Admin.query.filter_by(username=username).first()
@@ -274,6 +454,20 @@ def admin_login():
     session["admin_id"] = admin.id
     return redirect("/admin/dashboard")
 
+from flask import jsonify
+
+@app.route("/admin/check-username")
+def check_username():
+    username = (request.args.get("username") or "").strip().lower()
+
+    if not USERNAME_REGEX.match(username):
+        return jsonify(valid=False)
+
+    exists = Admin.query.filter_by(username=username).first()
+    return jsonify(
+        valid=True,
+        available=not bool(exists)
+    )
 
 # -------------------------------------------------
 # ADMIN REGISTRATION (OTP FLOW)
@@ -283,14 +477,36 @@ def admin_login():
 def admin_register():
 
     name     = request.form.get("name", "").strip()
-    username = request.form.get("username", "").strip()
+    name = name.title()
+    username = request.form.get("username", "").strip().lower()
     mobile   = request.form.get("mobile", "").strip()
     email    = request.form.get("email", "").strip()
     password = request.form.get("password", "")
     confirm  = request.form.get("confirm", "")
-
+    
     # ---- preserve entered values ----
     session["register_form"] = request.form
+    if not USERNAME_REGEX.match(username):
+        flash(
+            "Username must be lowercase, letters/numbers/underscore only, "
+            "max 15 characters, and not start or end with underscore",
+            "admin_register_error"
+        )
+        return render_template(
+            "login.html",
+            open_panel="register",
+            form=request.form
+        )
+    if not PASSWORD_REGEX.match(password):
+        flash(
+            "Password must be at least 8 characters, include one uppercase letter and one special character",
+            "admin_register_error"
+        )
+        return render_template(
+            "login.html",
+            open_panel="register",
+            form=request.form
+        )
 
     # ---- password mismatch ----
     if password != confirm:
@@ -325,12 +541,14 @@ def admin_register():
     otp = generate_otp()
     store_new_otp(email, otp, "admin_register")
 
-    send_otp_email(
-        email,
-        "Your OTP Code",
-        f"<h2>Your OTP is {otp}</h2><p>Valid for 5 minutes.</p>",
-        text=f"Your OTP is {otp}"
+    email_data = admin_register_otp_email(name, otp)
+    send_vote_central_email(
+        to_email=email,
+        subject=email_data["subject"],
+        body=email_data["body"]
     )
+
+
 
 
     # ---- prepare admin (not saved yet) ----
@@ -375,7 +593,7 @@ def verify_otp():
         return redirect("/verify-otp")
 
     # ---- expired ----
-    if record.expires_at < datetime.utcnow():
+    if ensure_utc(record.expires_at) < datetime.now(timezone.utc):
         flash("OTP expired — request a new one", "otp_error")
         return redirect("/voter/otp")
 
@@ -385,28 +603,27 @@ def verify_otp():
     db.session.commit()
 
     # ---- create admin ----
+    admin_code = generate_admin_code()
+
     new_admin = Admin(
         name=pending["name"],
         username=pending["username"],
         mobile=pending["mobile"],
         email=pending["email"],
         password=pending["password"],
-        admin_code=generate_admin_code()
+        admin_code=admin_code
     )
 
     db.session.add(new_admin)
     db.session.commit()
 
-    send_otp_email(
-        new_admin.email,
-        "Admin Account Created",
-        f"""
-        <h2>Welcome {new_admin.name}</h2>
-        <p><b>Username:</b> {new_admin.username}</p>
-        <p><b>Admin Code:</b> {new_admin.admin_code}</p>
-        """,
-        text=f"Username: {new_admin.username}, Admin Code: {new_admin.admin_code}"
+    email_data = private_admin_code_email(admin_code)
+    send_vote_central_email(
+        to_email=email,
+        subject=email_data["subject"],
+        body=email_data["body"]
     )
+
 
     # cleanup
     session.pop("pending_admin", None)
@@ -441,10 +658,11 @@ def admin_forgot_password():
 
         store_new_otp(email, otp, "admin_reset")
 
-        send_otp_email(
-            email,
-            "Admin Password Reset OTP",
-            f"Your OTP to reset password is: {otp}"
+        email_data = admin_reset_otp_email(admin.name, otp)
+        send_vote_central_email(
+            to_email=admin.email,
+            subject=email_data["subject"],
+            body=email_data["body"]
         )
 
         session["reset_email"] = email
@@ -477,7 +695,7 @@ def admin_reset_verify():
         flash("Invalid or expired OTP. Please try again.", "otp_error")
         return redirect("/verify-otp?context=reset")
 
-    if record.expires_at < datetime.utcnow():
+    if ensure_utc(record.expires_at) < datetime.now(timezone.utc):
         flash("OTP expired — request new reset link", "otp_error")
         return redirect("/")
 
@@ -506,9 +724,19 @@ def admin_reset_password():
         flash("Account not found", "otp_error")
         return redirect("/")
 
-    password = request.form["password"]
-    confirm  = request.form["confirm"]
+    # ✅ DEFINE VARIABLES FIRST
+    password = request.form.get("password", "")
+    confirm  = request.form.get("confirm", "")
 
+    # ---- password strength ----
+    if not PASSWORD_REGEX.match(password):
+        flash(
+            "Password must be at least 8 characters, include one uppercase letter and one special character",
+            "otp_error"
+        )
+        return redirect("/?panel=reset")
+
+    # ---- match check ----
     if password != confirm:
         flash("Passwords do not match", "otp_error")
         return redirect("/?panel=reset")
@@ -521,9 +749,7 @@ def admin_reset_password():
     session.pop("reset_email", None)
     session.pop("otp_context", None)
 
-    # ✅ SUCCESS MESSAGE (correct category)
     flash("Password updated successfully. Please login.", "admin_login_success")
-
     return redirect("/")
 
 from flask import jsonify
@@ -540,10 +766,13 @@ def admin_profile_update():
 
     data = request.get_json() or {}
 
-    name = (data.get("name") or "").strip()
-    username = (data.get("username") or "").strip()
+    name = (data.get("name") or "").strip().title()
+    username = (data.get("username") or "").strip().lower()
+
     mobile = (data.get("mobile") or "").strip()
     whatsapp = (data.get("whatsapp") or "").strip()
+    if not USERNAME_REGEX.match(username):
+        return jsonify(success=False, message="Invalid username format")
 
     # ---- basic validation ----
     if not name or not username:
@@ -567,6 +796,18 @@ def admin_profile_update():
     db.session.commit()
 
     return jsonify(success=True)
+@app.route("/admin/check-email")
+def check_email():
+    email = (request.args.get("email") or "").strip().lower()
+
+    if "@" not in email or "." not in email:
+        return jsonify(valid=False)
+
+    exists = Admin.query.filter_by(email=email).first()
+    return jsonify(
+        valid=True,
+        available=not bool(exists)
+    )
 
 @app.route("/admin/reset-resend")
 def admin_reset_resend():
@@ -579,7 +820,15 @@ def admin_reset_resend():
     otp = generate_otp()
     store_new_otp(email, otp, "admin_reset")
 
-    send_otp_email(email, "Admin Password Reset OTP", f"Your OTP is {otp}")
+    admin = Admin.query.filter_by(email=email).first()
+
+    email_data = admin_reset_otp_email(admin.name if admin else "Admin", otp)
+    send_vote_central_email(
+        to_email=email,
+        subject=email_data["subject"],
+        body=email_data["body"]
+    )
+
 
     flash("New OTP sent to your email", "otp_success")
     return redirect("/verify-otp?context=reset")
@@ -596,7 +845,13 @@ def voter_resend_otp():
     otp = generate_otp()
     store_new_otp(email, otp, role)
 
-    send_otp_email(email, "Voting Login OTP", f"Your new OTP is {otp}")
+    email_data = voter_otp_email(otp)
+    send_vote_central_email(
+        to_email=email,
+        subject=email_data["subject"],
+        body=email_data["body"]
+    )
+
 
     flash("A new OTP has been sent", "otp_success")
     return redirect("/voter/otp")
@@ -613,7 +868,13 @@ def admin_register_resend():
     otp = generate_otp()
     store_new_otp(email, otp, "admin_register")
 
-    send_otp_email(email, "Admin Registration OTP", f"Your OTP is {otp}")
+    email_data = resend_otp_email(otp, "Admin Registration")
+    send_vote_central_email(
+        to_email=email,
+        subject=email_data["subject"],
+        body=email_data["body"]
+    )
+
 
     flash("New OTP sent to your email", "otp_success")
     return redirect("/verify-otp")
@@ -634,7 +895,13 @@ def voter_public_login():
     otp = generate_otp()
     store_new_otp(email, otp, "voter_public")
 
-    send_otp_email(email, "Voting Login OTP", f"Your OTP is {otp}")
+    email_data = voter_otp_email(otp)
+    send_vote_central_email(
+        to_email=email,
+        subject=email_data["subject"],
+        body=email_data["body"]
+    )
+
 
     session["voter_email"] = email
 
@@ -665,7 +932,13 @@ def voter_private_login():
     otp = generate_otp()
     store_new_otp(email, otp, "voter_private", admin.id)
 
-    send_otp_email(email, "Private Voting OTP", f"Your OTP is {otp}")
+    email_data = voter_otp_email(otp)
+    send_vote_central_email(
+        to_email=email,
+        subject=email_data["subject"],
+        body=email_data["body"]
+    )
+
 
     session["voter_email"] = email
     session["voter_admin_id"] = admin.id
@@ -705,7 +978,7 @@ def voter_verify():
 
         return redirect("/voter/otp")
 
-    if record.expires_at < datetime.utcnow():
+    if ensure_utc(record.expires_at) < datetime.now(timezone.utc):
         flash("OTP expired — request a new OTP", "otp_error")
         return redirect("/")
     # OTP verified — delete it permanently
@@ -950,7 +1223,7 @@ def view_election(eid):
 
     email = session["voter_email"]
     election = Election.query.get_or_404(eid)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # 🚫 Block viewing private elections of other admins
     if election.election_type == "private" and "voter_admin_id" in session:
@@ -1066,8 +1339,8 @@ def cast_vote():
             election_id=election_id,
             candidate_id=candidate_id,
             email=email,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
         ))
         db.session.commit()
 
@@ -1077,11 +1350,11 @@ def cast_vote():
     # -----------------------------
     # MODIFY WITHIN 45 SECONDS
     # -----------------------------
-    elapsed = (datetime.utcnow() - existing_vote.created_at).total_seconds()
+    elapsed = (datetime.now(timezone.utc) - existing_vote.created_at).total_seconds()
 
     if elapsed <= 45:
         existing_vote.candidate_id = candidate_id
-        existing_vote.updated_at = datetime.utcnow()
+        existing_vote.updated_at = datetime.now(timezone.utc)
         db.session.commit()
 
         flash(f"Vote updated. {int(45-elapsed)} seconds remaining.")
@@ -1326,26 +1599,59 @@ def admin_result_detail(eid):
 # -------------------------------------------------
 # CREATE ELECTION
 # -------------------------------------------------
-
+from datetime import datetime
+from datetime import datetime
 @app.route("/admin/create-election", methods=["POST"])
 def create_election():
 
+    if not require_admin_login():
+        return redirect("/")
+
     etype = request.form["type"]
+    name  = request.form["name"].strip()
 
-    start = request.form.get("start_time") or None
-    end   = request.form.get("end_time") or None
+    start_raw = request.form.get("start_time") or None
+    end_raw   = request.form.get("end_time") or None
 
-    # private requires time
-    if etype == "private" and (not start or not end):
-        flash("Private elections must have a start and end time")
+    try:
+        start = datetime.fromisoformat(start_raw) if start_raw else None
+        end   = datetime.fromisoformat(end_raw) if end_raw else None
+    except ValueError:
+        flash("Invalid date or time format. Please select a valid date and time.")
         return redirect("/admin/dashboard")
+
+    now = datetime.now()
+
+    # ---------------- VALIDATIONS ----------------
+
+    # ❌ Start time cannot be before creation time
+    if start and start < now:
+        flash("Start time cannot be in the past.")
+        return redirect("/admin/dashboard")
+
+    # ❌ End time must be after current time
+    if end and end <= now:
+        flash("End time must be after the current time.")
+        return redirect("/admin/dashboard")
+
+    # ❌ Start must be before end
+    if start and end and start >= end:
+        flash("Start time must be before the end time.")
+        return redirect("/admin/dashboard")
+
+    # ❌ Private election requires both times
+    if etype == "private" and (not start or not end):
+        flash("Private elections must have both start and end time.")
+        return redirect("/admin/dashboard")
+
+    # ---------------- CREATE ----------------
 
     election = Election(
         admin_id=session["admin_id"],
-        name=request.form["name"],
+        name=name,
         election_type=etype,
-        start_time=start,
-        end_time=end
+        start_time=start.isoformat() if start else None,
+        end_time=end.isoformat() if end else None
     )
 
     if etype == "public":
@@ -1354,38 +1660,44 @@ def create_election():
     db.session.add(election)
     db.session.commit()
 
-    flash("Election created — add minimum 2 candidates")
+    flash(f"Election '{name}' created successfully.")
     return redirect("/admin/dashboard")
+
+
+
 
 
 
 # -------------------------------------------------
 # ADD CANDIDATE
 # -------------------------------------------------
-
 @app.route("/admin/add-candidate", methods=["POST"])
 def add_candidate():
 
-    election = Election.query.get(request.form["election_id"])
+    election = Election.query.get_or_404(request.form["election_id"])
 
-    if election_has_ended(election):
-        flash("Cannot add candidate — election already ended")
+    now = datetime.now()
+    start = datetime.fromisoformat(election.start_time) if election.start_time else None
+    end   = datetime.fromisoformat(election.end_time) if election.end_time else None
+
+    if start and now >= start:
+        flash("Cannot add candidates after election has started")
         return redirect("/admin/dashboard")
 
-    photo_filename = save_uploaded_file(request.files.get("photo"))
+    photo = save_uploaded_file(request.files.get("photo"))
 
     candidate = Candidate(
         election_id=election.id,
         name=request.form["name"].strip(),
-        party=request.form.get("party") or None,
-        description=request.form.get("description") or None,
-        photo=photo_filename
+        party=request.form.get("party"),
+        description=request.form.get("description"),
+        photo=photo
     )
 
     db.session.add(candidate)
     db.session.commit()
 
-    flash("Candidate added")
+    flash("Candidate added successfully")
     return redirect("/admin/dashboard")
 
 
@@ -1436,9 +1748,14 @@ def delete_candidate(cid):
         flash("Cannot delete candidate — election already ended")
         return redirect("/admin/dashboard")
 
-    if Vote.query.filter_by(candidate_id=cid).count() > 0:
-        flash("Cannot delete — votes exist")
+    if start and now >= start:
+        flash("Cannot delete candidate after election has started")
         return redirect("/admin/dashboard")
+
+    if Vote.query.filter_by(candidate_id=cid).count() > 0:
+        flash("Cannot delete candidate — votes already cast")
+        return redirect("/admin/dashboard")
+
 
     db.session.delete(candidate)
     db.session.commit()
@@ -1517,6 +1834,14 @@ def whitelist_remove(wid):
         return redirect("/admin/dashboard")
 
     election = Election.query.get(entry.election_id)
+    has_voted = Vote.query.filter_by(
+        election_id=election.id,
+        email=entry.email
+    ).first()
+
+    if has_voted:
+        flash("Cannot remove voter — this voter has already voted")
+        return redirect("/admin/dashboard")
 
     # 🚫 BLOCK if election already ended
     if election_has_ended(election):
@@ -1602,6 +1927,7 @@ def edit_election_time():
 
     flash("Election time updated")
     return redirect("/admin/dashboard")
+from datetime import datetime, timezone
 
 @app.route("/admin/election/update", methods=["POST"])
 def update_election():
@@ -1614,17 +1940,45 @@ def update_election():
 
     e.name = request.form["name"].strip()
 
-    e.start_time = request.form.get("start_time") or None
-    e.end_time   = request.form.get("end_time") or None
+    start_raw = request.form.get("start_time") or None
+    end_raw   = request.form.get("end_time") or None
 
-    if e.election_type == "private" and (not e.start_time or not e.end_time):
-        flash("Private elections must have a time period")
+    try:
+        start_new = datetime.fromisoformat(start_raw) if start_raw else None
+        end_new   = datetime.fromisoformat(end_raw) if end_raw else None
+    except ValueError:
+        flash("Invalid date/time format", "error")
         return redirect("/admin/dashboard")
+
+    now = datetime.now()
+
+    # ---- VALIDATION RULES ----
+
+    # Start time must be before end time
+    if start_new and end_new and start_new >= end_new:
+        flash("Start time must be before end time", "error")
+        return redirect("/admin/dashboard")
+
+    # End time must always be in the future
+    if end_new and end_new <= now:
+        flash("End time must be after the current time", "error")
+        return redirect("/admin/dashboard")
+
+    # Private election must have both times
+    if e.election_type == "private" and (not start_new or not end_new):
+        flash("Private elections must have a valid start and end time", "error")
+        return redirect("/admin/dashboard")
+
+    # ---- SAVE ----
+    e.start_time = start_new.isoformat() if start_new else None
+    e.end_time   = end_new.isoformat() if end_new else None
 
     db.session.commit()
 
-    flash("Election updated")
+    flash("Election updated successfully")
     return redirect("/admin/dashboard")
+
+
 
 @app.route("/admin/whitelist/bulk-add", methods=["POST"])
 def whitelist_bulk_add():

@@ -1861,7 +1861,11 @@ input:focus,select:focus,textarea:focus{
 <div id="manageCandidatesModal" class="modal">
   <div class="modal-box">
     <h3 id="mcTitle">Manage Candidates</h3>
-    <form method="POST" action="/admin/add-candidate" enctype="multipart/form-data">
+    <form method="POST"
+      action="/admin/add-candidate"
+      enctype="multipart/form-data"
+      onsubmit="return handleCandidateImageSubmit(this)">
+
       <input type="hidden" id="mcElectionId" name="election_id">
       <input name="name" placeholder="Candidate name" required>
       <input name="party" placeholder="Party">
@@ -1879,7 +1883,10 @@ input:focus,select:focus,textarea:focus{
 <div id="editCandidateModal" class="modal">
   <div class="modal-box">
     <h3>Edit Candidate</h3>
-    <form method="POST" action="/admin/candidate/update" enctype="multipart/form-data">
+  <form method="POST"
+        action="/admin/candidate/update"
+        enctype="multipart/form-data"
+        onsubmit="return handleCandidateImageSubmit(this)">
       <input type="hidden" id="editCandidateId" name="candidate_id">
       <input id="editCandidateName" disabled>
       <input id="editCandidateParty" name="party">
@@ -2676,7 +2683,7 @@ function saveProfile(){
     return;
   }
 
-  const name = nameEl.value.trim();
+  const name = toTitleCase(nameEl.value.trim());
   const username = userEl.value.trim();
   const mobile = mobEl.value.trim();
   const whatsapp = waEl.value.trim();
@@ -2822,7 +2829,52 @@ function confirmLogout(){
   localStorage.removeItem("admin_modal");
   window.location.href = "/logout";
 }
+function toTitleCase(str){
+  return str
+    .toLowerCase()
+    .split(" ")
+    .filter(w => w.length > 0)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 </script>
+<script>
+function validateSquareImage(file, callback){
+  if(!file) return callback(true);
+
+  const img = new Image();
+  const reader = new FileReader();
+
+  reader.onload = e => {
+    img.onload = () => {
+      if(img.width !== img.height){
+        showAlert("Image must be a square (1:1 ratio). Please upload a proper image.");
+        callback(false);
+      } else {
+        callback(true);
+      }
+    };
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(file);
+}
+</script>
+<script>
+function handleCandidateImageSubmit(form){
+  const fileInput = form.querySelector("input[type='file']");
+  const file = fileInput?.files[0];
+
+  if(!file) return true; // no image → allow
+
+  validateSquareImage(file, ok => {
+    if(ok) form.submit();
+  });
+
+  return false; // stop default submit
+}
+</script>
+
 </body>
 </html>
