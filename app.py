@@ -32,102 +32,131 @@ UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+# -------------------------------------------------
+# EMAIL CONFIG
+# -------------------------------------------------
 
-# 1. Get your API Key from https://www.promailer.xyz/
-# 2. Add PROMAIL_API_KEY to Render Environment Variables
 PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
+PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
+
+SMTP_EMAIL = "control.your.voting@gmail.com"
+SMTP_PASSWORD = "sydpdtgkauovfiee"
+
+USE_PROMAIL = True   # 🔁 switch here if needed
+
+
+# -------------------------------------------------
+# OTP EMAIL (ProMailer preferred, SMTP fallback)
+# -------------------------------------------------
 def send_otp_email(to, subject, html, text=None):
     """
-    Used ONLY for OTP-related emails (admin, voter, reset, resend)
+    Used ONLY for OTP emails
     """
-    if not PROMAIL_API_KEY:
-        print("ERROR: PROMAIL_API_KEY missing")
-        return False
 
-    payload = {
-        "to": to,
-        "subject": subject,
-        "html": html,
-        "from": PROMAIL_SENDER
-    }
+    # ---------- ProMailer ----------
+    if USE_PROMAIL and PROMAIL_API_KEY:
+        payload = {
+            "to": to,
+            "subject": subject,
+            "html": html
+        }
 
-    if text:
-        payload["text"] = text
+        if text:
+            payload["text"] = text
 
+        try:
+            r = requests.post(
+                PROMAIL_URL,
+                headers={
+                    "Authorization": f"Bearer {PROMAIL_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json=payload,
+                timeout=10
+            )
+
+            print("ProMailer OTP:", r.status_code, r.text)
+
+            if r.status_code == 200:
+                return True
+
+        except Exception as e:
+            print("ProMailer OTP Exception:", e)
+
+    # ---------- SMTP FALLBACK ----------
     try:
-        r = requests.post(
-            PROMAIL_URL,
-            headers={
-                "Authorization": f"Bearer {PROMAIL_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json=payload,
-            timeout=10
-        )
-
-        if r.status_code == 200:
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.starttls()
+            smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
+            message = f"Subject: {subject}\n\n{text or html}"
+            smtp.sendmail(SMTP_EMAIL, to, message)
             return True
-
-        print("ProMailer error:", r.status_code, r.text)
-        return False
-
     except Exception as e:
-        print("ProMailer exception:", e)
+        print("SMTP OTP ERROR:", e)
         return False
 
+
+# -------------------------------------------------
+# SYSTEM EMAIL (Admin codes, notices)
+# -------------------------------------------------
 def send_vote_central_email(to_email, subject, body):
     """
-    Used for ALL non-OTP system emails (admin code, confirmations, notices)
+    Used for NON-OTP emails
     """
 
-    if not PROMAIL_API_KEY:
-        print("ERROR: PROMAIL_API_KEY missing")
-        return False
-
-    # Convert plain text body → clean HTML
     html = body.replace("\n", "<br>")
 
-    payload = {
-        "to": to_email,
-        "subject": subject,
-        "html": f"""
-        <div style="font-family:Arial,Helvetica,sans-serif;
-                    font-size:14px;
-                    line-height:1.6;
-                    color:#111;">
-            {html}
-            <br><br>
-            <hr style="border:none;border-top:1px solid #ddd">
-            <small style="color:#666">
-                VoteCentral · Secure · Verified · One Vote Per User
-            </small>
-        </div>
-        """,
-        "text": body,
-        "from": PROMAIL_SENDER
-    }
+    # ---------- ProMailer ----------
+    if USE_PROMAIL and PROMAIL_API_KEY:
+        payload = {
+            "to": to_email,
+            "subject": subject,
+            "html": f"""
+            <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">
+                {html}
+                <br><br>
+                <hr>
+                <small>VoteCentral · Secure · Verified · One Vote Per User</small>
+            </div>
+            """,
+            "text": body
+        }
 
+        try:
+            r = requests.post(
+                PROMAIL_URL,
+                headers={
+                    "Authorization": f"Bearer {PROMAIL_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json=payload,
+                timeout=10
+            )
+
+            print("ProMailer SYS:", r.status_code, r.text)
+
+            if r.status_code == 200:
+                return True
+
+        except Exception as e:
+            print("ProMailer SYS Exception:", e)
+
+    # ---------- SMTP FALLBACK ----------
     try:
-        r = requests.post(
-            PROMAIL_URL,
-            headers={
-                "Authorization": f"Bearer {PROMAIL_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json=payload,
-            timeout=10
-        )
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.starttls()
+            smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
+            message = f"""From: VoteCentral <{SMTP_EMAIL}>
+To: {to_email}
+Subject: {subject}
 
-        if r.status_code == 200:
+{body}
+"""
+            smtp.sendmail(SMTP_EMAIL, to_email, message)
             return True
-
-        print("ProMailer error:", r.status_code, r.text)
-        return False
-
     except Exception as e:
-        print("ProMailer exception:", e)
+        print("SMTP SYS ERROR:", e)
         return False
-
 
 
 # 1. Get your API Key from https://www.promailer.xyz/
