@@ -36,7 +36,7 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # EMAIL CONFIG
 # -------------------------------------------------
 
-PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
+PROMAIL_API_KEY = "ee34a2c8-2dfa-44e8-862e-d7124cbadfb4"
 PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 
 SMTP_EMAIL = "control.your.voting@gmail.com"
@@ -1289,7 +1289,8 @@ def view_election(eid):
     remaining_seconds = 0
 
     if voted:
-        elapsed = (now - voted.created_at).total_seconds()
+        elapsed = (now - ensure_utc(voted.created_at)).total_seconds()
+
         if elapsed < LOCK_SECONDS:
             can_change = True
             remaining_seconds = int(LOCK_SECONDS - elapsed)
@@ -1300,8 +1301,9 @@ def view_election(eid):
     start_time = datetime.fromisoformat(election.start_time) if election.start_time else None
     end_time   = datetime.fromisoformat(election.end_time) if election.end_time else None
 
-    has_started = start_time and now >= start_time
-    has_ended   = end_time and now > end_time
+    has_started = start_time and now >= ensure_utc(start_time)
+    has_ended   = end_time and now > ensure_utc(end_time)
+
 
     return render_template(
         "single_election.html",
