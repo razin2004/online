@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="230"
+     height="36"
+     viewBox="0 0 230 36"
+     role="img"
+     aria-label="VoteCentral logo">
+
+  <!-- ICON -->
+  <g transform="translate(0,4)">
+    <!-- finger -->
+    <rect x="5" y="0" width="10" height="24" rx="5" fill="#2563eb"/>
+    <!-- check mark -->
+    <path d="M8 12l3 3 6-7"
+          fill="none"
+          stroke="#ffffff"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+  </g>
+
+  <!-- TEXT -->
+  <text x="24"
+        y="25"
+        font-size="24"
+        font-weight="700"
+        font-family="Segoe UI, Arial, sans-serif"
+        fill="#ffffff">
+    Vote<tspan fill="#2563eb">Central</tspan>
+  </text>
+</svg>

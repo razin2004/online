@@ -33,49 +33,20 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # -------------------------------------------------
 # SMTP — GMAIL OTP SETUP
 # -------------------------------------------------
-# 1. Get your API Key from https://www.promailer.xyz/
-# 2. Add PROMAIL_API_KEY to Render Environment Variables
-PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
-def send_otp_email(to, subject, html, text=None):
-    if not PROMAIL_API_KEY:
-        print("ERROR: PROMAIL_API_KEY missing")
-        return False
 
-    url = "https://mailserver.automationlounge.com/api/v1/messages/send"
+SMTP_EMAIL = "control.your.voting@gmail.com"
+SMTP_PASSWORD = "sydpdtgkauovfiee"
 
-    headers = {
-        "Authorization": f"Bearer {PROMAIL_API_KEY}",
-        "Content-Type": "application/json"
-    }
 
-    payload = {
-        "to": to,
-        "subject": subject,
-        "html": html
-    }
-
-    # optional plain text fallback
-    if text:
-        payload["text"] = text
-
+def send_otp_email(to, subject, text):
     try:
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=10
-        )
-
-        print("ProMailer status:", response.status_code)
-        print("ProMailer response:", response.text)
-
-        if response.status_code == 200:
-            return True
-        return False
-
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.starttls()
+            smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
+            message = f"Subject: {subject}\n\n{text}"
+            smtp.sendmail(SMTP_EMAIL, to, message)
     except Exception as e:
-        print("ProMailer Exception:", e)
-        return False
+        print("SMTP ERROR:", e)
 
 
 
@@ -368,7 +339,7 @@ def verify_otp():
 
     # ---- invalid ----
     if not record or record.code != otp:
-        flash("Invalid OTP", "otp_error")
+        flash("Invalid or expired OTP. Please try again.", "otp_error")
         return redirect("/verify-otp")
 
     # ---- expired ----
@@ -471,7 +442,7 @@ def admin_reset_verify():
     ).order_by(OTPStore.id.desc()).first()
 
     if not record or record.code != otp:
-        flash("Invalid OTP", "otp_error")
+        flash("Invalid or expired OTP. Please try again.", "otp_error")
         return redirect("/verify-otp?context=reset")
 
     if record.expires_at < datetime.utcnow():
@@ -698,7 +669,7 @@ def voter_verify():
     ).order_by(OTPStore.id.desc()).first()
 
     if not record or record.code != otp:
-        flash("Invalid OTP", "otp_error")
+        flash("Invalid or expired OTP. Please try again.", "otp_error")
 
         return redirect("/voter/otp")
 
@@ -710,7 +681,7 @@ def voter_verify():
     db.session.commit()
 
     if not record:
-        flash("Invalid OTP", "otp_error")
+        flash("Invalid or expired OTP. Please try again.", "otp_error")
 
         return redirect("/voter/otp")
 
@@ -1676,9 +1647,15 @@ def logout():
 
 # -------------------------------------------------
 if __name__ == "__main__":
+    # Get port from environment or default to 5000
     port = int(os.environ.get("PORT", 5000))
+    
+    # Check if we are running on Render (Render sets the 'RENDER' env var to 'true')
+    # If not on Render, debug will be True for your local VS Code
+    is_on_render = os.environ.get("RENDER") == "true"
+    
     app.run(
         host="0.0.0.0",
         port=port,
-        debug=False
+        debug=not is_on_render
     )

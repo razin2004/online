@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Admin — Election Results</title>
+    <title>VoteCentral — Election Results</title>
     <style>
         :root {
             --bg: #020617;
@@ -23,7 +24,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
             background: rgba(11, 18, 32, 0.5);
             backdrop-filter: var(--glass);
             border-bottom: 1px solid var(--border);
@@ -124,13 +125,59 @@
             .mobile-card { display: block; }
             .nav-header h2 { font-size: 18px; }
         }
+        .brand-title{
+  font-weight:800;
+  letter-spacing:.3px;
+}
+.brand-vote{ color:#ffffff; }
+.brand-central{ color:#3b82f6; }
+.header-title-group{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+}
+
+/* hidden by default */
+.mobile-title-logo{
+    height: 40px;
+}
+/* mobile only */
+@media (max-width:768px){
+  .mobile-title-logo{
+    height:38px;
+    margin-bottom:-10px;
+  }
+}
+.icon{
+  width:14px;
+  height:14px;
+  fill:currentColor;
+  margin-right:6px;
+  vertical-align:middle;
+}
+.media-box{
+  width:100%;
+  aspect-ratio:1/1;
+  overflow:hidden;
+  border-radius:12px;
+}
+.media-box img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
     </style>
 </head>
 <body>
-
 <nav class="nav-header">
-    <h2>Election Central</h2>
-    <a href="/admin/dashboard" class="btn-dash">Dashboard</a>
+  <div class="header-title-group">
+    <img src="/static/uploads/votecentral-logo.svg"
+         class="mobile-title-logo"
+         alt="VoteCentral">
+  </div>
+
+  <a href="/admin/dashboard" class="btn-dash">Dashboard</a>
 </nav>
 
 <div class="container">
@@ -169,7 +216,13 @@
                     <td>{{ e.total_votes }}</td>
                     <td>
                         {% if e.can_open %}
-                            <a href="/admin/results/{{ e.id }}"><button class="btn-open">Open</button></a>
+                            <a href="/admin/results/{{ e.id }}"><button class="btn-open">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M5 12h14M13 5l6 7-6 7"/>
+  </svg>
+  Open
+</button>
+</a>
                         {% else %}
                             <button class="btn-locked" onclick="showReason('{{ e.reason }}')">Locked</button>
                         {% endif %}
@@ -205,14 +258,17 @@
 </div>
 
 <script>
-    function showReason(msg) {
-        document.getElementById('reasonText').innerText = msg;
-        document.getElementById('modalOverlay').style.display = 'flex';
-    }
+function showReason(msg) {
+  document.getElementById('reasonText').innerText = msg;
+  document.getElementById('modalOverlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
 
-    function closeModal() {
-        document.getElementById('modalOverlay').style.display = 'none';
-    }
+function closeModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
 
     // Filter Logic
     const searchBox = document.getElementById("searchBox");

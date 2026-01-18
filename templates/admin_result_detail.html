@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ election.name }} — Admin Result</title>
+    <title>VoteCentral — {{ election.name }} Results</title>
     <style>
         :root {
             --bg: #020617;
@@ -133,15 +134,58 @@
             .title { font-size: 1rem; }
             .cand-photo { width: 60px; height: 60px; }
         }
+        .brand-vote{ color:#ffffff; }
+.brand-central{ color:#3b82f6; }
+
+/* logo hidden by default */
+.brand-logo-mobile{
+  display:none;
+}
+
+/* mobile-only logo above title */
+@media (max-width:600px){
+  .brand-logo-mobile{
+    display:block;
+    height:22px;
+    margin-bottom:2px;
+  }
+}
+.media-box{
+  width:80px;
+  aspect-ratio:1/1;
+  border-radius:14px;
+  overflow:hidden;
+  background:#0f172a;
+  flex-shrink:0;
+}
+.media-box img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+@media (max-width:600px){
+  .media-box{ width:60px; }
+}
+.icon{
+  width:14px;
+  height:14px;
+  fill:currentColor;
+  margin-right:6px;
+  vertical-align:middle;
+}
+
     </style>
 </head>
 <body>
 
 <nav class="topbar">
-    <div class="topbar-brand">
-        <div class="title">Admin Panel</div>
-        <div class="sub">{{ election.name }}</div>
-    </div>
+<div class="topbar-brand">
+  <div class="title">
+    <span class="brand-vote">Vote</span><span class="brand-central">Central</span>
+  </div>
+  <div class="sub">{{ election.name }}</div>
+</div>
+
     <a href="/admin/dashboard" class="btn-nav">Dashboard</a>
 </nav>
 
@@ -184,7 +228,9 @@
                     </span>
                 {% endif %}
 
-                <img src="/static/uploads/{{ r.photo if r.photo else 'default.png' }}" class="cand-photo">
+<div class="media-box">
+  <img src="/static/uploads/{{ r.photo if r.photo else 'default.png' }}">
+</div>
                 
                 <div class="cand-info">
                     <div class="cand-name">{{ r.name }}</div>
@@ -208,9 +254,13 @@
     </div>
 
     <div style="text-align: center; margin-top: 10px;">
-        <a href="/admin/results" style="color: var(--text-dim); font-size: 0.9rem; text-decoration: none;">
-            &larr; Back to Results List
-        </a>
+        <a href="/admin/results" style="color:var(--text-dim);font-size:0.9rem;text-decoration:none;">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M15 18l-6-6 6-6"/>
+  </svg>
+  Back to Results List
+</a>
+
     </div>
 
 </div>

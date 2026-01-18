@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
+
 <meta charset="UTF-8" />
-<title>OTP Verification — Secure Access</title>
+<title>VoteCentral — OTP Verification</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
@@ -64,6 +66,18 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
 .link-text a:hover{text-decoration:underline;}
 
 .divider{height:1px;margin:12px 0;background:#1f2937;}
+.brand-title{
+  text-align:center;
+  font-weight:800;
+  letter-spacing:.3px;
+}
+.brand-vote{ color:#ffffff; }
+.brand-central{ color:#3b82f6; }
+.btn:disabled{
+  opacity:.7;
+  cursor:not-allowed;
+}
+
 </style>
 </head>
 
@@ -72,8 +86,17 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
 {% set messages = get_flashed_messages(with_categories=True) %}
 
 <div class="container">
+<div style="text-align:center;margin-bottom:0px;margin-left:50px;height:23px;">
+  <img
+    src="/static/uploads/votecentral-logo.svg"
+    alt="VoteCentral"
+    style="height:26px"
+  >
+</div>
 
-  <h2>🔐 OTP Verification</h2>
+  
+<p class="sub">OTP Verification</p>
+
 
   {% if context == "reset" %}
     <p class="sub">Enter the OTP sent to your admin email to continue.</p>
@@ -190,8 +213,11 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
 
 {# PASSWORD RESET CONFIRMATION STATE #}
 
-<h2>✔ OTP Verified</h2>
-<p class="sub">Create your new secure password.</p>
+<h2 class="brand-title">
+  <span class="brand-vote">Vote</span><span class="brand-central">Central</span>
+</h2>
+<p class="sub">OTP Verified — Create New Password</p>
+
 
 <form method="POST" action="/admin/reset-password">
 
@@ -214,6 +240,13 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
 
 
 <script>
+  const otpInput = document.querySelector(".otp-input");
+if(otpInput){
+  otpInput.addEventListener("input",()=>{
+    otpInput.value = otpInput.value.replace(/\D/g,"").slice(0,6);
+  });
+}
+
 const form = document.getElementById("otpForm");
 const btn = document.getElementById("verifyBtn");
 

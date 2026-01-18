@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
 <meta charset="UTF-8" />
-<title>Admin Panel | Secure Vote</title>
+<title>VoteCentral — Admin Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -22,8 +23,9 @@
   --card-bg:rgba(30,41,59,.72);
   --card-bg-hover:rgba(30,41,59,.88);
   --border:rgba(148,163,184,.12);
+  --brand-blue:#2563eb;
+  --blue:var(--brand-blue);
 
-  --blue:#38bdf8;
   --indigo:#6366f1;
   --green:#10b981;
   --red:#ef4444;
@@ -824,7 +826,7 @@ input:focus,select:focus,textarea:focus{
 @media (max-width: 768px){
 
   .top-header{
-    height:58px;
+    height:70px;
     padding:0 14px;
     position:sticky;
     top:0;
@@ -843,6 +845,29 @@ input:focus,select:focus,textarea:focus{
     font-size:10px;
   }
 }
+/* ================= MOBILE TITLE LOGO (SAFE) ================= */
+
+.header-title-group{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start; /* 🔑 left aligned */
+}
+
+/* hidden by default */
+.mobile-title-logo{
+  display:none;
+}
+
+/* mobile only */
+@media (max-width:768px){
+  .mobile-title-logo{
+    display:block;
+    height:35px;
+    margin-bottom:-5px; /* tiny gap above title */
+    margin-left: -4px;
+  }
+}
+
 @media (max-width: 768px){
 
   .election-grid{
@@ -1074,22 +1099,127 @@ input:focus,select:focus,textarea:focus{
   font-size:13px;
   padding:8px 16px;
 }
+.icon{
+  width:16px;
+  height:16px;
+  fill:currentColor;
+  flex-shrink:0;
+}
+.status-running{
+  background:rgba(37,99,235,.18);
+  color:#2563eb;
+}
+.card h3{
+  letter-spacing:.2px;
+}
+.filter-grid{
+  display:grid;
+  grid-template-columns:1fr 160px 160px;
+  gap:12px;
+}
+.media-box{
+  width:100%;
+  aspect-ratio:1/1;
+  overflow:hidden;
+  border-radius:12px;
+}
+.media-box img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
 
 
 </style>
 </head>
 
 <body>
+<!-- SVG ICON DEFINITIONS -->
+<svg style="display:none">
+
+  <!-- Alert icons -->
+  <symbol id="icon-alert-critical" viewBox="0 0 24 24">
+    <path d="M12 2 1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/>
+  </symbol>
+
+  <symbol id="icon-alert-warning" viewBox="0 0 24 24">
+    <path d="M12 2 1 21h22L12 2zm1 13h-2v-4h2v4zm0 4h-2v-2h2v2z"/>
+  </symbol>
+
+  <symbol id="icon-alert-info" viewBox="0 0 24 24">
+    <path d="M11 9h2V7h-2v2zm0 8h2v-6h-2v6zm1-14a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
+  </symbol>
+
+  <!-- Empty state icons -->
+  <symbol id="icon-ballot" viewBox="0 0 24 24">
+    <path d="M3 4h18v2H3V4zm2 4h14v12H5V8zm3 2v2h4v-2H8z"/>
+  </symbol>
+
+  <symbol id="icon-chart" viewBox="0 0 24 24">
+    <path d="M3 3h2v18H3V3zm6 6h2v12H9V9zm6-4h2v16h-2V5zm6 8h2v8h-2v-8z"/>
+  </symbol>
+
+  <symbol id="icon-user" viewBox="0 0 24 24">
+    <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm-8 9a8 8 0 0 1 16 0z"/>
+  </symbol>
+
+  <symbol id="icon-mail" viewBox="0 0 24 24">
+    <path d="M2 4h20v16H2V4zm10 7 8-5H4l8 5zm0 2-8-5v10h16V8l-8 5z"/>
+  </symbol>
+
+</svg>
 
 <!-- ================= SIDEBAR ================= -->
 <aside class="sidebar">
-  <div class="sidebar-brand">VOTEGUARD ADMIN</div>
+<div class="sidebar-brand">
+  <img
+    src="/static/uploads/votecentral-logo.svg"
+    alt="VoteCentral"
+    style="height:28px; display:block;"
+  >
+  <small style="display:block;font-size:11px;color:var(--muted);font-weight:600">
+    Admin Console
+  </small>
+</div>
+
+
   <ul class="nav-menu">
-    <li class="nav-item active" onclick="switchView('dashboard')">📊 Dashboard</li>
-    <li class="nav-item" onclick="switchView('overview')">👁️ Overview</li>
-    <li class="nav-item" onclick="switchView('elections')">🗳️ Elections</li>
-    <li class="nav-item" onclick="switchView('results')">🏆 Results</li>
-    <li class="nav-item" onclick="switchView('profile')">👤 Profile</li>
+    <li class="nav-item active" onclick="switchView('dashboard')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M3 13h8V3H3v10zm10 8h8V3h-8v18zM3 21h8v-6H3v6z"/>
+  </svg>
+  Dashboard
+</li>
+
+    <li class="nav-item" onclick="switchView('overview')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+  </svg>
+  Overview
+</li>
+
+    <li class="nav-item" onclick="switchView('elections')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M4 10h16v10H4V10zm8-8l6 4H6l6-4z"/>
+  </svg>
+  Elections
+</li>
+
+
+    <li class="nav-item" onclick="switchView('results')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M6 3h12v4a6 6 0 0 1-12 0V3zm3 18h6v-2H9v2zm-2-4h10v-2H7v2z"/>
+  </svg>
+  Results
+</li>
+
+    <li class="nav-item" onclick="switchView('profile')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm-8 9a8 8 0 0 1 16 0z"/>
+  </svg>
+  Profile
+</li>
+
   </ul>
 
   <div class="sidebar-footer">
@@ -1103,11 +1233,41 @@ input:focus,select:focus,textarea:focus{
 
 <!-- ================= MOBILE NAV ================= -->
 <nav class="mobile-nav">
-  <div class="m-nav-item" data-view="dashboard" onclick="switchView('dashboard')">📊<br>Dash</div>
-  <div class="m-nav-item" data-view="overview" onclick="switchView('overview')">👁️<br>View</div>
-  <div class="m-nav-item" data-view="elections" onclick="switchView('elections')">🗳️<br>Vote</div>
-  <div class="m-nav-item" data-view="results" onclick="switchView('results')">🏆<br>Win</div>
-  <div class="m-nav-item" data-view="profile" onclick="switchView('profile')">👤<br>Me</div>
+  <div class="m-nav-item" data-view="dashboard" onclick="switchView('dashboard')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M3 13h8V3H3v10zm10 8h8V3h-8v18zM3 21h8v-6H3v6z"/>
+  </svg>
+  <div>Dash</div>
+</div>
+
+  <div class="m-nav-item" data-view="overview" onclick="switchView('overview')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+  </svg>
+  <div>View</div>
+</div>
+
+  <div class="m-nav-item" data-view="elections" onclick="switchView('elections')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M4 10h16v10H4V10zm8-8l6 4H6l6-4z"/>
+  </svg>
+  <div>Vote</div>
+</div>
+
+  <div class="m-nav-item" data-view="results" onclick="switchView('results')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M6 3h12v4a6 6 0 0 1-12 0V3zm3 18h6v-2H9v2zm-2-4h10v-2H7v2z"/>
+  </svg>
+  <div>Win</div>
+</div>
+
+  <div class="m-nav-item" data-view="profile" onclick="switchView('profile')">
+  <svg class="icon" viewBox="0 0 24 24">
+    <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm-8 9a8 8 0 0 1 16 0z"/>
+  </svg>
+  <div>Me</div>
+</div>
+
 </nav>
 
 
@@ -1115,7 +1275,14 @@ input:focus,select:focus,textarea:focus{
 <main class="main-wrapper">
 
 <header class="top-header">
+  <div class="header-title-group">
+  <img
+    src="/static/uploads/votecentral-logo.svg"
+    alt="VoteCentral"
+    class="mobile-title-logo"
+  >
   <h2 id="view-title">Dashboard</h2>
+</div>
 
   <div id="header-actions" style="display:flex;gap:10px">
     <button
@@ -1254,7 +1421,7 @@ input:focus,select:focus,textarea:focus{
 {% for e in elections if e.is_running and e.total_votes == 0 %}
   {% set _ = alerts.append({
     "level": "critical",
-    "icon": "🔴",
+    "icon": "critical",
     "text": "Running election <b>" ~ e.name ~ "</b> has no votes yet",
     "action": "candidates",
     "id": e.id,
@@ -1268,7 +1435,7 @@ input:focus,select:focus,textarea:focus{
 {% for e in elections if e.election_type == "private" and e.whitelist|length == 0 %}
   {% set _ = alerts.append({
     "level": "warning",
-    "icon": "🟡",
+    "icon": "warning",
     "text": "Private election <b>" ~ e.name ~ "</b> has an empty whitelist",
     "action": "whitelist",
     "id": e.id,
@@ -1284,7 +1451,7 @@ input:focus,select:focus,textarea:focus{
   {% if (start_ts - datetime.now()).total_seconds() <= 86400 %}
     {% set _ = alerts.append({
       "level": "info",
-      "icon": "🔵",
+      "icon": "info",
       "text": "Election <b>" ~ e.name ~ "</b> starts within 24 hours",
       "action": "scroll",
       "id": e.id
@@ -1294,7 +1461,13 @@ input:focus,select:focus,textarea:focus{
 
 {% if alerts|length > 0 %}
 <div class="card">
-  <h3 style="color:var(--yellow)">⚠️ Attention Needed</h3>
+  <h3 style="display:flex;align-items:center;gap:8px">
+  <svg class="icon" viewBox="0 0 24 24">
+    <use href="#icon-alert-warning"></use>
+  </svg>
+  Attention Needed
+</h3>
+
 
   <ul style="margin-top:10px;line-height:1.8;list-style:none;padding-left:0">
     {% for a in alerts %}
@@ -1308,7 +1481,12 @@ input:focus,select:focus,textarea:focus{
           '{{ a.end|default('') }}'
         )"
       >
-        <span class="alert-icon">{{ a.icon }}</span>
+        <span class="alert-icon">
+  <svg class="icon" viewBox="0 0 24 24">
+    <use href="#icon-alert-{{ a.icon }}"></use>
+  </svg>
+</span>
+
         <span class="alert-text">{{ a.text | safe }}</span>
 
       </li>
@@ -1404,7 +1582,12 @@ input:focus,select:focus,textarea:focus{
 <section id="elections" class="view-container">
 {% if elections|length == 0 %}
 <div class="empty-state">
-  <div class="empty-icon">🗳️</div>
+  <div class="empty-icon">
+  <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
+    <use href="#icon-chart"></use>
+  </svg>
+</div>
+
   <div class="empty-title">No elections created</div>
   <div class="empty-text">
     Elections will appear here once you create one.
@@ -1503,16 +1686,6 @@ input:focus,select:focus,textarea:focus{
 <section id="results" class="view-container">
 {% set total_votes = elections | sum(attribute='total_votes') %}
 
-{% if total_votes == 0 %}
-<div class="empty-state">
-  <div class="empty-icon">📊</div>
-  <div class="empty-title">No votes recorded</div>
-  <div class="empty-text">
-    Voting has not started yet or no votes have been cast.
-    Results will appear automatically once voting begins.
-  </div>
-</div>
-{% endif %}
 
   <!-- FILTER BAR -->
   <div class="card">
@@ -1744,7 +1917,12 @@ input:focus,select:focus,textarea:focus{
 <div id="logoutConfirmModal" class="modal">
   <div class="modal-box" style="max-width:360px;text-align:center">
     
-    <div style="font-size:36px;margin-bottom:6px">🚪</div>
+    <div style="font-size:36px;margin-bottom:6px">
+      <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
+  <path d="M10 17v-2h4v-2h-4v-2l-3 3 3 3zm9-14H9v4h2V5h6v14h-6v-2H9v4h10V3z"/>
+</svg>
+
+    </div>
 
     <h3 style="margin-bottom:6px">Confirm Logout</h3>
 
@@ -1933,7 +2111,12 @@ function openManageCandidates(eid, name, start, end){
       if(!data.candidates.length){
         list.innerHTML = `
           <div class="empty-state">
-            <div class="empty-icon">👤</div>
+            <div class="empty-icon">
+  <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
+    <use href="#icon-user"></use>
+  </svg>
+</div>
+
             <div class="empty-title">No candidates added</div>
             <div class="empty-text">
               ${isEnded
@@ -2027,7 +2210,12 @@ function openWhitelist(eid, name, start, end){
       if(!data.whitelist.length){
         list.innerHTML = `
           <div class="empty-state">
-            <div class="empty-icon">📧</div>
+            <div class="empty-icon">
+  <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
+    <use href="#icon-mail"></use>
+  </svg>
+</div>
+
             <div class="empty-title">Whitelist is empty</div>
             <div class="empty-text">
               Only whitelisted voters can participate in this private election.
@@ -2411,7 +2599,7 @@ function handleResultAccess(id, type, start, end){
 
   // 🔒 Private election → only AFTER end
   if(type === "private" && status !== "ended"){
-    showAlert("This private election is not finished yet.");
+    showAlert("Results will be available once the private election ends.");
     return;
   }
 

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 32 32"
+     width="32"
+     height="32"
+     role="img"
+     aria-label="VoteCentral icon">
+
+  <rect x="11" y="4" width="10" height="24" rx="5" fill="#2563eb"/>
+
+  <path d="M13 16l3 3 6-7"
+        fill="none"
+        stroke="#ffffff"
+        stroke-width="2.4"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

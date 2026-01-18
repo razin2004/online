@@ -1,0 +1,27 @@
+<svg width="260" height="48" viewBox="0 0 260 48" fill="none"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- ICON: Ballot box -->
+  <g transform="translate(0,4)">
+    <!-- Box -->
+    <rect x="2" y="12" width="32" height="24" rx="4" fill="#2563eb"/>
+    <!-- Slot -->
+    <rect x="8" y="10" width="20" height="4" rx="2" fill="#ffffff"/>
+    <!-- Checkmark -->
+    <path d="M14 24L18 28L24 20"
+          stroke="#ffffff"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+  </g>
+
+  <!-- TEXT -->
+  <text x="44" y="32"
+        font-family="Plus Jakarta Sans, Segoe UI, Arial, sans-serif"
+        font-size="24"
+        font-weight="700"
+        letter-spacing="0.3">
+    <tspan fill="#ffffff">Vote</tspan><tspan fill="#2563eb">Central</tspan>
+  </text>
+
+</svg>

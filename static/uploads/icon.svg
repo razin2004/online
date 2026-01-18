@@ -1,0 +1,17 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Ballot box -->
+  <rect x="6" y="14" width="28" height="20" rx="4" fill="#2563eb"/>
+
+  <!-- Slot -->
+  <rect x="12" y="12" width="16" height="4" rx="2" fill="#ffffff"/>
+
+  <!-- Checkmark -->
+  <path d="M16 24L19.5 27.5L25 21"
+        stroke="#ffffff"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+</svg>

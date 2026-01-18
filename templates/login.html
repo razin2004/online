@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
 <meta charset="UTF-8" />
-<title>Online Voting System — Secure Access Portal</title>
+<title>VoteCentral — Secure Online Voting</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
@@ -75,7 +76,9 @@ h1{font-size:24px;margin-bottom:6px;}
   background:rgba(255,255,255,.08);
   color:#fff;
 }
-
+.mobile-header{
+  display:none;
+}
 /* ---------- BUTTONS ---------- */
 
 .btn{
@@ -88,8 +91,9 @@ h1{font-size:24px;margin-bottom:6px;}
   margin-top:12px;
 }
 
-.primary{background:#22c55e;}
-.primary:hover{background:#16a34a;}
+.primary { background:#2563eb; }
+.primary:hover { background:#1d4ed8; }
+
 
 .blue{background:#2563eb;}
 .blue:hover{background:#1d4ed8;}
@@ -383,10 +387,6 @@ h1{font-size:24px;margin-bottom:6px;}
    PREMIUM MOBILE HEADER (REPLACES DESKTOP WELCOME)
    ===================================================== */
 
-.mobile-header{
-  display:none;
-}
-
 @media (max-width: 900px){
 
   .mobile-header{
@@ -608,6 +608,57 @@ h1{font-size:24px;margin-bottom:6px;}
     overscroll-behavior: contain;
   }
 }
+.icon{
+  width:18px;
+  height:18px;
+  fill:currentColor;
+  vertical-align:middle;
+  margin-right:8px;
+}
+/* ================= BRAND LOGO ================= */
+
+.brand-logo{
+  display:block;
+  width:auto;
+}
+
+/* big logo for login / welcome panel */
+.brand-logo--hero{
+  height:48px;        /* ⬅ increase this value */
+  margin-bottom:-10px;
+  margin-left: 100px;
+}
+
+/* ================= MOBILE HEADER LOGO CENTERING ================= */
+
+.mobile-header{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:64px;
+  align-items:center;
+  justify-content:center;   /* logical center */
+  z-index:20000;
+}
+
+/* force true visual center */
+.mobile-header .mh-center{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+}
+
+/* logo size */
+.brand-logo--mobile{
+height: 35px;
+margin-bottom: -8px;
+margin-left: 75px;
+margin-top: 2px;
+}
+
+
+
 
 </style>
 </head>
@@ -616,10 +667,13 @@ h1{font-size:24px;margin-bottom:6px;}
 <!-- ========== MOBILE HEADER (MEDIA VIEW ONLY) ========== -->
 <div class="mobile-header">
  
-
   <div class="mh-center">
-    <div class="mh-title">Online Voting System</div>
-    <div class="mh-sub">Verified • One Vote Per User</div>
+<img src="/static/uploads/votecentral-logo.svg"
+     class="brand-logo brand-logo--mobile"
+     alt="VoteCentral">
+
+    <div class="mh-sub">Secure • Verified • One Vote Per Voter
+</div>
     <div class="mh-dots">
       <span data-panel="login"></span>
       <span data-panel="register"></span>
@@ -673,7 +727,8 @@ h1{font-size:24px;margin-bottom:6px;}
     <p class="sub">Please select your login mode to continue.</p>
 
     <h1>Admin Login</h1>
-    <p class="sub">Sign in to manage elections, candidates and results.</p>
+    <p class="sub">Sign in to manage elections, candidates, and results securely.
+</p>
 
     {% if messages %}
       {% for cat,msg in messages %}
@@ -734,7 +789,8 @@ h1{font-size:24px;margin-bottom:6px;}
     </button>
 
     <div style="margin-top:6px;font-size:12px;color:#9ca3af;">
-      You will receive an OTP to verify your identity before voting.
+      A one-time password (OTP) will be sent to verify your identity before voting.
+
     </div>
 
   </div>
@@ -752,12 +808,18 @@ h1{font-size:24px;margin-bottom:6px;}
 
     {% if messages %}
       {% for cat,msg in messages %}
-        {% if cat in ["admin_register_error","admin_register_success"] %}
-          <div style="background:#7f1d1d;border:1px solid #ef4444;
-          padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
+        {% if cat == "admin_register_error" %}
+          <div style="background:#7f1d1d;border:1px solid #ef4444;">
             {{ msg }}
           </div>
         {% endif %}
+
+        {% if cat == "admin_register_success" %}
+          <div style="background:#022c22;border:1px solid #22c55e;">
+            {{ msg }}
+          </div>
+        {% endif %}
+
       {% endfor %}
     {% endif %}
 
@@ -804,15 +866,23 @@ h1{font-size:24px;margin-bottom:6px;}
     <h1>Voter Login</h1>
     <p class="sub">Choose your election type and continue with OTP verification.</p>
 
-    <!-- PUBLIC ELECTION -->
-    <div class="option-box" id="optPublic">
-      🟢 Public Election — Open Participation
-    </div>
+<div class="option-box" id="optPublic">
+  <svg class="icon" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M8 12l3 3 5-6"/>
+  </svg>
+  Public Election — Open Participation
+</div>
 
-    <!-- PRIVATE ELECTION -->
-    <div class="option-box" id="optPrivate">
-      🔵 Private Election — Admin Approved Access
-    </div>
+
+<div class="option-box" id="optPrivate">
+  <svg class="icon" viewBox="0 0 24 24">
+    <rect x="5" y="11" width="14" height="10" rx="2"/>
+    <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+  </svg>
+  Private Election — Admin Approved Access
+</div>
+
 
     <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
       Want to switch back?
@@ -872,7 +942,10 @@ h1{font-size:24px;margin-bottom:6px;}
 
   <!-- RIGHT STATIC PANEL -->
   <div class="welcome">
-    <h2>Online Voting System</h2>
+   <img src="/static/uploads/votecentral-logo.svg"
+     class="brand-logo brand-logo--hero"
+     alt="VoteCentral">
+
     <p style="color:#cbd5e1;font-size:13px;">
       Secure • Verified • One Vote Per User
     </p>
@@ -1175,7 +1248,7 @@ if (window.innerWidth < 900) {
     };
 
     const panelTitles = {
-      login:    "Online Voting System",
+      login:    "VoteCentral",
       register: "Admin Registration",
       voter:    "Voter Access",
       reset:    "Password Reset"
