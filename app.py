@@ -11,7 +11,7 @@ from datetime import timezone
 
 from flask import (
     Flask, render_template, request, redirect,
-    session, flash
+    session, flash,url_for
 )
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -633,6 +633,21 @@ def verify_otp():
 
     # ---- create admin ----
     admin_code = generate_admin_code()
+    # 🚫 SAFETY CHECK — prevent duplicate admin creation
+    existing_admin = Admin.query.filter_by(email=pending["email"]).first()
+    if existing_admin:
+        # cleanup OTP + session to prevent loops
+        OTPStore.query.filter_by(
+            email=pending["email"],
+            role="admin_register"
+        ).delete()
+        db.session.commit()
+
+        session.pop("pending_admin", None)
+        session.pop("otp_context", None)
+
+        flash("This email is already registered. Please login.", "admin_login_error")
+        return redirect("/?panel=login")
 
     new_admin = Admin(
         name=pending["name"],
@@ -646,7 +661,11 @@ def verify_otp():
     db.session.add(new_admin)
     db.session.commit()
 
-    email_data = private_admin_code_email(admin_code)
+    email_data = private_admin_code_email(
+    pending["name"],
+    admin_code
+)
+
     send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
@@ -1381,7 +1400,9 @@ def cast_vote():
     # -----------------------------
     # MODIFY WITHIN 45 SECONDS
     # -----------------------------
-    elapsed = (datetime.now(timezone.utc) - existing_vote.created_at).total_seconds()
+    elapsed = (
+        datetime.now(timezone.utc) - ensure_utc(existing_vote.created_at)
+    ).total_seconds()
 
     if elapsed <= 45:
         existing_vote.candidate_id = candidate_id
@@ -1631,7 +1652,6 @@ def admin_result_detail(eid):
 # CREATE ELECTION
 # -------------------------------------------------
 from datetime import datetime
-from datetime import datetime
 @app.route("/admin/create-election", methods=["POST"])
 def create_election():
 
@@ -1649,7 +1669,8 @@ def create_election():
         end   = datetime.fromisoformat(end_raw) if end_raw else None
     except ValueError:
         flash("Invalid date or time format. Please select a valid date and time.")
-        return redirect("/admin/dashboard")
+        return redirect("/admin/dashboard?open=create")
+
 
     now = datetime.now()
 
@@ -1658,22 +1679,23 @@ def create_election():
     # ❌ Start time cannot be before creation time
     if start and start < now:
         flash("Start time cannot be in the past.")
-        return redirect("/admin/dashboard")
+        return redirect("/admin/dashboard?open=create")
 
     # ❌ End time must be after current time
     if end and end <= now:
         flash("End time must be after the current time.")
-        return redirect("/admin/dashboard")
+        return redirect("/admin/dashboard?open=create")
 
     # ❌ Start must be before end
     if start and end and start >= end:
         flash("Start time must be before the end time.")
-        return redirect("/admin/dashboard")
+        return redirect("/admin/dashboard?open=create")
 
     # ❌ Private election requires both times
     if etype == "private" and (not start or not end):
         flash("Private elections must have both start and end time.")
-        return redirect("/admin/dashboard")
+        return redirect("/admin/dashboard?open=create")
+
 
     # ---------------- CREATE ----------------
 
@@ -1692,9 +1714,14 @@ def create_election():
     db.session.commit()
 
     flash(f"Election '{name}' created successfully.")
-    return redirect("/admin/dashboard")
-
-
+    return redirect(
+        url_for(
+            "admin_dashboard",
+            open="candidates",
+            eid=election.id,
+            name=election.name
+        )
+    )
 
 
 
@@ -1707,14 +1734,36 @@ def add_candidate():
 
     election = Election.query.get_or_404(request.form["election_id"])
 
-    now = datetime.now()
-    start = datetime.fromisoformat(election.start_time) if election.start_time else None
-    end   = datetime.fromisoformat(election.end_time) if election.end_time else None
+    now = datetime.now(timezone.utc)
 
-    if start and now >= start:
-        flash("Cannot add candidates after election has started")
+    start = (
+        ensure_utc(datetime.fromisoformat(election.start_time))
+        if election.start_time else None
+    )
+    end = (
+        ensure_utc(datetime.fromisoformat(election.end_time))
+        if election.end_time else None
+    )
+
+    # 🔴 RULE 1: Election ended → never allow
+    if end and now > end:
+        flash("Cannot add candidates — the election has already ended.")
         return redirect("/admin/dashboard")
 
+    # 🟡 RULE 2: Election running + votes exist → block
+    if start and start <= now:
+        vote_exists = Vote.query.filter_by(
+            election_id=election.id
+        ).first()
+
+        if vote_exists:
+            flash(
+                "Cannot add candidates — voting has already started "
+                "and votes have been cast."
+            )
+            return redirect("/admin/dashboard")
+
+    # ✅ RULE 3: Allowed (not started OR running with zero votes)
     photo = save_uploaded_file(request.files.get("photo"))
 
     candidate = Candidate(
@@ -1728,8 +1777,13 @@ def add_candidate():
     db.session.add(candidate)
     db.session.commit()
 
-    flash("Candidate added successfully")
-    return redirect("/admin/dashboard")
+    # Context-aware success message
+    if start and start <= now:
+        flash("Candidate added successfully (no votes had been cast).")
+    else:
+        flash("Candidate added successfully before the election started.")
+
+    return redirect(request.referrer or "/admin/dashboard")
 
 
 
@@ -1756,43 +1810,68 @@ def edit_candidate():
     db.session.commit()
 
     flash("Candidate updated")
-    return redirect("/admin/dashboard")
+    return redirect(request.referrer or "/admin/dashboard")
+
 
 
 
 # -------------------------------------------------
 # DELETE CANDIDATE (only if no votes)
 # -------------------------------------------------
-
 @app.route("/admin/candidate/delete/<cid>")
 def delete_candidate(cid):
 
-    candidate = Candidate.query.get(cid)
-
+    candidate = db.session.get(Candidate, cid)
     if not candidate:
-        flash("Candidate not found")
-        return redirect("/admin/dashboard")
+        flash("Candidate not found.")
+        return redirect(request.referrer or "/admin/dashboard")
 
-    election = Election.query.get(candidate.election_id)
+    election = db.session.get(Election, candidate.election_id)
+    if not election:
+        flash("Election not found.")
+        return redirect(request.referrer or "/admin/dashboard")
 
-    if election_has_ended(election):
-        flash("Cannot delete candidate — election already ended")
-        return redirect("/admin/dashboard")
+    now = datetime.now(timezone.utc)
 
-    if start and now >= start:
-        flash("Cannot delete candidate after election has started")
-        return redirect("/admin/dashboard")
+    start = (
+        ensure_utc(datetime.fromisoformat(election.start_time))
+        if election.start_time else None
+    )
+    end = (
+        ensure_utc(datetime.fromisoformat(election.end_time))
+        if election.end_time else None
+    )
 
-    if Vote.query.filter_by(candidate_id=cid).count() > 0:
-        flash("Cannot delete candidate — votes already cast")
-        return redirect("/admin/dashboard")
+    # ❌ RULE 1: Election ended → never allow
+    if end and now > end:
+        flash("Cannot delete candidate — the election has already ended.")
+        return redirect(request.referrer or "/admin/dashboard")
 
+    # Count votes for this election
+    total_votes = Vote.query.filter_by(
+        election_id=election.id
+    ).count()
 
+    # ❌ RULE 2: Election started AND votes exist → block
+    if start and now >= start and total_votes > 0:
+        flash(
+            "Cannot delete candidate — the election has started and votes have been cast."
+        )
+        return redirect(request.referrer or "/admin/dashboard")
+
+    # ✅ RULE 3: Allowed (not started OR started with zero votes)
     db.session.delete(candidate)
     db.session.commit()
 
-    flash("Candidate deleted")
-    return redirect("/admin/dashboard")
+    if start and now >= start:
+        flash("Candidate deleted successfully (no votes were cast).")
+    else:
+        flash("Candidate deleted successfully before the election started.")
+
+    return redirect(request.referrer or "/admin/dashboard")
+
+
+
 
 @app.route("/admin/candidate/update", methods=["POST"])
 def update_candidate():
@@ -1821,39 +1900,125 @@ def update_candidate():
     db.session.commit()
 
     flash("Candidate updated")
-    return redirect("/admin/dashboard")
+    return redirect(request.referrer or "/admin/dashboard")
 
 
 # -------------------------------------------------
 # WHITELIST (PRIVATE ONLY)
 # -------------------------------------------------
+from flask import request
 
 @app.route("/admin/whitelist/add", methods=["POST"])
 def whitelist_add():
 
-    election = Election.query.get(request.form["election_id"])
-    email = request.form["email"].strip().lower()
+    election = Election.query.get(request.form.get("election_id"))
+    if not election:
+        flash("Election not found")
+        return redirect(request.referrer or "/admin/dashboard")
+
+    email = (request.form.get("email") or "").strip().lower()
+
+    # ❌ basic email validation
+    if not email or "@" not in email or "." not in email:
+        flash("Enter a valid email address to add to whitelist")
+        return redirect(request.referrer or "/admin/dashboard")
 
     # 🚫 BLOCK if election already ended
     if election_has_ended(election):
         flash("Cannot modify whitelist — election already ended")
-        return redirect("/admin/dashboard")
+        return redirect(request.referrer or "/admin/dashboard")
 
+    # 🚫 PRIVATE ONLY
     if election.election_type != "private":
         flash("Whitelist only for private elections")
-        return redirect("/admin/dashboard")
+        return redirect(request.referrer or "/admin/dashboard")
 
-    if VoterWhitelist.query.filter_by(election_id=election.id, email=email).first():
+    # 🚫 DUPLICATE CHECK
+    if VoterWhitelist.query.filter_by(
+        election_id=election.id,
+        email=email
+    ).first():
         flash("Email already added")
-        return redirect("/admin/dashboard")
+        return redirect(request.referrer or "/admin/dashboard")
 
-    db.session.add(VoterWhitelist(election_id=election.id, email=email))
+    # ✅ ADD
+    db.session.add(
+        VoterWhitelist(
+            election_id=election.id,
+            email=email
+        )
+    )
     db.session.commit()
 
     flash("Email added to whitelist")
-    return redirect("/admin/dashboard")
+    return redirect(request.referrer or "/admin/dashboard")
 
 
+@app.route("/admin/whitelist/bulk-add", methods=["POST"])
+def whitelist_bulk_add():
+
+    election = Election.query.get(request.form.get("election_id"))
+
+    if not election:
+        flash("Election not found")
+        return redirect(request.referrer or "/admin/dashboard")
+
+    # 🚫 BLOCK if election already ended
+    if election_has_ended(election):
+        flash("Cannot modify whitelist — election already ended")
+        return redirect(request.referrer or "/admin/dashboard")
+
+    # 🚫 PRIVATE ONLY
+    if election.election_type != "private":
+        flash("Whitelist allowed only for private elections")
+        return redirect(request.referrer or "/admin/dashboard")
+
+    raw_emails = request.form.get("emails", "")
+
+    emails = [
+        e.strip().lower()
+        for e in raw_emails.replace(",", "\n").split("\n")
+        if e.strip()
+    ]
+
+    added = 0
+    skipped_invalid = 0
+    skipped_duplicate = 0
+
+    for email in emails:
+
+        # ❌ invalid email
+        if "@" not in email or "." not in email:
+            skipped_invalid += 1
+            continue
+
+        # ❌ duplicate
+        if VoterWhitelist.query.filter_by(
+            election_id=election.id,
+            email=email
+        ).first():
+            skipped_duplicate += 1
+            continue
+
+        db.session.add(
+            VoterWhitelist(
+                election_id=election.id,
+                email=email
+            )
+        )
+        added += 1
+
+    db.session.commit()
+
+    # 📢 precise feedback
+    if added:
+        flash(f"{added} email(s) added to whitelist")
+    if skipped_invalid:
+        flash(f"{skipped_invalid} invalid email(s) skipped")
+    if skipped_duplicate:
+        flash(f"{skipped_duplicate} duplicate email(s) skipped")
+
+    return redirect(request.referrer or "/admin/dashboard")
 
 @app.route("/admin/whitelist/remove/<wid>")
 def whitelist_remove(wid):
@@ -1883,7 +2048,7 @@ def whitelist_remove(wid):
     db.session.commit()
 
     flash("Email removed from whitelist")
-    return redirect("/admin/dashboard")
+    return redirect(request.referrer or "/admin/dashboard")
 
 
 
@@ -1910,11 +2075,19 @@ def toggle_results(id):
 def delete_election(eid):
 
     election = Election.query.get(eid)
-
-    if election_has_ended(election):
-        flash("Cannot delete — election already ended")
+    if not election:
+        flash("Election not found")
         return redirect("/admin/dashboard")
 
+    now = datetime.now()
+    start = datetime.fromisoformat(election.start_time) if election.start_time else None
+
+    # ❌ STARTED → block normal delete
+    if start and now >= start:
+        flash("Election already started — use force delete")
+        return redirect("/admin/dashboard")
+
+    # ❌ votes safety
     if Vote.query.filter_by(election_id=eid).count() > 0:
         flash("Election has votes — cannot delete directly")
         return redirect("/admin/dashboard")
@@ -1922,7 +2095,7 @@ def delete_election(eid):
     db.session.delete(election)
     db.session.commit()
 
-    flash("Election deleted")
+    flash("Election deleted successfully")
     return redirect("/admin/dashboard")
 
 
@@ -1935,11 +2108,22 @@ def delete_election(eid):
 def force_delete_election(eid):
 
     election = Election.query.get(eid)
+    if not election:
+        flash("Election not found")
+        return redirect("/admin/dashboard")
+
+    now = datetime.now()
+    start = datetime.fromisoformat(election.start_time) if election.start_time else None
+
+    # ❌ NOT STARTED → block force delete
+    if not start or now < start:
+        flash("Force delete allowed only after election has started")
+        return redirect("/admin/dashboard")
 
     db.session.delete(election)
     db.session.commit()
 
-    flash("Election + votes deleted permanently")
+    flash("Election and all related data deleted permanently")
     return redirect("/admin/dashboard")
 
 @app.route("/admin/election/edit-time", methods=["POST"])
@@ -1957,20 +2141,41 @@ def edit_election_time():
     db.session.commit()
 
     flash("Election time updated")
-    return redirect("/admin/dashboard")
+    return redirect(request.referrer or "/admin/dashboard")
 from datetime import datetime, timezone
-
 @app.route("/admin/election/update", methods=["POST"])
 def update_election():
 
     e = Election.query.get(request.form["election_id"])
+    if not e:
+        flash("Election not found")
+        return redirect(url_for(
+            "admin_dashboard",
+            open="edit",
+            eid=e.id,
+            name=e.name,
+            start=e.start_time or "",
+            end=e.end_time or ""
+        ))
 
-    if election_has_ended(e):
+    now = datetime.now()
+
+    start_old = datetime.fromisoformat(e.start_time) if e.start_time else None
+    end_old   = datetime.fromisoformat(e.end_time) if e.end_time else None
+
+    # 🚫 ENDED → nothing editable
+    if end_old and now >= end_old:
         flash("Cannot edit — election already ended")
-        return redirect("/admin/dashboard")
+        return redirect(url_for(
+            "admin_dashboard",
+            open="edit",
+            eid=e.id,
+            name=e.name,
+            start=e.start_time or "",
+            end=e.end_time or ""
+        ))
 
-    e.name = request.form["name"].strip()
-
+    name = request.form["name"].strip()
     start_raw = request.form.get("start_time") or None
     end_raw   = request.form.get("end_time") or None
 
@@ -1978,77 +2183,95 @@ def update_election():
         start_new = datetime.fromisoformat(start_raw) if start_raw else None
         end_new   = datetime.fromisoformat(end_raw) if end_raw else None
     except ValueError:
-        flash("Invalid date/time format", "error")
-        return redirect("/admin/dashboard")
+        flash("Invalid date/time format")
+        return redirect(url_for(
+            "admin_dashboard",
+            open="edit",
+            eid=e.id,
+            name=e.name,
+            start=e.start_time or "",
+            end=e.end_time or ""
+        ))
 
-    now = datetime.now()
+    # ❌ Start time in past
+    if start_new and start_new < now:
+        flash("Start time cannot be in the past")
+        return redirect(url_for(
+            "admin_dashboard",
+            open="edit",
+            eid=e.id,
+            name=e.name,
+            start=e.start_time or "",
+            end=e.end_time or ""
+        ))
 
-    # ---- VALIDATION RULES ----
+    # 🟡 STARTED → start time locked
+    if start_old and now >= start_old:
+        if start_new and start_new != start_old:
+            flash("Start time cannot be edited after election has started")
+            return redirect(url_for(
+                "admin_dashboard",
+                open="edit",
+                eid=e.id,
+                name=e.name,
+                start=e.start_time or "",
+                end=e.end_time or ""
+            ))
+        start_new = start_old
 
-    # Start time must be before end time
+    # ❌ start >= end
     if start_new and end_new and start_new >= end_new:
-        flash("Start time must be before end time", "error")
-        return redirect("/admin/dashboard")
+        flash("Start time must be before end time")
+        return redirect(url_for(
+            "admin_dashboard",
+            open="edit",
+            eid=e.id,
+            name=e.name,
+            start=e.start_time or "",
+            end=e.end_time or ""
+        ))
 
-    # End time must always be in the future
+    # ❌ end in past
     if end_new and end_new <= now:
-        flash("End time must be after the current time", "error")
-        return redirect("/admin/dashboard")
+        flash("End time must be after the current time")
+        return redirect(url_for(
+            "admin_dashboard",
+            open="edit",
+            eid=e.id,
+            name=e.name,
+            start=e.start_time or "",
+            end=e.end_time or ""
+        ))
 
-    # Private election must have both times
+    # ❌ private needs both times
     if e.election_type == "private" and (not start_new or not end_new):
-        flash("Private elections must have a valid start and end time", "error")
-        return redirect("/admin/dashboard")
+        flash("Private elections must have valid start and end time")
+        return redirect(url_for(
+            "admin_dashboard",
+            open="edit",
+            eid=e.id,
+            name=e.name,
+            start=e.start_time or "",
+            end=e.end_time or ""
+        ))
 
-    # ---- SAVE ----
+    # ✅ SAVE
+    e.name = name
     e.start_time = start_new.isoformat() if start_new else None
     e.end_time   = end_new.isoformat() if end_new else None
 
     db.session.commit()
 
     flash("Election updated successfully")
-    return redirect("/admin/dashboard")
+    return redirect(url_for(
+        "admin_dashboard",
+        open="edit",
+        eid=e.id,
+        name=e.name,
+        start=e.start_time or "",
+        end=e.end_time or ""
+    ))
 
-
-
-@app.route("/admin/whitelist/bulk-add", methods=["POST"])
-def whitelist_bulk_add():
-
-    election = Election.query.get(request.form["election_id"])
-
-    if election_has_ended(election):
-        flash("Cannot modify whitelist — election already ended")
-        return redirect("/admin/dashboard")
-
-    if election.election_type != "private":
-        flash("Whitelist allowed only for private elections")
-        return redirect("/admin/dashboard")
-
-    raw_emails = request.form["emails"]
-
-    emails = [
-        e.strip().lower()
-        for e in raw_emails.replace(",", "\n").split("\n")
-        if e.strip()
-    ]
-
-    added = 0
-
-    for email in emails:
-        if not VoterWhitelist.query.filter_by(
-            election_id=election.id,
-            email=email
-        ).first():
-
-            db.session.add(
-                VoterWhitelist(election_id=election.id, email=email)
-            )
-            added += 1
-
-    db.session.commit()
-
-    flash(f"{added} emails added to whitelist")
-    return redirect("/admin/dashboard")
 
 
 # -------------------------------------------------

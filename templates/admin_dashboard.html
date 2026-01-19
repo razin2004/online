@@ -1128,7 +1128,58 @@ input:focus,select:focus,textarea:focus{
   height:100%;
   object-fit:cover;
 }
+#flash-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
 
+.flash-box{
+  background:#0b1220;
+  padding:24px 28px;
+  border-radius:14px;
+  max-width:420px;
+  width:90%;
+  text-align:center;
+  box-shadow:0 20px 50px rgba(0,0,0,.7);
+  animation:scaleIn .25s ease;
+}
+
+.flash-message{
+  color:#e5e7eb;
+  font-size:15px;
+  margin-bottom:16px;
+}
+
+.flash-message.error{
+  color:#f87171;
+}
+
+.flash-message.success{
+  color:#4ade80;
+}
+
+.flash-message.warning{
+  color:#facc15;
+}
+
+.flash-box button{
+  background:#2563eb;
+  color:#fff;
+  border:none;
+  padding:8px 18px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+@keyframes scaleIn{
+  from{transform:scale(.9);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
 
 </style>
 </head>
@@ -1580,6 +1631,24 @@ input:focus,select:focus,textarea:focus{
 
 <!-- ================= ELECTIONS ================= -->
 <section id="elections" class="view-container">
+    <div class="card">
+  <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:12px">
+    <input id="electionSearch" placeholder="Search elections...">
+
+    <select id="electionTypeFilter">
+      <option value="all">All Types</option>
+      <option value="public">Public</option>
+      <option value="private">Private</option>
+    </select>
+
+    <select id="electionStatusFilter">
+      <option value="all">All Status</option>
+      <option value="running">Running</option>
+      <option value="upcoming">Upcoming</option>
+      <option value="ended">Ended</option>
+    </select>
+  </div>
+</div>
 {% if elections|length == 0 %}
 <div class="empty-state">
   <div class="empty-icon">
@@ -1601,24 +1670,6 @@ input:focus,select:focus,textarea:focus{
 </div>
 {% endif %}
 
-  <div class="card">
-  <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:12px">
-    <input id="electionSearch" placeholder="Search elections...">
-
-    <select id="electionTypeFilter">
-      <option value="all">All Types</option>
-      <option value="public">Public</option>
-      <option value="private">Private</option>
-    </select>
-
-    <select id="electionStatusFilter">
-      <option value="all">All Status</option>
-      <option value="running">Running</option>
-      <option value="upcoming">Upcoming</option>
-      <option value="ended">Ended</option>
-    </select>
-  </div>
-</div>
 
   <div class="election-grid">
     {% for e in elections %}
@@ -1827,6 +1878,8 @@ input:focus,select:focus,textarea:focus{
   <div class="modal-box">
     <h3>Create Election</h3>
     <form method="POST" action="/admin/create-election">
+  <input type="hidden" name="return_modal" value="createElection">
+
       <input name="name" placeholder="Election name" required>
       <select name="type">
         <option value="public">Public</option>
@@ -1851,8 +1904,22 @@ input:focus,select:focus,textarea:focus{
       <input type="datetime-local" id="editElectionStart" name="start_time">
       <input type="datetime-local" id="editElectionEnd" name="end_time">
       <button class="btn btn-primary">Save</button>
-      <button type="button" class="btn btn-danger" onclick="confirmDeleteElection()">Delete</button>
-      <button type="button" class="btn btn-outline" onclick="confirmForceDeleteElection()">Force Delete</button>
+      <button
+        id="deleteElectionBtn"
+        type="button"
+        class="btn btn-danger"
+        onclick="confirmDeleteElection()">
+        Delete
+      </button>
+
+      <button
+        id="forceDeleteElectionBtn"
+        type="button"
+        class="btn btn-outline"
+        onclick="confirmForceDeleteElection()">
+        Force Delete
+      </button>
+
     </form>
   </div>
 </div>
@@ -1949,6 +2016,25 @@ input:focus,select:focus,textarea:focus{
   </div>
 </div>
 
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div id="flash-overlay">
+  <div class="flash-box">
+    {% for category, message in messages %}
+      <div class="flash-message {{ category }}">
+        {{ message }}
+      </div>
+    {% endfor %}
+    <button onclick="closeFlash()">OK</button>
+  </div>
+</div>
+{% endif %}
+{% endwith %}
+<script>
+function closeFlash(){
+  document.getElementById("flash-overlay")?.remove();
+}
+</script>
 
 <script>
   const VIEW_ORDER = [
@@ -2068,13 +2154,58 @@ document.addEventListener("keydown", e => {
 /* ======================================================
    EDIT / DELETE ELECTION
 ====================================================== */
-function openEditElection(id,name,start,end){
-  $("#editElectionId").value=id;
-  $("#editElectionName").value=name;
-  $("#editElectionStart").value=start||"";
-  $("#editElectionEnd").value=end||"";
+function openEditElection(id, name, start, end){
+  $("#editElectionId").value = id;
+  $("#editElectionName").value = name;
+  $("#editElectionStart").value = start || "";
+  $("#editElectionEnd").value = end || "";
+
+  // ---- LOCK RULES ----
+  const now = Date.now();
+  const startTs = start ? Date.parse(start) : null;
+  const endTs   = end   ? Date.parse(end)   : null;
+
+  const startInput = $("#editElectionStart");
+  const endInput   = $("#editElectionEnd");
+
+  // reset
+  startInput.disabled = false;
+  startInput.title = "";
+  endInput.disabled = false;
+  endInput.title = "";
+
+  // 🔴 election ended → everything locked
+  if(endTs && now >= endTs){
+    startInput.disabled = true;
+    endInput.disabled   = true;
+    startInput.title = "Election has ended";
+    endInput.title   = "Election has ended";
+  }
+  // 🟡 election running → start locked, end editable
+  else if(startTs && now >= startTs){
+    startInput.disabled = true;
+    startInput.title = "Start time cannot be changed after election starts";
+  }
+
   openModal("editElectionModal");
+  const delBtn  = $("#deleteElectionBtn");
+  const forceBtn = $("#forceDeleteElectionBtn");
+
+  delBtn.style.display = "none";
+  forceBtn.style.display = "none";
+
+  if(!startTs || now < startTs){
+    // upcoming
+    delBtn.style.display = "inline-flex";
+  }
+  else if(startTs && (!endTs || now < endTs)){
+    // running
+    forceBtn.style.display = "inline-flex";
+  }
+  // ended → neither shown
+
 }
+
 function confirmDeleteElection(){
   const id=$("#editElectionId").value;
   if(id && confirm("Delete election? Only allowed if no votes exist.")){
@@ -2095,39 +2226,43 @@ function openManageCandidates(eid, name, start, end){
   $("#mcElectionId").value = eid;
   $("#mcTitle").textContent = "Manage Candidates — " + name;
 
-  // Determine election status
   const fakeCard = document.createElement("div");
   fakeCard.dataset.start = start;
   fakeCard.dataset.end = end;
-  const isEnded = getElectionStatus(fakeCard) === "ended";
 
-  // Disable ADD CANDIDATE button if ended
+  const status = getElectionStatus(fakeCard);
+  const isRunning = status === "running";
+  const isEnded   = status === "ended";
+
   const addBtn = document.querySelector(
     "#manageCandidatesModal form button.btn-primary"
   );
-  if(addBtn){
-    addBtn.disabled = isEnded;
-    addBtn.title = isEnded ? "Election has ended" : "";
-  }
 
   fetch(`/admin/api/candidates/${eid}`)
     .then(r => r.json())
     .then(data => {
+
+      const hasVotes = data.candidates.some(c => c.votes > 0);
+
+      if(addBtn){
+        addBtn.disabled = isEnded || (isRunning && hasVotes);
+        addBtn.title =
+          isEnded
+            ? "Election has ended"
+            : (isRunning && hasVotes
+                ? "Cannot add candidates after votes are cast"
+                : "");
+      }
+
       const list = $("#mcList");
 
       if(!data.candidates.length){
         list.innerHTML = `
           <div class="empty-state">
-            <div class="empty-icon">
-  <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
-    <use href="#icon-user"></use>
-  </svg>
-</div>
-
             <div class="empty-title">No candidates added</div>
             <div class="empty-text">
               ${isEnded
-                ? "This election has ended. Candidates can no longer be modified."
+                ? "This election has ended."
                 : "Add candidates to allow voting."}
             </div>
           </div>
@@ -2138,31 +2273,8 @@ function openManageCandidates(eid, name, start, end){
       list.innerHTML = data.candidates.map(c => `
         <div class="card" style="padding:12px">
           <b>${c.name}</b>
-          <div class="note">${c.party || "Independent"}</div>
-          <div class="note">Votes: ${c.votes}</div>
-
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <button class="btn btn-outline"
-              ${isEnded ? "disabled title='Election has ended'" : ""}
-              onclick="openEditCandidate(
-                '${c.id}',
-                '${c.name}',
-                '${c.party || ""}',
-                '${c.description || ""}'
-              )">
-              Edit
-            </button>
-
-            <button class="btn btn-danger"
-              ${isEnded || c.votes > 0 ? "disabled" : ""}
-              onclick="
-                if(confirm('Delete ${c.name}?')){
-                  location.href='/admin/candidate/delete/${c.id}';
-                }
-              ">
-              Delete
-            </button>
-          </div>
+          <div>Party: ${c.party || "Independent"}</div>
+          <div>Votes: ${isEnded ? c.votes : "—"}</div>
         </div>
       `).join("");
     });
@@ -2213,7 +2325,6 @@ function openWhitelist(eid, name, start, end){
     .then(r => r.json())
     .then(data => {
       const list = $("#wlList");
-
       if(!data.whitelist.length){
         list.innerHTML = `
           <div class="empty-state">
@@ -2222,7 +2333,6 @@ function openWhitelist(eid, name, start, end){
     <use href="#icon-mail"></use>
   </svg>
 </div>
-
             <div class="empty-title">Whitelist is empty</div>
             <div class="empty-text">
               Only whitelisted voters can participate in this private election.
@@ -2250,10 +2360,8 @@ function openWhitelist(eid, name, start, end){
           </div>
         `).join("");
     });
-
   openModal("whitelistModal");
 }
-
 
 /* ======================================================
    SEARCH FILTERS
@@ -2286,7 +2394,6 @@ function attachWhitelistSearch(){
 }
 attachCandidateSearch();
 attachWhitelistSearch();
-
 
 /* Overview search */
 $("#ovPublicSearch")?.addEventListener("input",e=>{
@@ -2355,7 +2462,6 @@ function updateCountdowns(){
     else timer.textContent="Ended";
   });
   updateStatusChips();
-
 }
 
 let timer=null;
@@ -2557,7 +2663,7 @@ enableButtonLoading();
 document.addEventListener("DOMContentLoaded", () => {
   const modalStateRaw = localStorage.getItem("admin_modal");
   const savedView = localStorage.getItem("admin_active_view");
-
+  const params = new URLSearchParams(window.location.search);
   // 1️⃣ Modal restoration has TOP priority
   if (modalStateRaw) {
     const { type, electionId, electionName } = JSON.parse(modalStateRaw);
@@ -2588,6 +2694,49 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3️⃣ Final fallback
   currentViewIndex = 0;
   switchView("dashboard");
+  const urlParams = new URLSearchParams(window.location.search);
+  if(urlParams.get("open") === "create"){
+    openModal("createElectionModal");
+  }
+
+
+// ---- AUTO OPEN MANAGE CANDIDATES AFTER CREATE ----
+if (params.get("open") === "candidates") {
+    const eid = params.get("eid");
+    const name = params.get("name");
+
+    if (eid && name) {
+        // ensure elections view is visible
+        switchView("elections");
+
+        // wait for DOM cards to render
+        setTimeout(() => {
+            openManageCandidates(eid, decodeURIComponent(name));
+        }, 200);
+    }
+}
+// ---- AUTO OPEN EDIT ELECTION MODAL ----
+if (params.get("open") === "edit") {
+  const eid = params.get("eid");
+  const name = params.get("name");
+  const start = params.get("start");
+  const end = params.get("end");
+
+  if (eid && name !== null) {
+    setTimeout(() => {
+      openEditElection(
+        eid,
+        decodeURIComponent(name),
+        start || "",
+        end || ""
+      );
+    }, 200);
+  }
+}
+
+
+
+
 });
 
 function rememberModal(type, electionId, electionName){

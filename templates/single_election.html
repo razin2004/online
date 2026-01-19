@@ -353,7 +353,6 @@ button{
     <div class="candidate {% if voted and voted.candidate_id == c.id %}selected{% endif %}" id="cand-card-{{ c.id }}">
       {% if c.photo %}<img src="/static/uploads/{{ c.photo }}">{% endif %}
       <div class="candidate-name">{{ c.name }}</div>
-      {% if c.party %}<div class="party">{{ c.party }}</div>{% endif %}
       {% if c.description %}<div class="desc">{{ c.description }}</div>{% endif %}
       
       <div class="status-indicator" id="status-ind-{{ c.id }}">
