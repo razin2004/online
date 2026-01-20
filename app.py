@@ -279,8 +279,6 @@ Secure • Verified • One Vote Per User
 """
     }
 
-
-
 def admin_reset_otp_email(name, username, otp):
     return {
         "subject": "VoteCentral – Password Reset Verification",
@@ -576,7 +574,7 @@ def admin_register():
     otp = generate_otp()
     store_new_otp(email, otp, "admin_register")
 
-    email_data = admin_register_otp_email(name, otp)
+    email_data = admin_register_otp_email(username,name, otp)
     send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
@@ -712,7 +710,7 @@ def admin_forgot_password():
 
         store_new_otp(email, otp, "admin_reset")
 
-        email_data = admin_reset_otp_email(admin.name, otp)
+        email_data = admin_reset_otp_email(admin.name, admin.username, otp)
         send_vote_central_email(
             to_email=admin.email,
             subject=email_data["subject"],
