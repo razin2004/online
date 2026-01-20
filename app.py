@@ -254,43 +254,48 @@ def ensure_utc(dt):
         return dt.replace(tzinfo=timezone.utc)
     return dt
 
-def admin_register_otp_email(name, otp):
+def admin_register_otp_email(name, username, otp):
     return {
         "subject": "VoteCentral – Verify Your Admin Account",
         "body": f"""
 Hello {name},
 
-Thank you for registering as an administrator on VoteCentral.
+Your administrator account registration was initiated on VoteCentral.
 
-To complete your account setup, please verify your email address using the One-Time Password (OTP) below:
+Username: {username}
+
+To complete your registration, please verify your email using the OTP below:
 
 Verification OTP: {otp}
 
 This OTP is valid for 5 minutes.
-For security reasons, do not share this code with anyone.
+Do not share this code with anyone.
 
-If you did not initiate this registration, you may safely ignore this email.
+If you did not initiate this registration, please ignore this email.
 
-Best regards,
+Regards,
 VoteCentral Security Team
 Secure • Verified • One Vote Per User
 """
     }
 
 
-def admin_reset_otp_email(name, otp):
+
+def admin_reset_otp_email(name, username, otp):
     return {
         "subject": "VoteCentral – Password Reset Verification",
         "body": f"""
 Hello {name},
 
-We received a request to reset the password for your VoteCentral admin account.
+A password reset was requested for your VoteCentral admin account.
 
-Please use the following One-Time Password (OTP) to continue:
+Username: {username}
+
+Please use the OTP below to proceed:
 
 Password Reset OTP: {otp}
 
-This OTP will expire in 5 minutes.
+This OTP is valid for 5 minutes.
 If you did not request this reset, please ignore this email.
 
 Regards,
@@ -298,6 +303,7 @@ VoteCentral Support Team
 Secure • Verified • One Vote Per User
 """
     }
+
 
 def private_admin_code_email(admin_name, admin_code):
     return {
