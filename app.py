@@ -370,6 +370,25 @@ VoteCentral Security Team
 Secure • Verified • One Vote Per User
 """
     }
+def admin_username_recovery_email(name, username):
+    return {
+        "subject": "VoteCentral – Your Admin Username",
+        "body": f"""
+Hello {name},
+
+You requested a reminder of your VoteCentral admin username.
+
+Your username:
+{username}
+
+If you did not request this email, you can safely ignore it.
+No changes were made to your account.
+
+Regards,
+VoteCentral Support Team
+Secure • Verified • One Vote Per User
+"""
+    }
 
 # -------------------------------------------------
 # DATABASE MODELS
@@ -574,7 +593,7 @@ def admin_register():
     otp = generate_otp()
     store_new_otp(email, otp, "admin_register")
 
-    email_data = admin_register_otp_email(username,name, otp)
+    email_data = admin_register_otp_email(name, username, otp)
     send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
@@ -687,6 +706,43 @@ def verify_otp():
 # -------------------------------------------------
 # ADMIN FORGOT PASSWORD — REQUEST RESET OTP
 # -------------------------------------------------
+@app.route("/admin/forgot-username", methods=["POST"])
+def admin_forgot_username():
+
+    email = request.form["email"].strip().lower()
+    admin = Admin.query.filter_by(email=email).first()
+
+    # 🔒 Do not reveal existence
+    if admin:
+        email_data = {
+            "subject": "VoteCentral – Your Admin Username",
+            "body": f"""
+Hello {admin.name},
+
+You requested a reminder of your VoteCentral admin username.
+
+Your username:
+{admin.username}
+
+If you did not request this email, you can safely ignore it.
+
+Regards,
+VoteCentral Support Team
+Secure • Verified • One Vote Per User
+"""
+        }
+
+        send_vote_central_email(
+            to_email=admin.email,
+            subject=email_data["subject"],
+            body=email_data["body"]
+        )
+
+    flash(
+        "If the email is registered, recovery instructions have been sent.",
+        "admin_login_success"
+    )
+    return redirect("/")
 
 @app.route("/admin/forgot-password", methods=["POST"])
 def admin_forgot_password():
@@ -874,7 +930,12 @@ def admin_reset_resend():
 
     admin = Admin.query.filter_by(email=email).first()
 
-    email_data = admin_reset_otp_email(admin.name if admin else "Admin", otp)
+    email_data = admin_reset_otp_email(
+        admin.name if admin else "Admin",
+        admin.username if admin else "unknown",
+        otp
+    )
+
     send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
@@ -884,6 +945,21 @@ def admin_reset_resend():
 
     flash("New OTP sent to your email", "otp_success")
     return redirect("/verify-otp?context=reset")
+
+@app.route("/admin/reset-cancel")
+def admin_reset_cancel():
+
+    # Explicitly invalidate reset session
+    session.pop("otp_reset_verified", None)
+    session.pop("reset_email", None)
+    session.pop("otp_context", None)
+
+    flash(
+        "Password reset cancelled. No changes were made.",
+        "admin_login_success"
+    )
+    return redirect("/")
+
 @app.route("/voter/resend-otp")
 def voter_resend_otp():
 
@@ -1238,32 +1314,49 @@ def voter_result_detail(eid):
 
     candidates = Candidate.query.filter_by(election_id=election.id).all()
 
+    # 1. Fetch and Count
     result = []
     max_votes = 0
-
     for c in candidates:
         count = Vote.query.filter_by(candidate_id=c.id).count()
         max_votes = max(max_votes, count)
-
         result.append({
             "name": c.name,
-            "count": count
+            "count": count,
+            "photo": c.photo,
+            "party": getattr(c, 'party', 'Independent') # Safe fallback
         })
 
-    # tie-safe winner detection
-    for r in result:
-            r["winner"] = (r["count"] == max_votes and max_votes > 0)
+    # 2. SORT BY VOTES (Highest first)
+    result = sorted(result, key=lambda x: x['count'], reverse=True)
 
+    # 3. Mark Winner/Leader
+    for r in result:
+        r["winner"] = (r["count"] == max_votes and max_votes > 0)
+
+    # 4. Calculate Whitelist Stats
+    total_whitelisted = VoterWhitelist.query.filter_by(election_id=election.id).count()
+    voted_count = Vote.query.filter_by(election_id=election.id).count()
+    not_voted_count = max(0, total_whitelisted - voted_count) if election.election_type == 'private' else 0
     total_votes = Vote.query.filter_by(election_id=election.id).count()
+    # 5. Premium Date Formatting
+    def format_date(date_str):
+        if not date_str: return "N/A"
+        try:
+            dt = datetime.fromisoformat(date_str)
+            return dt.strftime("%b %d, %Y • %I:%M %p") # e.g. Jan 20, 2026 • 04:30 PM
+        except: return date_str
 
     return render_template(
-        "voter_result_detail.html",
+        "voter_result_detail.html", # or admin_result_detail.html
         election=election,
         result=result,
-        total_votes=total_votes
+        total_votes=total_votes,
+        total_whitelisted=total_whitelisted,
+        not_voted_count=not_voted_count,
+        start_fmt=format_date(election.start_time),
+        end_fmt=format_date(election.end_time)
     )
-
-from datetime import datetime
 
 from datetime import datetime
 
@@ -1620,35 +1713,48 @@ def admin_result_detail(eid):
         return redirect("/admin/results")
 
     candidates = Candidate.query.filter_by(election_id=election.id).all()
-
+# 1. Fetch and Count
     result = []
     max_votes = 0
-
     for c in candidates:
         count = Vote.query.filter_by(candidate_id=c.id).count()
         max_votes = max(max_votes, count)
-
         result.append({
-            "id": c.id,
             "name": c.name,
+            "count": count,
             "photo": c.photo,
-            "party": c.party,
-            "description": c.description,
-            "count": count
+            "party": getattr(c, 'party', 'Independent') # Safe fallback
         })
 
-    # mark winners — only meaningful when election ended
-    for r in result:
-        r["winner"] = (ended and r["count"] == max_votes and max_votes > 0)
+    # 2. SORT BY VOTES (Highest first)
+    result = sorted(result, key=lambda x: x['count'], reverse=True)
 
+    # 3. Mark Winner/Leader
+    for r in result:
+        r["winner"] = (r["count"] == max_votes and max_votes > 0)
+
+    # 4. Calculate Whitelist Stats
+    total_whitelisted = VoterWhitelist.query.filter_by(election_id=election.id).count()
+    voted_count = Vote.query.filter_by(election_id=election.id).count()
+    not_voted_count = max(0, total_whitelisted - voted_count) if election.election_type == 'private' else 0
     total_votes = Vote.query.filter_by(election_id=election.id).count()
+    # 5. Premium Date Formatting
+    def format_date(date_str):
+        if not date_str: return "N/A"
+        try:
+            dt = datetime.fromisoformat(date_str)
+            return dt.strftime("%b %d, %Y • %I:%M %p") # e.g. Jan 20, 2026 • 04:30 PM
+        except: return date_str
 
     return render_template(
-        "admin_result_detail.html",
+        "admin_result_detail.html", # or admin_result_detail.html
         election=election,
         result=result,
         total_votes=total_votes,
-        ended=ended        # <-- winner logic flag
+        total_whitelisted=total_whitelisted,
+        not_voted_count=not_voted_count,
+        start_fmt=format_date(election.start_time),
+        end_fmt=format_date(election.end_time)
     )
 
 
@@ -1768,7 +1874,14 @@ def add_candidate():
             return redirect("/admin/dashboard")
 
     # ✅ RULE 3: Allowed (not started OR running with zero votes)
-    photo = save_uploaded_file(request.files.get("photo"))
+    uploaded = request.files.get("photo")
+
+    photo = None
+    if uploaded and uploaded.filename:
+        photo = save_uploaded_file(uploaded)
+    else:
+        photo = "default-candidate.jpg"
+
 
     candidate = Candidate(
         election_id=election.id,

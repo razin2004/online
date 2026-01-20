@@ -764,11 +764,13 @@ margin-top: 2px;
 
       <button class="btn blue">Login as Admin</button>
       <p style="margin-top:6px;font-size:12px;color:#9ca3af;">
-        Forgot your password?
-        <a href="javascript:void(0)" id="openReset" style="color:#ecd072;">
-          Reset password
+        <a href="javascript:void(0)"
+          id="openRecovery"
+          style="color:#7dd3fc;">
+          Forgot username or password?
         </a>
       </p>
+
 
       <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
         Don’t have an admin account?
@@ -900,79 +902,141 @@ margin-top: 2px;
   </div>
   <div class="panel reset-panel">
 
-  <h1>Reset Password</h1>
-{% if messages %}
-  {% for cat, msg in messages %}
-    {% if cat in [
-  "otp_error",
-  "otp_success",
-  "admin_login_success",
-  "admin_login_error"
-] %}
+  {# ================= FLASH MESSAGES ================= #}
+  {% if messages %}
+    {% for cat, msg in messages %}
+      {% if cat in ["otp_error","otp_success","admin_login_success","admin_login_error"] %}
+        <div
+          style="
+            margin-bottom:10px;
+            padding:10px;
+            border-radius:8px;
+            font-size:12px;
+            {% if cat == 'otp_error' %}
+              background:#7f1d1d;border:1px solid #ef4444;
+            {% else %}
+              background:#022c22;border:1px solid #22c55e;
+            {% endif %}
+          ">
+          {{ msg }}
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
 
-      <div
-        style="
-          margin-bottom:10px;
-          padding:10px;
-          border-radius:8px;
-          font-size:12px;
-          {% if cat == 'otp_error' %}
-            background:#7f1d1d;border:1px solid #ef4444;
-          {% else %}
-            background:#022c22;border:1px solid #22c55e;
-          {% endif %}
-        ">
-        {{ msg }}
-      </div>
+  <!-- =================================================
+       STEP 1: RECOVERY CHOICE
+  ================================================== -->
+  <div id="recoveryChoice"
+      {% if session.get("otp_reset_verified") %}style="display:none;"{% endif %}>
+
+    <h1>Account Recovery</h1>
+    <p class="sub">Choose how you want to recover your account.</p>
+
+    <button class="btn blue" id="choosePassword">
+      Reset Password
+    </button>
+
+    <button class="btn blue" id="chooseUsername">
+      Recover Username
+    </button>
+
+    <p style="margin-top:10px;font-size:12px;">
+      <a href="javascript:void(0)" id="resetBackLogin" style="color:#7dd3fc;">
+        Back to Login
+      </a>
+    </p>
+
+  </div>
+
+  <!-- =================================================
+       STEP 2A: PASSWORD RESET (EMAIL → OTP)
+  ================================================== -->
+<div id="passwordRecovery"
+     {% if session.get("otp_reset_verified") %}style="display:block;"{% else %}style="display:none;"{% endif %}>
+
+
+    {% if not session.get("otp_reset_verified") %}
+
+      <h1>Reset Password</h1>
+      <p class="sub">Enter your registered admin email to receive OTP.</p>
+
+      <form method="POST" action="/admin/forgot-password">
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" name="email" required>
+        </div>
+
+        <button class="btn blue">Send OTP</button>
+      </form>
+<p style="margin-top:10px;font-size:12px;">
+  <a href="javascript:void(0)"
+     class="recoveryBack"
+     style="color:#7dd3fc;">
+    ← Back
+  </a>
+</p>
+
+    {% else %}
+
+      <h1>Create New Password</h1>
+      <p class="sub">OTP verified. Create a new password.</p>
+
+      <form method="POST" action="/admin/reset-password">
+        <div class="field">
+          <label>New Password</label>
+          <input type="password" name="password" required>
+        </div>
+
+        <div class="field">
+          <label>Confirm Password</label>
+          <input type="password" name="confirm" required>
+        </div>
+
+        <div id="passwordStatus" style="font-size:12px;margin-top:4px;"></div>
+
+        <button class="btn green">Save New Password</button>
+      </form>
+      <button class="btn neutral"
+        onclick="confirmCancelReset()">
+  Cancel Password Reset
+</button>
+
+
     {% endif %}
-  {% endfor %}
-{% endif %}
 
-  {% if not session.get("otp_reset_verified") %}
+  </div>
 
-    <p class="sub">Enter your registered admin email to receive OTP.</p>
+  <!-- =================================================
+       STEP 2B: USERNAME RECOVERY (EMAIL ONLY)
+  ================================================== -->
+  <div id="usernameRecovery" style="display:none;">
 
-    <form method="POST" action="/admin/forgot-password">
+    <h1>Recover Username</h1>
+    <p class="sub">
+      Enter your admin email. Your username will be sent to your email.
+    </p>
+
+    <form method="POST" action="/admin/forgot-username">
       <div class="field">
         <label>Email Address</label>
         <input type="email" name="email" required>
       </div>
 
-      <button class="btn blue">Send OTP</button>
-
-      <p style="margin-top:10px;font-size:12px;">
-        <a href="javascript:void(0)"
-          id="resetBackLogin"
-          style="color:#7dd3fc;">
-          Back to Login
-        </a>
-
-      </p>
+      <button class="btn blue">Send Username</button>
     </form>
+<p style="margin-top:10px;font-size:12px;">
+  <a href="javascript:void(0)"
+     class="recoveryBack"
+     style="color:#7dd3fc;">
+    ← Back
+  </a>
+</p>
 
-  {% else %}
-
-    <p class="sub">OTP verified. Create a new password.</p>
-
-    <form method="POST" action="/admin/reset-password">
-      <div class="field">
-        <label>New Password</label>
-        <input type="password" name="password" required>
-      </div>
-
-      <div class="field">
-        <label>Confirm Password</label>
-        <input type="password" name="confirm" required>
-      </div>
-      <div id="passwordStatus" style="font-size:12px;margin-top:4px;"></div>
-
-
-      <button class="btn green">Save New Password</button>
-    </form>
-
-  {% endif %}
+  </div>
 
 </div>
+
 
   <!-- RIGHT STATIC PANEL -->
   <div class="welcome">
@@ -1018,7 +1082,7 @@ margin-top: 2px;
         <input type="email" name="email" required>
       </div>
 
-      <button class="reset-btn green">
+      <button class="reset-btn blue">
         Send OTP & Continue
       </button>
     </form>
@@ -1083,6 +1147,44 @@ margin-top: 2px;
 </div>
 
 <script>
+function confirmCancelReset(){
+  if(confirm("Are you sure? You will need OTP again to reset password.")){
+    window.location.href = "/admin/reset-cancel";
+  }
+}
+document.querySelectorAll(".recoveryBack").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.getElementById("recoveryChoice").style.display = "block";
+    document.getElementById("passwordRecovery").style.display = "none";
+    document.getElementById("usernameRecovery").style.display = "none";
+  });
+});
+
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const recoveryChoice   = document.getElementById("recoveryChoice");
+  const passwordRecovery = document.getElementById("passwordRecovery");
+  const usernameRecovery = document.getElementById("usernameRecovery");
+
+  document.getElementById("choosePassword")?.addEventListener("click", () => {
+    recoveryChoice.style.display = "none";
+    passwordRecovery.style.display = "block";
+    usernameRecovery.style.display = "none";
+  });
+
+  document.getElementById("chooseUsername")?.addEventListener("click", () => {
+    recoveryChoice.style.display = "none";
+    passwordRecovery.style.display = "none";
+    usernameRecovery.style.display = "block";
+  });
+
+});
+</script>
+
+<script>
 let wrap;
 let publicOtpOverlay;
 let privateOtpOverlay;
@@ -1100,10 +1202,11 @@ document.addEventListener("DOMContentLoaded", () => {
      ADMIN / MAIN PANEL CONTROLS
   ===================================================== */
 
-  document.getElementById("openReset")?.addEventListener("click", () => {
+  document.getElementById("openRecovery")?.addEventListener("click", () => {
     wrap.className = "wrapper reset";
     sessionStorage.setItem("active_panel", "reset");
   });
+
 
   document.getElementById("resetBackLogin")?.addEventListener("click", () => {
     wrap.className = "wrapper";
@@ -1174,10 +1277,7 @@ document.addEventListener("DOMContentLoaded", () => {
     wrap.className = "wrapper register";
     sessionStorage.setItem("active_panel", "register");
   }
-  if (serverPanel === "reset") {
-    wrap.className = "wrapper reset";
-    sessionStorage.setItem("active_panel", "reset");
-  }
+  
 
   /* =====================================================
      AUTO-OPEN OTP POPUP ON ERROR

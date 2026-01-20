@@ -173,6 +173,72 @@
   margin-right:6px;
   vertical-align:middle;
 }
+/* ================= FLOATING DOWNLOAD BUTTON ================= */
+
+.fab-download{
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 1500;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 14px 18px;
+  border-radius: 999px;
+
+  background: linear-gradient(135deg, #3d64cf, #3762d7);
+  color: #052e16;
+  border: none;
+
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: .2px;
+
+  cursor: pointer;
+  box-shadow:
+    0 20px 40px -10px rgba(34,197,94,.6),
+    inset 0 0 0 1px rgba(255,255,255,.25);
+
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.fab-download:hover{
+  transform: translateY(-3px);
+  box-shadow:
+    0 28px 55px -12px rgba(34,197,94,.75),
+    inset 0 0 0 1px rgba(255,255,255,.35);
+}
+
+.fab-icon{
+  width:18px;
+  height:18px;
+  fill:currentColor;
+}
+
+/* ================= MOBILE: ICON ONLY ================= */
+
+@media (max-width:600px){
+  .fab-download{
+    width:56px;
+    height:56px;
+    padding:0;
+    border-radius:50%;
+    justify-content:center;
+    margin-bottom: 20px;
+
+  }
+
+  .fab-text{
+    display:none;
+  }
+
+  .fab-icon{
+    width:22px;
+    height:22px;
+  }
+}
 
     </style>
 </head>
@@ -185,7 +251,7 @@
   </div>
   <div class="sub">{{ election.name }}</div>
 </div>
-
+    
     <a href="/admin/dashboard" class="btn-nav">Dashboard</a>
 </nav>
 
@@ -264,7 +330,99 @@
     </div>
 
 </div>
+<div id="premium-report" style="position: absolute; left: -9999px; width: 1200px; padding: 60px; background: #fff; color: #1e293b; font-family: 'Inter', system-ui, sans-serif;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #3b82f6; padding-bottom: 30px; margin-bottom: 40px;">
+        <div>
+            <img src="/static/uploads/votecentral.svg" style="height: 100px; margin-bottom: -35px; margin-left: -20px;">
+            <h1 style="font-size: 38px; margin: 0; letter-spacing: -1px; color: #0f172a;">Official Election Audit</h1>
+            <p style="font-size: 18px; color: #64748b; margin-top: 5px;">Generated on {{ now.strftime('%Y-%m-%d %H:%M:%S') if now else '2026-01-20' }}</p>
+        </div>
+        <div style="text-align: right;">
+            <span style="background: #eff6ff; color: #3b82f6; padding: 8px 16px; border-radius: 50px; font-weight: 800; font-size: 14px; text-transform: uppercase;">
+                {{ election.election_type }} Election
+            </span>
+            <h2 style="margin: 15px 0 0 0; font-size: 28px; color: #3b82f6;">{{ election.name }}</h2>
+        </div>
+    </div>
 
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 50px;">
+        <div style="background: #f8fafc; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0;">
+            <small style="color: #64748b; text-transform: uppercase; font-weight: 700; font-size: 11px;">Total Participation</small>
+            <div style="font-size: 24px; font-weight: 800; color: #0f172a;">{{ total_votes }} <span style="font-size: 14px; color: #94a3b8;">Votes</span></div>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0;">
+            <small style="color: #64748b; text-transform: uppercase; font-weight: 700; font-size: 11px;">Start Schedule</small>
+            <div style="font-size: 16px; font-weight: 700; color: #334155; margin-top: 5px;">{{ start_fmt }}</div>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0;">
+            <small style="color: #64748b; text-transform: uppercase; font-weight: 700; font-size: 11px;">End Schedule</small>
+            <div style="font-size: 16px; font-weight: 700; color: #334155; margin-top: 5px;">{{ end_fmt }}</div>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0;">
+            <small style="color: #64748b; text-transform: uppercase; font-weight: 700; font-size: 11px;">Whitelist Status</small>
+            <div style="font-size: 14px; font-weight: 700; color: #334155; margin-top: 5px;">
+                {% if election.election_type == 'private' %}
+                <span style="color: #16a34a;">Voted: {{ total_votes }}</span><br>
+                <span style="color: #ef4444;">Not Voted: {{ not_voted_count }}</span>
+                {% else %}
+                N/A (Public)
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <table style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
+        <thead>
+            <tr style="color: #64748b; text-transform: uppercase; font-size: 12px; font-weight: 800; text-align: left;">
+                <th style="padding: 10px 20px;">Rank & Candidate</th>
+                <th style="padding: 10px 20px;">Party</th>
+                <th style="padding: 10px 20px;">Vote Count</th>
+                <th style="padding: 10px 20px;">Percentage</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in result %}
+            <tr style="background: {{ '#f0fdf4' if r.winner else '#ffffff' }}; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                <td style="padding: 20px; border-radius: 12px 0 0 12px; display: flex; align-items: center; gap: 20px;">
+                    <span style="font-weight: 900; color: #94a3b8; font-size: 20px;">#{{ loop.index }}</span>
+                    <img src="/static/uploads/{{ r.photo if r.photo else 'default.png' }}" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <div>
+                        <div style="font-weight: 800; font-size: 18px; color: #1e293b;">{{ r.name }}</div>
+                        {% if r.winner %}<span style="font-size: 10px; background: #16a34a; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 900;">WINNER</span>{% endif %}
+                    </div>
+                </td>
+                <td style="padding: 20px; font-weight: 600; color: #64748b;">{{ r.party }}</td>
+                <td style="padding: 20px; font-weight: 800; font-size: 20px; color: #0f172a;">{{ r.count }}</td>
+                <td style="padding: 20px; border-radius: 0 12px 12px 0;">
+                    <div style="font-weight: 800; font-size: 18px; color: #3b82f6;">{{ (r.count / total_votes * 100)|round(1) if total_votes > 0 else 0 }}%</div>
+                    <div style="width: 100px; height: 6px; background: #e2e8f0; border-radius: 10px; margin-top: 5px; overflow: hidden;">
+                        <div style="width: {{ (r.count / total_votes * 100) if total_votes > 0 else 0 }}%; height: 100%; background: #3b82f6;"></div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 60px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 30px;">
+        <p style="color: #94a3b8; font-size: 12px; font-weight: 500;">
+            This document serves as the official record of results for the mentioned election. <br>
+            Verified by <strong>VoteCentral Digital Sovereignty Engine</strong>.
+        </p>
+    </div>
+</div>
+<button class="fab-download" onclick="downloadReport()" aria-label="Download report">
+<svg viewBox="0 0 24 24" class="fab-icon" aria-hidden="true">
+  <!-- Arrow -->
+  <path d="M12 3a1 1 0 0 1 1 1v9.17l2.59-2.58a1 1 0 1 1 1.41 1.42l-4.3 4.29a1 1 0 0 1-1.4 0l-4.3-4.29a1 1 0 1 1 1.41-1.42L11 13.17V4a1 1 0 0 1 1-1z"/>
+  <!-- Base -->
+  <path d="M5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1z"/>
+</svg>
+
+  <span class="fab-text">Download Report</span>
+</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
     window.addEventListener('load', () => {
         const total = parseInt("{{ total_votes }}") || 0;
@@ -283,6 +441,22 @@
             document.getElementById(labelId).innerText = pct + "%";
         });
     });
+    function downloadReport() {
+    const report = document.getElementById('premium-report');
+    
+    // Scale up for high clarity (Retina quality)
+    html2canvas(report, {
+        scale: 3, 
+        useCORS: true, // Needed to load candidate images
+        logging: false,
+        backgroundColor: "#ffffff"
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `VoteCentral_{{ election.name }}_Report.png`;
+        link.href = canvas.toDataURL('image/png', 1.0);
+        link.click();
+    });
+}
 </script>
 
 </body>

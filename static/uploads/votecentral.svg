@@ -1,0 +1,26 @@
+<svg
+  width="520"
+  height="120"
+  viewBox="0 0 520 120"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="VoteCentral logo">
+
+  <style>
+    .brand {
+      font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+  </style>
+
+  <text
+    x="20"
+    y="80"
+    class="brand"
+    font-size="72"
+    fill="#3b82f6">
+    VoteCentral
+  </text>
+
+</svg>

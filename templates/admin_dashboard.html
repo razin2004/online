@@ -2015,6 +2015,31 @@ input:focus,select:focus,textarea:focus{
 
   </div>
 </div>
+<!-- GLOBAL CONFIRM MODAL -->
+<div id="confirmModal" class="modal">
+  <div class="modal-box" style="max-width:380px;text-align:center">
+
+    <div style="font-size:34px;margin-bottom:6px;color:var(--yellow)">
+      
+    </div>
+
+    <h3 id="confirmTitle">Confirm?</h3>
+
+    <p id="confirmMessage"
+       style="margin:14px 0;color:var(--muted);font-size:14px;line-height:1.5">
+    </p>
+
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:18px">
+      <button class="btn btn-outline" onclick="closeConfirm()">
+        Cancel
+      </button>
+      <button id="confirmYesBtn" class="btn btn-danger">
+        OK
+      </button>
+    </div>
+
+  </div>
+</div>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
@@ -2030,11 +2055,6 @@ input:focus,select:focus,textarea:focus{
 </div>
 {% endif %}
 {% endwith %}
-<script>
-function closeFlash(){
-  document.getElementById("flash-overlay")?.remove();
-}
-</script>
 
 <script>
   const VIEW_ORDER = [
@@ -2045,16 +2065,7 @@ function closeFlash(){
   "profile"
 ];
 
-function showAlert(message){
-  $("#alertMessage").textContent = message;
-  $("#alertModal").style.display = "flex";
-  document.body.style.overflow = "hidden";
-}
 
-function closeAlert(){
-  $("#alertModal").style.display = "none";
-  document.body.style.overflow = "auto";
-}
 
 /* ======================================================
    CORE HELPERS
@@ -2119,7 +2130,41 @@ function switchView(viewId){
   view.scrollTo({ top:0 });
 }
 
+function showAlert(message){
+  $("#alertMessage").textContent = message;
+  $("#alertModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
 
+function closeAlert(){
+  $("#alertModal").style.display = "none";
+  document.body.style.overflow = "auto";
+}
+function closeFlash(){
+  document.getElementById("flash-overlay")?.remove();
+}
+let confirmAction = null;
+
+function openConfirm(message, onConfirm){
+  $("#confirmMessage").textContent = message;
+  confirmAction = onConfirm;
+
+  $("#confirmModal").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function closeConfirm(){
+  $("#confirmModal").style.display = "none";
+  document.body.style.overflow = "auto";
+  confirmAction = null;
+}
+
+$("#confirmYesBtn").addEventListener("click", () => {
+  if(typeof confirmAction === "function"){
+    confirmAction();
+  }
+  closeConfirm();
+});
 /* ======================================================
    MODALS
 ====================================================== */
@@ -2208,16 +2253,24 @@ function openEditElection(id, name, start, end){
 
 function confirmDeleteElection(){
   const id=$("#editElectionId").value;
-  if(id && confirm("Delete election? Only allowed if no votes exist.")){
-    location.href=`/admin/election/delete/${id}`;
-  }
+  if(!id) return;
+
+  openConfirm(
+    "Delete this election? Only allowed if no votes exist.",
+    () => location.href=`/admin/election/delete/${id}`
+  );
 }
+
 function confirmForceDeleteElection(){
   const id=$("#editElectionId").value;
-  if(id && confirm("⚠ FORCE DELETE will remove election, candidates & votes. Continue?")){
-    location.href=`/admin/election/force-delete/${id}`;
-  }
+  if(!id) return;
+
+  openConfirm(
+    "⚠ FORCE DELETE will permanently remove the election, candidates, and votes.",
+    () => location.href=`/admin/election/force-delete/${id}`
+  );
 }
+
 
 /* ======================================================
    MANAGE CANDIDATES
@@ -2270,13 +2323,57 @@ function openManageCandidates(eid, name, start, end){
         return;
       }
 
-      list.innerHTML = data.candidates.map(c => `
-        <div class="card" style="padding:12px">
-          <b>${c.name}</b>
-          <div>Party: ${c.party || "Independent"}</div>
-          <div>Votes: ${isEnded ? c.votes : "—"}</div>
-        </div>
-      `).join("");
+list.innerHTML = data.candidates.map(c => `
+  <div class="card" style="padding:12px;display:flex;gap:12px;align-items:center">
+
+    <div class="media-box" style="width:64px;flex-shrink:0">
+      <img src="/static/uploads/${c.photo || 'default-candidate.png'}">
+    </div>
+
+    <div style="flex:1">
+      <b>${c.name}</b>
+      <div style="font-size:13px;color:var(--muted)">
+        Party: ${c.party || "Independent"}
+      </div>
+      <div style="font-size:13px">
+        Votes: ${isEnded ? c.votes : "—"}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:6px">
+      <!-- EDIT -->
+      <button
+        class="btn btn-outline"
+        ${isEnded ? "disabled title='Election has ended'" : ""}
+        onclick="openEditCandidate(
+          '${c.id}',
+          '${c.name}',
+          '${c.party || ""}',
+          '${c.description || ""}'
+        )">
+        Edit
+      </button>
+
+      <!-- DELETE -->
+      <button
+        class="btn btn-danger"
+        ${(isEnded || c.votes > 0) ? "disabled title='Cannot delete candidate'" : ""}
+          onclick="
+            openConfirm(
+              'Delete ${c.name}? This action cannot be undone.',
+              () => location.href='/admin/candidate/delete/${c.id}'
+            );
+          "
+
+          
+        ">
+        Delete
+      </button>
+    </div>
+
+  </div>
+`).join("");
+
     });
 
   openModal("manageCandidatesModal");
@@ -2293,11 +2390,15 @@ function openEditCandidate(id,name,party,desc){
   openModal("editCandidateModal");
 }
 function confirmDeleteCandidate(){
-  const id=$("#editCandidateId").value;
-  if(id && confirm("Delete candidate? Only allowed if zero votes.")){
-    location.href=`/admin/candidate/delete/${id}`;
-  }
+  const id = $("#editCandidateId").value;
+  if(!id) return;
+
+  openConfirm(
+    "Delete this candidate? Only allowed if zero votes.",
+    () => location.href=`/admin/candidate/delete/${id}`
+  );
 }
+
 
 /* ======================================================
    WHITELIST
@@ -2350,10 +2451,7 @@ function openWhitelist(eid, name, start, end){
             <b>${w.email}</b>
             <button class="btn btn-danger"
               ${isEnded ? "disabled title='Election has ended'" : ""}
-              onclick="
-                if(confirm('Remove ${w.email}?')){
-                  location.href='/admin/whitelist/remove/${w.id}';
-                }
+              onclick="location.href='/admin/whitelist/remove/${w.id}'"
               ">
               Remove
             </button>
