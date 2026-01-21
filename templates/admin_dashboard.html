@@ -1180,6 +1180,114 @@ input:focus,select:focus,textarea:focus{
   from{transform:scale(.9);opacity:0}
   to{transform:scale(1);opacity:1}
 }
+/* ================= WHITELIST SELECTION UI ================= */
+
+.wl-action-bar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:12px 0 14px;
+  flex-wrap:wrap;
+}
+
+.wl-select-all{
+  display:none;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  color:var(--muted);
+  font-weight:600;
+}
+
+/* Custom checkbox */
+.wl-check,
+#wlSelectAll{
+  appearance:none;
+  width:16px;
+  height:16px;
+  border-radius:5px;
+  border:1.5px solid var(--border);
+  background:rgba(2,6,23,.9);
+  display:inline-grid;
+  place-items:center;
+  cursor:pointer;
+}
+
+/* Hide whitelist checkboxes by default */
+.wl-check{
+  display:none;
+}
+
+.wl-check:checked,
+#wlSelectAll:checked{
+  background:linear-gradient(135deg,var(--blue),var(--indigo));
+  border-color:transparent;
+}
+
+.wl-check:checked::after,
+#wlSelectAll:checked::after{
+  content:"";
+  width:6px;
+  height:10px;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+
+  /* original rotation + micro offset */
+  transform: translate(-3px, -6px) rotate(45deg);
+}
+
+
+
+
+/* Hide buttons by default (JS controls visibility) */
+#wlSelectAllWrap,
+#wlDeleteSelectedBtn,
+#wlCancelBtn{
+  display:none;
+}
+/* Whitelist row */
+.wl-row{
+  padding:10px;
+  display:flex;
+  align-items:center;
+  gap:8px;                 /* tight gap */
+}
+
+.wl-email{
+  flex:1;
+  font-weight:600;
+  font-size:14px;
+  word-break:break-all;
+}
+/* ================= WHITELIST ACTION BAR LAYOUT ================= */
+
+.wl-action-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between; /* 🔑 split left / right */
+  gap:10px;
+  margin:12px 0 14px;
+  flex-wrap:wrap;
+}
+
+.wl-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.wl-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-left:auto; /* 🔑 forces right alignment */
+}
+
+/* Close button tighter */
+#wlCancelBtn{
+  padding:8px 10px;
+  font-size:14px;
+}
 
 </style>
 </head>
@@ -1968,17 +2076,67 @@ input:focus,select:focus,textarea:focus{
 <!-- WHITELIST -->
 <div id="whitelistModal" class="modal">
   <div class="modal-box">
-    <h3 id="wlTitle">Whitelist</h3>
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 id="wlTitle">Whitelist</h3>
+
+    </div>
+
+    <div id="wlCount"
+         style="font-size:13px;color:var(--muted);margin-bottom:10px">
+      Total: 0
+    </div>
+
+    <!-- ADD EMAILS -->
     <form method="POST" action="/admin/whitelist/bulk-add">
       <input type="hidden" id="wlElectionId" name="election_id">
-      <textarea name="emails" placeholder="Emails"></textarea>
+      <textarea name="emails" placeholder="Enter emails (comma or @gmail.com)"></textarea>
       <button class="btn btn-primary">Add</button>
     </form>
+
     <input id="wlSearchInput" placeholder="Search email">
+   <!-- ACTION BAR -->
+<div class="wl-action-bar">
+
+  <!-- LEFT GROUP -->
+  <div class="wl-left">
+    <button id="wlSelectBtn"
+            class="btn btn-outline"
+            onclick="enableWhitelistSelection()">
+      Select
+    </button>
+
+    <label id="wlSelectAllWrap" class="wl-select-all">
+      <input type="checkbox" id="wlSelectAll">
+      Select All
+    </label>
+  </div>
+
+  <!-- RIGHT GROUP -->
+  <div class="wl-right">
+    <button id="wlDeleteSelectedBtn"
+            class="btn btn-danger"
+            onclick="confirmBulkDelete()">
+      Delete 
+    </button>
+
+    <button id="wlCancelBtn"
+            class="btn btn-outline"
+            onclick="cancelWhitelistSelection()">
+      ✕
+    </button>
+  </div>
+
+</div>
+
+
     <div id="wlList"></div>
+
     <button class="btn btn-outline" onclick="closeModals()">Close</button>
+
   </div>
 </div>
+
 {% endraw %}
 <div id="alertModal" class="modal">
   <div class="modal-box" style="max-width:380px;text-align:center">
@@ -2426,40 +2584,131 @@ function openWhitelist(eid, name, start, end){
     .then(r => r.json())
     .then(data => {
       const list = $("#wlList");
-      if(!data.whitelist.length){
-        list.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">
-  <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
-    <use href="#icon-mail"></use>
-  </svg>
-</div>
-            <div class="empty-title">Whitelist is empty</div>
-            <div class="empty-text">
-              Only whitelisted voters can participate in this private election.
-              ${isEnded ? "This election has ended." : "Add voter emails to enable access."}
-            </div>
-          </div>
-        `;
-        return;
-      }
+
+      // ✅ UPDATE COUNT
+      $("#wlCount").textContent = `Total: ${data.whitelist.length}`;
+
+// cache controls
+const selectBtn   = document.getElementById("wlSelectBtn");
+const selectAll   = document.getElementById("wlSelectAllWrap");
+const deleteBtn   = document.getElementById("wlDeleteSelectedBtn");
+const cancelBtn   = document.getElementById("wlCancelBtn");
+const searchInput = document.getElementById("wlSearchInput");
+
+/* ================= EMPTY WHITELIST ================= */
+if(!data.whitelist.length){
+
+  // hide selection UI
+  if(selectBtn)   selectBtn.style.display = "none";
+  if(selectAll)   selectAll.style.display = "none";
+  if(deleteBtn)   deleteBtn.style.display = "none";
+  if(cancelBtn)   cancelBtn.style.display = "none";
+  if(searchInput) searchInput.style.display = "none";
+
+  list.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
+          <use href="#icon-mail"></use>
+        </svg>
+      </div>
+      <div class="empty-title">Whitelist is empty</div>
+      <div class="empty-text">
+        Only whitelisted voters can participate in this private election.
+        ${isEnded ? "This election has ended." : "Add voter emails to enable access."}
+      </div>
+    </div>
+  `;
+  return;
+}
+
+/* ================= NON-EMPTY WHITELIST ================= */
+
+// show base controls
+if(selectBtn)   selectBtn.style.display = "inline-flex";
+if(searchInput) searchInput.style.display = "block";
+
+// reset selection state every open
+cancelWhitelistSelection();
 
       list.innerHTML = data.whitelist
         .sort((a,b)=>a.email.localeCompare(b.email))
         .map(w => `
-          <div class="card" style="padding:10px">
-            <b>${w.email}</b>
+          <div class="card wl-row">
+
+            ${
+              w.has_voted
+                ? ""
+                : `<input type="checkbox" class="wl-check" value="${w.id}">`
+            }
+
+            <span class="wl-email">${w.email}</span>
+
             <button class="btn btn-danger"
-              ${isEnded ? "disabled title='Election has ended'" : ""}
-              onclick="location.href='/admin/whitelist/remove/${w.id}'"
-              ">
-              Remove
+              ${w.has_voted ? "disabled title='User has already voted'" : ""}
+              onclick="location.href='/admin/whitelist/remove/${w.id}'">
+              ${w.has_voted ? "Voted" : "Remove"}
             </button>
+
           </div>
         `).join("");
-    });
+
+    })
   openModal("whitelistModal");
 }
+let whitelistSelectionMode = false;
+
+function enableWhitelistSelection(){
+  whitelistSelectionMode = true;
+
+  document.getElementById("wlSelectBtn").style.display = "none";
+  document.getElementById("wlSelectAllWrap").style.display = "flex";
+  document.getElementById("wlCancelBtn").style.display = "inline-flex";
+
+  document.querySelectorAll(".wl-check").forEach(c=>{
+    c.style.display = "inline-grid";
+  });
+}
+
+function cancelWhitelistSelection(){
+  whitelistSelectionMode = false;
+
+  // buttons
+  document.getElementById("wlSelectBtn").style.display = "inline-flex";
+  document.getElementById("wlSelectAllWrap").style.display = "none";
+  document.getElementById("wlDeleteSelectedBtn").style.display = "none";
+  document.getElementById("wlCancelBtn").style.display = "none";
+
+  // reset select-all
+  const selectAll = document.getElementById("wlSelectAll");
+  if(selectAll) selectAll.checked = false;
+
+  // hide & uncheck all row checkboxes
+  document.querySelectorAll(".wl-check").forEach(c=>{
+    c.checked = false;
+    c.style.display = "none";
+  });
+}
+
+
+function updateWhitelistDeleteVisibility(){
+  const checked = document.querySelectorAll(".wl-check:checked").length;
+  document.getElementById("wlDeleteSelectedBtn").style.display =
+    checked > 0 ? "inline-flex" : "none";
+}
+
+document.addEventListener("change", e=>{
+  if(e.target.classList.contains("wl-check")){
+    updateWhitelistDeleteVisibility();
+  }
+
+  if(e.target.id === "wlSelectAll"){
+    document.querySelectorAll(".wl-check").forEach(c=>{
+      c.checked = e.target.checked;
+    });
+    updateWhitelistDeleteVisibility();
+  }
+});
 
 /* ======================================================
    SEARCH FILTERS
@@ -2485,7 +2734,8 @@ function attachWhitelistSearch(){
   input.addEventListener("input", () => {
     const q = input.value.toLowerCase();
     list.querySelectorAll(".card").forEach(card => {
-      const email = card.querySelector("b")?.innerText.toLowerCase() || "";
+      const email = card.querySelector(".wl-email")?.innerText.toLowerCase() || "";
+
       card.style.display = email.includes(q) ? "" : "none";
     });
   });
@@ -2585,7 +2835,81 @@ function getElectionStatus(card){
   if(start && end && now >= start && now <= end) return "running";
   return "unknown";
 }
+function getSortKey(card, mode){
+  const status = getElectionStatus(card);
+  const start  = card.dataset.start ? Date.parse(card.dataset.start) : Infinity;
+  const end    = card.dataset.end   ? Date.parse(card.dataset.end)   : Infinity;
+  const now    = Date.now();
 
+  /*
+    Lower tuple = higher priority
+  */
+
+  // ===== ELECTIONS / OVERVIEW =====
+  if(mode === "elections"){
+    if(status === "running"){
+      return [0, end];           // finishing first
+    }
+    if(status === "upcoming"){
+      return [1, start];         // starting first
+    }
+    if(status === "ended"){
+      return [2, -end];          // last ended first
+    }
+  }
+
+  // ===== RESULTS =====
+  if(mode === "results"){
+    if(status === "ended"){
+      return [0, -end];          // last ended first
+    }
+    if(status === "running"){
+      return [1, end || Infinity];
+    }
+    if(status === "upcoming"){
+      return [2, start];
+    }
+  }
+
+  return [9, Infinity];
+}
+function sortCards(containerSelector, cardSelector, mode){
+  const container = document.querySelector(containerSelector);
+  if(!container) return;
+
+  const cards = Array.from(container.querySelectorAll(cardSelector));
+
+  cards.sort((a,b)=>{
+    const ka = getSortKey(a, mode);
+    const kb = getSortKey(b, mode);
+
+    if(ka[0] !== kb[0]) return ka[0] - kb[0];
+    return ka[1] - kb[1];
+  });
+
+  cards.forEach(c => container.appendChild(c));
+}
+document.addEventListener("DOMContentLoaded", () => {
+  sortCards(
+    "#elections .election-grid",
+    "[data-election-card]",
+    "elections"
+  );
+});
+document.addEventListener("DOMContentLoaded", () => {
+  sortCards(
+    "#overviewGrid",
+    "[data-ov-card]",
+    "elections"
+  );
+});
+document.addEventListener("DOMContentLoaded", () => {
+  sortCards(
+    "#results .election-grid",
+    "[data-result-card]",
+    "results"
+  );
+});
 /* ======================================================
    ELECTIONS FILTER
 ====================================================== */
@@ -3121,6 +3445,44 @@ function handleCandidateImageSubmit(form){
 
   return false; // stop default submit
 }
+function confirmBulkDelete(){
+  const ids = Array.from(
+    document.querySelectorAll(".wl-check:checked")
+  ).map(c => c.value);
+
+  if(ids.length === 0){
+    showAlert("Select at least one email to delete.");
+    return;
+  }
+
+  openConfirm(
+    `Delete ${ids.length} selected whitelist entries?`,
+    () => submitBulkDelete(ids)
+  );
+}
+
+function submitBulkDelete(ids){
+  fetch("/admin/whitelist/bulk-delete",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ ids })
+  })
+  .then(r => r.json())
+  .then(res => {
+    if(!res.success){
+      showAlert(res.message || "Delete failed");
+      return;
+    }
+
+    // refresh whitelist
+    openWhitelist(
+      $("#wlElectionId").value,
+      $("#wlTitle").textContent.replace("Whitelist — ","")
+    );
+  })
+  .catch(() => showAlert("Network error"));
+}
+
 </script>
 
 </body>

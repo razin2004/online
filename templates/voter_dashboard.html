@@ -612,6 +612,7 @@ function applyFilters(){
   // ✅ toggle "no results" card
   document.getElementById("noResultsCard").style.display =
     visibleCount === 0 ? "block" : "none";
+  sortElectionCards();
 }
 
 searchBox.oninput=applyFilters;
@@ -683,13 +684,16 @@ function updateTimers(){
       return `${h}h ${m}m ${sec}s`;
     }
 
-    if(!s||!e){
-      chip.textContent="RUNNING";
-      chip.className="status-chip status-running";
-      label.textContent="No time restriction";
-      card.dataset.state="running";
-      btn.disabled=false;
-    }else if(now<s){
+      if(!s || !e){
+        chip.textContent="RUNNING";
+        chip.className="status-chip status-running";
+        label.textContent="No time restriction";
+
+        // 🔑 distinct state
+        card.dataset.state = "running-open";
+
+        btn.disabled = false;
+      }else if(now<s){
       chip.textContent="UPCOMING";
       chip.className="status-chip status-upcoming";
       label.innerHTML="Starts in <b>"+fmt(s-now)+"</b>";
@@ -709,10 +713,53 @@ function updateTimers(){
       btn.disabled=true;
     }
   });
+sortElectionCards();
 }
 
 setInterval(updateTimers,1000);
 updateTimers();
+function sortElectionCards(){
+  const grid = document.querySelector(".grid");
+  if(!grid) return;
+
+  const cards = Array.from(grid.querySelectorAll(".election-item"));
+
+  cards.sort((a,b)=>{
+    const sa = a.dataset.state;
+    const sb = b.dataset.state;
+
+    const ba = a.querySelector("button[id^='btn-']");
+    const bb = b.querySelector("button[id^='btn-']");
+
+    const as = ba?.dataset.start ? Date.parse(ba.dataset.start) : Infinity;
+    const ae = ba?.dataset.end   ? Date.parse(ba.dataset.end)   : Infinity;
+    const bs = bb?.dataset.start ? Date.parse(bb.dataset.start) : Infinity;
+    const be = bb?.dataset.end   ? Date.parse(bb.dataset.end)   : Infinity;
+
+    const rank = s =>
+      s === "running"       ? 0 :   // live (timed)
+      s === "running-open"  ? 1 :   // live (no time restriction)
+      s === "upcoming"      ? 2 :
+      s === "ended"         ? 3 : 9;
+
+
+    // primary: state
+    if(rank(sa) !== rank(sb)){
+      return rank(sa) - rank(sb);
+    }
+
+    // secondary: time
+    if(sa === "running")        return ae - be;   // ending soonest
+    if(sa === "running-open")  return 0;          // keep original order
+    if(sa === "upcoming")       return as - bs;   // starting soonest
+    if(sa === "ended")          return be - ae;   // recently ended
+
+
+    return 0;
+  });
+
+  cards.forEach(c => grid.appendChild(c));
+}
 function confirmLogout(){
   openSmartModal(
     "Confirm Logout",

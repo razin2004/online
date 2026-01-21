@@ -1630,7 +1630,7 @@ def api_candidates(eid):
 
     return {"candidates": data}
 
-@app.route("/admin/api/whitelist/<eid>")
+@app.route("/admin/api/whitelist/<int:eid>")
 def api_whitelist(eid):
 
     if not require_admin_login():
@@ -1638,17 +1638,28 @@ def api_whitelist(eid):
 
     election = Election.query.get_or_404(eid)
 
-    entries = VoterWhitelist.query.filter_by(election_id=election.id).all()
+    entries = VoterWhitelist.query.filter_by(
+        election_id=election.id
+    ).all()
+
+    # build set of emails that have voted in this election
+    voted_emails = {
+        v.email.lower()
+        for v in Vote.query.filter_by(election_id=election.id).all()
+        if v.email
+    }
 
     data = [
         {
             "id": w.id,
-            "email": w.email
+            "email": w.email,
+            "has_voted": w.email.lower() in voted_emails
         }
         for w in entries
     ]
 
     return {"whitelist": data}
+
 @app.route("/admin/results")
 def admin_results_page():
     if not require_admin_login():
@@ -2034,7 +2045,7 @@ def whitelist_add():
         return redirect(request.referrer or "/admin/dashboard")
 
     email = (request.form.get("email") or "").strip().lower()
-
+    total_whitelisted = VoterWhitelist.query.filter_by(election_id=election.id).count()
     # ❌ basic email validation
     if not email or "@" not in email or "." not in email:
         flash("Enter a valid email address to add to whitelist")
@@ -2062,7 +2073,8 @@ def whitelist_add():
     db.session.add(
         VoterWhitelist(
             election_id=election.id,
-            email=email
+            email=email,
+            total_whitelisted=total_whitelisted
         )
     )
     db.session.commit()
@@ -2070,6 +2082,58 @@ def whitelist_add():
     flash("Email added to whitelist")
     return redirect(request.referrer or "/admin/dashboard")
 
+@app.route("/admin/whitelist/bulk-delete", methods=["POST"])
+def whitelist_bulk_delete():
+
+    data = request.get_json() or {}
+    ids = data.get("ids", [])
+
+    if not ids:
+        return jsonify(success=False, message="No items selected")
+
+    entries = VoterWhitelist.query.filter(
+        VoterWhitelist.id.in_(ids)
+    ).all()
+
+    if not entries:
+        return jsonify(success=False, message="Nothing to delete")
+
+    election = Election.query.get(entries[0].election_id)
+
+    if election_has_ended(election):
+        return jsonify(
+            success=False,
+            message="Election has ended"
+        )
+
+    deleted = 0
+    skipped = 0
+
+    for w in entries:
+        voted = Vote.query.filter_by(
+            election_id=w.election_id,
+            email=w.email
+        ).first()
+
+
+        if voted:
+            skipped += 1
+            continue
+
+        db.session.delete(w)
+        deleted += 1
+
+    db.session.commit()
+
+    return jsonify(
+        success=True,
+        deleted=deleted,
+        skipped_voted=skipped,
+        message=f"{deleted} deleted, {skipped} skipped (already voted)"
+    )
+
+
+import re
 
 @app.route("/admin/whitelist/bulk-add", methods=["POST"])
 def whitelist_bulk_add():
@@ -2092,11 +2156,33 @@ def whitelist_bulk_add():
 
     raw_emails = request.form.get("emails", "")
 
-    emails = [
-        e.strip().lower()
-        for e in raw_emails.replace(",", "\n").split("\n")
-        if e.strip()
-    ]
+    # ====================================================
+    # 🔹 NORMALIZATION & SMART SPLITTING
+    # ====================================================
+
+    # 1️⃣ Normalize separators
+    text = raw_emails.replace(",", "\n")
+
+    # 2️⃣ Split by gmail boundary so next email is not swallowed
+    #    Example: abc@gmail.comxyz@gmail.com → abc@gmail.com\nxyz@gmail.com
+    text = re.sub(r'(@gmail\.com)', r'\1\n', text, flags=re.IGNORECASE)
+
+    # 3️⃣ Split lines
+    candidates = text.split("\n")
+
+    emails = []
+    for e in candidates:
+        if not e.strip():
+            continue
+
+        # 4️⃣ Remove ALL whitespace inside email
+        cleaned = re.sub(r"\s+", "", e).lower()
+
+        emails.append(cleaned)
+
+    # ====================================================
+    # 🔹 INSERT LOGIC
+    # ====================================================
 
     added = 0
     skipped_invalid = 0
@@ -2104,7 +2190,7 @@ def whitelist_bulk_add():
 
     for email in emails:
 
-        # ❌ invalid email
+        # ❌ basic email validation
         if "@" not in email or "." not in email:
             skipped_invalid += 1
             continue
@@ -2127,7 +2213,10 @@ def whitelist_bulk_add():
 
     db.session.commit()
 
-    # 📢 precise feedback
+    # ====================================================
+    # 📢 FEEDBACK
+    # ====================================================
+
     if added:
         flash(f"{added} email(s) added to whitelist")
     if skipped_invalid:
@@ -2136,6 +2225,7 @@ def whitelist_bulk_add():
         flash(f"{skipped_duplicate} duplicate email(s) skipped")
 
     return redirect(request.referrer or "/admin/dashboard")
+
 
 @app.route("/admin/whitelist/remove/<wid>")
 def whitelist_remove(wid):
