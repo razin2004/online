@@ -1401,7 +1401,8 @@ def voter_results_list():
         total_votes = Vote.query.filter_by(election_id=e.id).count()
 
         start = ensure_utc(datetime.fromisoformat(e.start_time)) if e.start_time else None
-        end   = datetime.fromisoformat(e.end_time)   if e.end_time else None
+        end = ensure_utc(datetime.fromisoformat(e.end_time)) if e.end_time else None
+
 
         now = datetime.now(timezone.utc)
 

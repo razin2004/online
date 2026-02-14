@@ -1244,6 +1244,17 @@ input:focus,select:focus,textarea:focus{
   gap:10px;
   font-size:12px;
 }
+/* Prevent date wrapping */
+.time-box{
+  flex-wrap:nowrap;
+}
+
+.time-value{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:65%;
+}
 
 /* Countdown text */
 .time-label{
@@ -1616,7 +1627,29 @@ input:focus,select:focus,textarea:focus{
   display:flex;
   gap:10px;
 }
+.candidate-actions{
+  display:flex;
+  gap:6px;
+}
 
+@media (max-width:768px){
+  .candidate-actions{
+    flex-direction:column;
+    width:90px;
+  }
+
+  .candidate-actions .btn{
+    width:100%;
+  }
+}
+@media (max-width:768px){
+  .modal-box{
+    margin:0 auto !important;
+    position:relative;
+    top:auto !important;
+    transform:none !important;
+  }
+}
 </style>
 </head>
 
@@ -2722,7 +2755,9 @@ input:focus,select:focus,textarea:focus{
 
     <div class="modal-header">
       <div class="modal-title">Edit Candidate</div>
-      <button class="modal-close" onclick="closeModals()">✕</button>
+      <button class="modal-close"
+        onclick="closeModals('editCandidateModal')">✕</button>
+
     </div>
 
     <form method="POST"
@@ -2912,10 +2947,7 @@ input:focus,select:focus,textarea:focus{
       </p>
 
       <div class="modal-footer">
-        <button class="btn btn-outline"
-                onclick="closeLogoutConfirm()">
-          Cancel
-        </button>
+      
 
 <button class="btn btn-danger"
         style="display:flex;align-items:center;justify-content:center;gap:8px"
@@ -3105,16 +3137,27 @@ function openModal(id){
   m.style.display="flex";
   document.body.style.overflow="hidden";
 }
-function closeModals(){
-  $$(".modal").forEach(m=>m.style.display="none");
+function closeModals(targetId){
+
+  // 🔥 CLEAR MODAL MEMORY
+  localStorage.removeItem("admin_modal");
+
+  if(targetId){
+    const m = document.getElementById(targetId);
+    if(m) m.style.display = "none";
+  } else {
+    $$(".modal").forEach(m=>m.style.display="none");
+  }
+
   document.body.style.overflow="auto";
-  localStorage.removeItem("admin_modal"); // ✅ ADD
 
   document.querySelectorAll(".btn.loading").forEach(btn=>{
     btn.classList.remove("loading");
     btn.disabled = false;
   });
 }
+
+
 
 
 window.addEventListener("click",e=>{
@@ -3322,7 +3365,8 @@ list.innerHTML = data.candidates.map(c => `
       </div>
     </div>
 
-    <div style="display:flex;gap:6px">
+    <div class="candidate-actions">
+
       <!-- EDIT -->
       <button
         class="btn btn-outline"
@@ -4158,6 +4202,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const savedView = localStorage.getItem("admin_active_view");
   const params = new URLSearchParams(window.location.search);
   // 1️⃣ Modal restoration has TOP priority
+  
   if (modalStateRaw) {
     const { type, electionId, electionName } = JSON.parse(modalStateRaw);
 
