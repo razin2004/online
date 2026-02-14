@@ -198,6 +198,9 @@ body{
     );
   }
 }
+.modal-box{
+  position:relative;
+}
 
 /* ======================================================
    TOP HEADER
@@ -379,6 +382,93 @@ input:focus,select:focus,textarea:focus{
   border-color:var(--blue);
   box-shadow:0 0 0 2px rgba(56,189,248,.25);
 }
+/* ================= TOAST SYSTEM ================= */
+
+#toastContainer{
+  position:fixed;
+  top:88px;              /* below sticky header */
+  right:24px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  z-index:4000;
+  pointer-events:none;
+}
+
+/* Mobile */
+@media(max-width:600px){
+  #toastContainer{
+    left:16px;
+    right:16px;
+    top:88px;
+    align-items:center;
+  }
+}
+.toast{
+  min-width:320px;
+  max-width:420px;
+  padding:16px 18px;
+  border-radius:16px;
+
+  background:rgba(15,23,42,.75);   /* semi transparent */
+  backdrop-filter:blur(14px);      /* 🔥 actual blur */
+  -webkit-backdrop-filter:blur(14px);
+
+  border:1px solid var(--border);
+  box-shadow:0 20px 60px rgba(0,0,0,.45);
+
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+
+  font-size:.85rem;
+  font-weight:600;
+
+  animation:toastIn .25s ease-out;
+  pointer-events:auto;
+}
+
+
+/* Mobile width */
+@media(max-width:600px){
+  .toast{
+    width:100%;
+    max-width:100%;
+  }
+}
+
+.toast-success{
+  border-left:4px solid var(--green);
+}
+
+.toast-error{
+  border-left:4px solid var(--red);
+}
+
+.toast-warning{
+  border-left:4px solid var(--yellow);
+}
+
+.toast-icon{
+  width:22px;
+  height:22px;
+  flex-shrink:0;
+}
+
+.toast-close{
+  margin-left:auto;
+  cursor:pointer;
+  opacity:.6;
+}
+
+.toast-close:hover{
+  opacity:1;
+}
+
+@keyframes toastIn{
+  from{opacity:0;transform:translateY(-8px);}
+  to{opacity:1;transform:translateY(0);}
+}
 
 /* ======================================================
    MOBILE NAV
@@ -416,28 +506,119 @@ input:focus,select:focus,textarea:focus{
 /* ======================================================
    MODALS
 ====================================================== */
+/* ======================================================
+   PREMIUM MODAL SYSTEM
+====================================================== */
+
 .modal{
   position:fixed;
   inset:0;
   display:none;
   justify-content:center;
   align-items:center;
-  background:rgba(0,0,0,.78);
-  backdrop-filter:blur(8px);
-  z-index:900;
+  background:rgba(0,0,0,.75);
+  backdrop-filter:blur(10px);
+  z-index:12000;
+  padding:20px;
 }
 
 .modal-box{
-  width:460px;
-  max-width:94%;
-  background:linear-gradient(180deg,#020617,#020617);
+  width:520px;
+  max-width:95%;
+  background:linear-gradient(180deg,#0b1220,#020617);
   border:1px solid var(--border);
-  border-radius:20px;
-  padding:20px;
-  max-height:85vh;
-  overflow-y:auto;
-  box-shadow:0 40px 120px rgba(0,0,0,.8);
+  border-radius:22px;
+  box-shadow:0 60px 140px rgba(0,0,0,.8);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  animation:fadeUp .25s ease;
 }
+
+/* HEADER */
+.modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 22px;
+  border-bottom:1px solid var(--border);
+}
+
+.modal-title{
+  font-size:16px;
+  font-weight:800;
+  letter-spacing:.3px;
+}
+
+/* BODY */
+.modal-body{
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  overflow-y:auto;
+  max-height:65vh;
+}
+
+/* FOOTER */
+.modal-footer{
+  padding:16px 4px;
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content: flex-start;
+  gap:10px;
+}
+
+/* FORM GRID */
+.modal-form{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+/* INPUT GROUP */
+.form-group{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.form-label{
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+  letter-spacing:.3px;
+}
+
+/* Close button */
+.modal-close{
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+  border-radius:10px;
+  width:32px;
+  height:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.modal-close:hover{
+  background:rgba(239,68,68,.15);
+  border-color:rgba(239,68,68,.4);
+  color:var(--red);
+}
+
+/* Mobile */
+@media(max-width:768px){
+  .modal-box{
+    width:100%;
+    border-radius:20px;
+    max-height:85vh;
+  }
+}
+
 
 /* ======================================================
    RESPONSIVE
@@ -464,42 +645,66 @@ input:focus,select:focus,textarea:focus{
 /* ======================================================
    EMPTY STATES
 ====================================================== */
-.empty-state{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
+/* ======================================================
+   PREMIUM EMPTY STATE SYSTEM
+====================================================== */
+.empty-card{
+  background:linear-gradient(
+    180deg,
+    rgba(30,41,59,.65),
+    rgba(2,6,23,.95)
+  );
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  padding:60px 40px;
   text-align:center;
-  padding:46px 24px;
-  border:1px dashed rgba(148,163,184,.25);
-  border-radius:18px;
-  background:rgba(2,6,23,.35);
-  color:var(--muted);
+  box-shadow:var(--shadow-soft);
   animation:fadeUp .35s ease;
 }
 
 .empty-icon{
-  font-size:36px;
-  margin-bottom:12px;
-  opacity:.9;
+  width:90px;
+  height:90px;
+  margin:0 auto 22px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,var(--blue),var(--indigo));
+  color:#020617;
+  box-shadow:0 20px 60px rgba(37,99,235,.25);
+}
+
+.empty-icon svg{
+  width:38px;
+  height:38px;
 }
 
 .empty-title{
-  font-size:15px;
-  font-weight:700;
-  color:var(--text);
-  margin-bottom:4px;
+  font-size:18px;
+  font-weight:800;
+  margin-bottom:8px;
+  letter-spacing:.3px;
 }
 
 .empty-text{
-  font-size:13px;
-  max-width:320px;
-  line-height:1.5;
+  font-size:14px;
+  color:var(--muted);
+  max-width:520px;
+  margin:0 auto 12px;
+  line-height:1.6;
+}
+
+.empty-meta{
+  font-size:12px;
+  color:var(--muted-soft);
+  opacity:.8;
 }
 
 .empty-action{
-  margin-top:14px;
+  margin-top:16px;
 }
+
 @media(max-width:768px){
   .empty-state{
     padding:36px 18px;
@@ -752,12 +957,22 @@ input:focus,select:focus,textarea:focus{
 }
 /* EXTRA-STRONG election name inside alerts */
 .alert-text b{
-  font-weight:900;              /* heavier than default bold */
-  color:#f6f8f8;                /* max contrast */
-  letter-spacing:.3px;
-  text-shadow:
-    0 0 6px rgba(255, 255, 255, 0.888),
+  font-weight:800;
+  color:inherit;       /* same color as parent */
+  text-shadow:none;
 }
+.alert-critical .alert-text b{
+  color:#e54343;
+}
+
+.alert-warning .alert-text b{
+  color:#ba8601;
+}
+
+.alert-info .alert-text b{
+  color:#246ac1;
+}
+
 @media (max-width: 768px){
 
   :root{
@@ -1053,12 +1268,12 @@ input:focus,select:focus,textarea:focus{
 ====================================================== */
 
 .vote-pill{
-  margin-top:10px;
+  margin-top:0px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   padding:7px 14px;
-  border-radius:999px;
+  border-radius:10px;
 
   font-size:12px;
   font-weight:900;
@@ -1095,7 +1310,7 @@ input:focus,select:focus,textarea:focus{
 
 /* Results tab emphasis */
 [data-result-card] .vote-pill{
-  margin-top:12px;
+  margin-top:12x;
   font-size:13px;
   padding:8px 16px;
 }
@@ -1105,10 +1320,7 @@ input:focus,select:focus,textarea:focus{
   fill:currentColor;
   flex-shrink:0;
 }
-.status-running{
-  background:rgba(37,99,235,.18);
-  color:#2563eb;
-}
+
 .card h3{
   letter-spacing:.2px;
 }
@@ -1128,32 +1340,35 @@ input:focus,select:focus,textarea:focus{
   height:100%;
   object-fit:cover;
 }
-#flash-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.6);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
+
+/* ================= PREMIUM RESULT CARD ================= */
+
+.result-card{
+  position:relative;
+  padding:22px;
+  border-radius:22px;
+  background:linear-gradient(
+    180deg,
+    rgba(30,41,59,.75),
+    rgba(2,6,23,.95)
+  );
+  border:1px solid rgba(148,163,184,.15);
+  transition:.3s ease;
 }
 
-.flash-box{
-  background:#0b1220;
-  padding:24px 28px;
-  border-radius:14px;
-  max-width:420px;
-  width:90%;
-  text-align:center;
-  box-shadow:0 20px 50px rgba(0,0,0,.7);
-  animation:scaleIn .25s ease;
+.result-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 30px 80px rgba(0,0,0,.55);
 }
 
-.flash-message{
-  color:#e5e7eb;
-  font-size:15px;
-  margin-bottom:16px;
+/* Status position */
+.result-card .result-status{
+  position:absolute;
+  top:16px;
+  right:16px;
 }
+
+
 
 .flash-message.error{
   color:#f87171;
@@ -1288,14 +1503,137 @@ input:focus,select:focus,textarea:focus{
   padding:8px 10px;
   font-size:14px;
 }
+.election-grid .empty-card{
+  grid-column: 1 / -1;   /* span full grid */
+  max-width: 100%;
+}
+.empty-card + .bottom-spacer{
+  display:none;
+}
+.profile-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  padding:14px 0;
+  border-bottom:1px solid var(--border);
+}
+
+.profile-left{
+  flex:1;
+}
+
+.profile-actions{
+  display:flex;
+  align-items:center;
+}
+
+.icon-btn{
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:6px;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.icon-btn:hover{
+  background:rgba(56,189,248,.12);
+  border-color:var(--blue);
+}
+
+.profile-input{
+  display:none;
+  margin-top:6px;
+}
+
+.profile-row.editing .profile-value{
+  display:none;
+}
+
+.profile-row.editing .profile-input{
+  display:block;
+}
+
+.profile-input{
+  transition:.2s ease;
+}
+.profile-row.editing .profile-input{
+  opacity:1;
+}
+@media (max-width:768px){
+
+  .modal-footer{
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .modal-footer .btn{
+    width:100%;
+    justify-content:center;
+  }
+
+  /* Destructive buttons visually separated */
+  .modal-footer .btn-danger{
+    margin-top:4px;
+  }
+
+}
+.public-code{
+  background:rgba(56,189,248,.15);
+  border:1px solid rgba(56,189,248,.35);
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.6px;
+  color:#fff;
+}
+
+.public-code span{
+  color:var(--blue);
+  font-weight:900;
+}
+
+.result-card{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.result-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+
+.result-meta{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:2px;
+}
+
+.result-actions{
+  display:flex;
+  gap:10px;
+}
 
 </style>
 </head>
 
 <body>
+  <div id="toastContainer"></div>
 <!-- SVG ICON DEFINITIONS -->
 <svg style="display:none">
 
+          <symbol id="icon-logout" width="16" height="16"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+</symbol>
   <!-- Alert icons -->
   <symbol id="icon-alert-critical" viewBox="0 0 24 24">
     <path d="M12 2 1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/>
@@ -1308,6 +1646,11 @@ input:focus,select:focus,textarea:focus{
   <symbol id="icon-alert-info" viewBox="0 0 24 24">
     <path d="M11 9h2V7h-2v2zm0 8h2v-6h-2v6zm1-14a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
   </symbol>
+ <symbol id="icon-edit" viewBox="0 0 24 24">
+  <path d="M3 17.25V21h3.75L19.81 7.94l-3.75-3.75L3 17.25zM20.71 
+  6.04a1 1 0 0 0 0-1.41l-1.34-1.34a1 1 0 0 0-1.41 
+  0l-1.13 1.13 3.75 3.75 1.13-1.13z"/>
+</symbol>
 
   <!-- Empty state icons -->
   <symbol id="icon-ballot" viewBox="0 0 24 24">
@@ -1382,9 +1725,12 @@ input:focus,select:focus,textarea:focus{
   </ul>
 
   <div class="sidebar-footer">
-<button class="btn btn-danger" style="width:100%" onclick="openLogoutConfirm()">
+<button class="btn btn-danger" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px"
+        onclick="openLogoutConfirm()">
+  <svg class="icon"><use href="#icon-logout"></use></svg>
   Logout
 </button>
+
 
 
   </div>
@@ -1434,6 +1780,8 @@ input:focus,select:focus,textarea:focus{
 <main class="main-wrapper">
 
 <header class="top-header">
+  
+
   <div class="header-title-group">
   <img
     src="/static/uploads/votecentral-logo.svg"
@@ -1605,53 +1953,86 @@ input:focus,select:focus,textarea:focus{
 {% endfor %}
 
 {# 🔵 Info: Starting soon #}
-{% for e in elections if e.is_upcoming and e.start_time %}
-  {% set start_ts = datetime.fromisoformat(e.start_time) %}
-  {% if (start_ts - datetime.now()).total_seconds() <= 86400 %}
-    {% set _ = alerts.append({
-      "level": "info",
-      "icon": "info",
-      "text": "Election <b>" ~ e.name ~ "</b> starts within 24 hours",
-      "action": "scroll",
-      "id": e.id
-    }) %}
-  {% endif %}
+{% for e in elections if e.is_upcoming and e.starts_within_24h %}
+  {% set _ = alerts.append({
+    "level": "info",
+    "icon": "info",
+    "text": "Election <b>" ~ e.name ~ "</b> starts within 24 hours",
+    "action": "scroll",
+    "id": e.id
+  }) %}
 {% endfor %}
 
+
 {% if alerts|length > 0 %}
-<div class="card">
-  <h3 style="display:flex;align-items:center;gap:8px">
-  <svg class="icon" viewBox="0 0 24 24">
-    <use href="#icon-alert-warning"></use>
-  </svg>
-  Attention Needed
-</h3>
+<div class="card" style="
+  border:1px solid rgba(245,158,11,.25);
+  background:linear-gradient(
+    180deg,
+    rgba(245,158,11,.08),
+    rgba(2,6,23,.9)
+  );
+">
 
+  <div style="
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  ">
+    <div style="
+      width:42px;
+      height:42px;
+      border-radius:12px;
+      background:rgba(245,158,11,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+      <svg class="icon" viewBox="0 0 24 24">
+        <use href="#icon-alert-warning"></use>
+      </svg>
+    </div>
 
-  <ul style="margin-top:10px;line-height:1.8;list-style:none;padding-left:0">
+    <div>
+      <div style="font-weight:800;font-size:16px">
+        Attention Required
+      </div>
+      <div style="font-size:12px;color:var(--muted)">
+        Review important election alerts
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
     {% for a in alerts %}
-      <li
-        class="alert-item alert-{{ a.level }}"
-        onclick="handleDashboardAlert(
-          '{{ a.action }}',
-          '{{ a.id }}',
-          '{{ a.name|default('') }}',
-          '{{ a.start|default('') }}',
-          '{{ a.end|default('') }}'
-        )"
-      >
-        <span class="alert-icon">
-  <svg class="icon" viewBox="0 0 24 24">
-    <use href="#icon-alert-{{ a.icon }}"></use>
-  </svg>
-</span>
+      <div class="alert-item alert-{{ a.level }}"
+           style="
+             background:rgba(255,255,255,.04);
+             border-radius:12px;
+             padding:10px 12px;
+           "
+           onclick="handleDashboardAlert(
+             '{{ a.action }}',
+             '{{ a.id }}',
+             '{{ a.name|default('') }}',
+             '{{ a.start|default('') }}',
+             '{{ a.end|default('') }}'
+           )">
 
-        <span class="alert-text">{{ a.text | safe }}</span>
+        <svg class="icon">
+          <use href="#icon-alert-{{ a.icon }}"></use>
+        </svg>
 
-      </li>
+        <span class="alert-text">
+          {{ a.text | safe }}
+        </span>
+
+      </div>
     {% endfor %}
-  </ul>
+  </div>
 </div>
+
 {% endif %}
 
   <!-- QUICK ACTIONS -->
@@ -1675,6 +2056,7 @@ input:focus,select:focus,textarea:focus{
 
 <!-- ================= OVERVIEW ================= -->
 <section id="overview" class="view-container">
+  {% if elections|length > 0 %}
 <div class="card">
   <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:12px">
     <input id="overviewSearch" placeholder="Search elections...">
@@ -1693,9 +2075,53 @@ input:focus,select:focus,textarea:focus{
     </select>
   </div>
 </div>
+{% endif %}
+{% if elections|length == 0 %}
 
+<div class="empty-card">
+  <div class="empty-icon">
+    <svg viewBox="0 0 24 24">
+      <use href="#icon-ballot"></use>
+    </svg>
+  </div>
+
+  <div class="empty-title">No Elections Available</div>
+
+  <div class="empty-text">
+    There are no elections to display in the overview section.
+  </div>
+
+  <div class="empty-meta">
+    Create your first election to start managing voting sessions.
+  </div>
+
+  <div class="empty-action">
+    <button class="btn btn-primary"
+            onclick="openModal('createElectionModal')">
+      + Create Election
+    </button>
+  </div>
+</div>
+
+{% else %}
 
     <div class="election-grid" id="overviewGrid">
+      <div id="overviewEmpty" class="empty-card" style="display:none">
+  <div class="empty-icon">
+    <svg viewBox="0 0 24 24">
+      <use href="#icon-ballot"></use>
+    </svg>
+  </div>
+
+  <div class="empty-title">No Matching Elections</div>
+  <div class="empty-text">
+    No elections match your current filters.
+  </div>
+  <div class="empty-meta">
+    Adjust search criteria or reset filters.
+  </div>
+</div>
+
       {% for e in elections %}
       <div class="card"
            data-ov-card
@@ -1704,10 +2130,23 @@ input:focus,select:focus,textarea:focus{
            data-code="{{ e.public_code|lower if e.public_code }}"
            data-start="{{ e.start_time }}"
            data-end="{{ e.end_time }}">
-        <b>{{ e.name }}</b>
-        <span class="badge {{ 'badge-public' if e.election_type=='public' else 'badge-private' }}">
-          {{ e.election_type|upper }}
-        </span>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <b>{{ e.name }}</b>
+    <div style="font-size:12px;color:var(--muted);margin-top:3px;font-weight: bold;">
+      {{ e.election_type|upper }}
+    </div>
+  </div>
+
+  {% if e.election_type == "public" and e.public_code %}
+<div class="public-code">
+  Public Code: <span>{{ e.public_code }}</span>
+</div>
+
+  {% endif %}
+</div>
+
+
         <div class="status-chip" data-status-chip></div>
         <div class="time-box">
   <span class="time-label">Time</span>
@@ -1724,21 +2163,19 @@ input:focus,select:focus,textarea:focus{
   {% endif %}
 </div>
 
-        <a href="/admin/toggle-results/{{ e.id }}">
-          <button class="btn btn-outline">
-            {% if e.result_visible %}Hide Results{% else %}Show Results{% endif %}
-          </button>
-        </a>
+       
       </div>
       {% endfor %}
       
     </div>
+    {% endif %}
   </div>
   <div class="bottom-spacer"></div>
 </section>
 
 <!-- ================= ELECTIONS ================= -->
 <section id="elections" class="view-container">
+   {% if elections|length > 0 %}
     <div class="card">
   <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:12px">
     <input id="electionSearch" placeholder="Search elections...">
@@ -1757,42 +2194,81 @@ input:focus,select:focus,textarea:focus{
     </select>
   </div>
 </div>
+{% endif %}
 {% if elections|length == 0 %}
-<div class="empty-state">
+<div class="empty-card">
   <div class="empty-icon">
-  <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
-    <use href="#icon-chart"></use>
-  </svg>
-</div>
-
-  <div class="empty-title">No elections created</div>
-  <div class="empty-text">
-    Elections will appear here once you create one.
-    Start by defining election type, schedule, and candidates.
+    <svg viewBox="0 0 24 24">
+      <use href="#icon-chart"></use>
+    </svg>
   </div>
+
+  <div class="empty-title">No Elections Created</div>
+
+  <div class="empty-text">
+    No elections exist yet. Create your first election to begin managing voting sessions.
+  </div>
+
+  <div class="empty-meta">
+    Define schedule, candidates, and access control.
+  </div>
+
   <div class="empty-action">
-    <button class="btn btn-primary" onclick="openModal('createElectionModal')">
+    <button class="btn btn-primary"
+            onclick="openModal('createElectionModal')">
       + Create Election
     </button>
   </div>
 </div>
+
 {% endif %}
 
 
   <div class="election-grid">
+    <div id="electionsEmpty" class="empty-card" style="display:none">
+  <div class="empty-icon">
+    <svg viewBox="0 0 24 24">
+      <use href="#icon-ballot"></use>
+    </svg>
+  </div>
+
+  <div class="empty-title">No Matching Elections</div>
+
+  <div class="empty-text">
+    No elections match your current filters.
+  </div>
+
+  <div class="empty-meta">
+    Adjust search criteria or reset filters.
+  </div>
+</div>
+
     {% for e in elections %}
 <div class="card"
      data-election-card
      data-type="{{ e.election_type }}"
+     data-name="{{ e.name|lower }}"
+     data-code="{{ e.public_code|lower if e.public_code }}"
      data-start="{{ e.start_time }}"
      data-end="{{ e.end_time }}">
 
-      <div style="display:flex;align-items:center;gap:8px">
-  <h3 style="margin:0">{{ e.name }}</h3>
-  <span class="badge {{ 'badge-public' if e.election_type=='public' else 'badge-private' }}">
-    {{ e.election_type|upper }}
-  </span>
+
+  <div style="display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <h3 style="margin:0">{{ e.name }}</h3>
+    <div style="font-size:12px;color:var(--muted);margin-top:3px;font-weight:600;">
+      {{ e.election_type|upper }}
+    </div>
+  </div>
+
+  {% if e.election_type == "public" and e.public_code %}
+ <div class="public-code">
+  Public Code: <span>{{ e.public_code }}</span>
 </div>
+
+  {% endif %}
+</div>
+
 <div
   class="status-chip"
   data-status-chip
@@ -1847,6 +2323,7 @@ input:focus,select:focus,textarea:focus{
 
 
   <!-- FILTER BAR -->
+    {% if elections|length > 0 %}
   <div class="card">
     <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:12px">
       <input id="resultsSearch" placeholder="Search elections...">
@@ -1865,45 +2342,115 @@ input:focus,select:focus,textarea:focus{
       </select>
     </div>
   </div>
-
+{% endif %}
   <!-- RESULTS GRID -->
-  <div class="election-grid">
-    {% for e in elections %}
-    <div class="card"
-         data-result-card
-         data-type="{{ e.election_type }}"
-         data-start="{{ e.start_time }}"
-         data-end="{{ e.end_time }}">
+{% if elections|length == 0 %}
 
-      <div style="display:flex;align-items:center;gap:8px">
-  <b>{{ e.name }}</b>
-  <span class="badge {{ 'badge-public' if e.election_type=='public' else 'badge-private' }}">
-    {{ e.election_type|upper }}
-  </span>
-</div>
-<div
-  class="status-chip"
-  data-status-chip
-></div>
-
-<div class="vote-pill {{ 'zero' if e.total_votes == 0 }}">
-  Total Votes: {{ e.total_votes }}
-</div>
-
-
-      <button class="btn btn-primary"
-        onclick="handleResultAccess(
-          '{{ e.id }}',
-          '{{ e.election_type }}',
-          '{{ e.start_time }}',
-          '{{ e.end_time }}'
-        )">
-        Open Results
-      </button>
-
-    </div>
-    {% endfor %}
+<div class="empty-card">
+  <div class="empty-icon">
+    <svg viewBox="0 0 24 24">
+      <use href="#icon-chart"></use>
+    </svg>
   </div>
+
+  <div class="empty-title">No Results Yet</div>
+
+  <div class="empty-text">
+    No elections exist, so there are no results to display.
+  </div>
+
+  <div class="empty-meta">
+    Results will appear here once elections are created and completed.
+  </div>
+
+  <div class="empty-action">
+    <button class="btn btn-primary"
+            onclick="openModal('createElectionModal')">
+      + Create Election
+    </button>
+  </div>
+</div>
+
+{% else %}
+
+<div class="election-grid">
+
+    <div id="resultsEmpty" class="empty-card" style="display:none">
+  <div class="empty-icon">
+    <svg viewBox="0 0 24 24">
+      <use href="#icon-chart"></use>
+    </svg>
+  </div>
+
+  <div class="empty-title">No Matching Results</div>
+  <div class="empty-text">
+    No elections match your selected filters.
+  </div>
+  <div class="empty-meta">
+    Results become available after elections conclude.
+  </div>
+</div>
+
+    {% for e in elections %}
+<div class="card result-card"
+     data-result-card
+     data-type="{{ e.election_type }}"
+     data-name="{{ e.name|lower }}"
+     data-code="{{ e.public_code|lower if e.public_code }}"
+     data-start="{{ e.start_time }}"
+     data-end="{{ e.end_time }}">
+
+
+  
+
+
+  <div class="result-header">
+    <div>
+      <b>{{ e.name }}</b>
+      <div class="result-meta" style="font-weight: bold;">
+        {{ e.election_type|upper }}
+      </div>
+    </div>
+
+    {% if e.election_type == "public" and e.public_code %}
+   <div class="public-code">
+  Public Code: <span>{{ e.public_code }}</span>
+</div>
+
+    {% endif %}
+  </div>
+<div class="result-status" data-status-chip></div>
+  <div class="vote-pill {{ 'zero' if e.total_votes == 0 }}">
+   Total Votes: {{ e.total_votes }} 
+  </div>
+
+  <div class="result-actions">
+    <button class="btn btn-primary"
+      onclick="handleResultAccess(
+        '{{ e.id }}',
+        '{{ e.election_type }}',
+        '{{ e.start_time }}',
+        '{{ e.end_time }}'
+      )">
+      Open Result
+    </button>
+
+    <button class="btn btn-outline"
+      onclick="toggleResultVisibility('{{ e.id }}')">
+      {% if e.result_visible %}
+        Hide
+      {% else %}
+        Publish
+      {% endif %}
+    </button>
+  </div>
+
+</div>
+
+    {% endfor %}
+    
+  </div>
+  {% endif %}
   <div class="bottom-spacer"></div>
 
 </section>
@@ -1915,37 +2462,43 @@ input:focus,select:focus,textarea:focus{
     <h3 style="margin-bottom:10px">Admin Profile</h3>
 
     <!-- NAME -->
-    <div class="profile-row">
+    <div class="profile-row" data-field="Name">
       <div>
         <div class="profile-label">Name</div>
         <div id="profileName" class="profile-value">{{ admin.name }}</div>
         <input id="profileNameInput" class="profile-input" value="{{ admin.name }}">
       </div>
-      <button class="edit-btn" onclick="toggleEdit('Name')">✏️</button>
+      <button class="edit-btn" onclick="toggleEdit('Name')">
+         <svg class="icon"><use href="#icon-edit"></use></svg>
+      </button>
     </div>
 
     <!-- USERNAME -->
-    <div class="profile-row">
+    <div class="profile-row" data-field="Username">
       <div>
         <div class="profile-label">Username</div>
         <div id="profileUsername" class="profile-value">{{ admin.username }}</div>
         <input id="profileUsernameInput" class="profile-input" value="{{ admin.username }}">
       </div>
-      <button class="edit-btn" onclick="toggleEdit('Username')">✏️</button>
+      <button class="edit-btn" onclick="toggleEdit('Username')">
+         <svg class="icon"><use href="#icon-edit"></use></svg>
+      </button>
     </div>
 
     <!-- MOBILE -->
-    <div class="profile-row">
+    <div class="profile-row" data-field="Mobile">
       <div>
         <div class="profile-label">Mobile Number</div>
         <div id="profileMobile" class="profile-value">{{ admin.mobile or "Not set" }}</div>
         <input id="profileMobileInput" class="profile-input" value="{{ admin.mobile or '' }}" placeholder="+91xxxxxxxxxx">
       </div>
-      <button class="edit-btn" onclick="toggleEdit('Mobile')">✏️</button>
+      <button class="edit-btn" onclick="toggleEdit('Mobile')">
+         <svg class="icon"><use href="#icon-edit"></use></svg>
+      </button>
     </div>
 
     <!-- WHATSAPP -->
-    <div class="profile-row">
+    <div class="profile-row" data-field="Whatsapp">
       <div>
         <div class="profile-label">WhatsApp Link</div>
         <div id="profileWhatsapp" class="profile-value">
@@ -1953,7 +2506,9 @@ input:focus,select:focus,textarea:focus{
         </div>
         <input id="profileWhatsappInput" class="profile-input" value="{{ admin.whatsapp or '' }}" placeholder="https://wa.me/91xxxxxxxxxx">
       </div>
-      <button class="edit-btn" onclick="toggleEdit('Whatsapp')">✏️</button>
+      <button class="edit-btn" onclick="toggleEdit('Whatsapp')">
+         <svg class="icon"><use href="#icon-edit"></use></svg>
+      </button>
     </div>
 
     <!-- ADMIN CODE -->
@@ -1980,239 +2535,446 @@ input:focus,select:focus,textarea:focus{
 
 <!-- ================= MODALS (ALL REQUIRED) ================= -->
 
-{% raw %}
-<!-- CREATE ELECTION -->
+
 <div id="createElectionModal" class="modal">
   <div class="modal-box">
-    <h3>Create Election</h3>
-    <form method="POST" action="/admin/create-election">
-  <input type="hidden" name="return_modal" value="createElection">
 
-      <input name="name" placeholder="Election name" required>
-      <select name="type">
-        <option value="public">Public</option>
-        <option value="private">Private</option>
-      </select>
-      <input type="datetime-local" name="start_time">
-      <input type="datetime-local" name="end_time">
-      <button class="btn btn-primary">Create</button>
-      <button class="btn btn-outline" data-no-loading onclick="closeModals()">Cancel</button>
+    <div class="modal-header">
+      <div class="modal-title">Create New Election</div>
+      <button class="modal-close" onclick="closeModals()">✕</button>
+    </div>
+
+    <form method="POST"
+          action="/admin/create-election"
+          class="modal-body modal-form">
+
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label">Election Name</label>
+        <input name="name" placeholder="Enter election name" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Election Type</label>
+        <select name="type">
+          <option value="public">Public</option>
+          <option value="private">Private</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Start Date & Time</label>
+        <input type="datetime-local" name="start_time">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">End Date & Time</label>
+        <input type="datetime-local" name="end_time">
+      </div>
+
+      <div class="modal-footer">
+        <button type="button"
+                class="btn btn-outline"
+                onclick="closeModals()">
+          Cancel
+        </button>
+
+        <button class="btn btn-primary">
+          Create Election
+        </button>
+      </div>
 
     </form>
   </div>
 </div>
-
-<!-- EDIT ELECTION -->
 <div id="editElectionModal" class="modal">
   <div class="modal-box">
-    <h3>Edit Election</h3>
-    <form method="POST" action="/admin/election/update">
-      <input type="hidden" id="editElectionId" name="election_id">
-      <input id="editElectionName" name="name">
-      <input type="datetime-local" id="editElectionStart" name="start_time">
-      <input type="datetime-local" id="editElectionEnd" name="end_time">
-      <button class="btn btn-primary">Save</button>
-      <button
-        id="deleteElectionBtn"
-        type="button"
-        class="btn btn-danger"
-        onclick="confirmDeleteElection()">
-        Delete
-      </button>
 
-      <button
-        id="forceDeleteElectionBtn"
-        type="button"
-        class="btn btn-outline"
-        onclick="confirmForceDeleteElection()">
-        Force Delete
-      </button>
+    <!-- HEADER -->
+    <div class="modal-header">
+      <div class="modal-title">Edit Election</div>
+      <button class="modal-close" onclick="closeModals()">✕</button>
+    </div>
+
+    <!-- BODY -->
+    <form method="POST"
+          action="/admin/election/update"
+          class="modal-body modal-form">
+
+      <input type="hidden" id="editElectionId" name="election_id">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label">Election Name</label>
+        <input id="editElectionName"
+               name="name"
+               placeholder="Enter election name">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Start Date & Time</label>
+        <input type="datetime-local"
+               id="editElectionStart"
+               name="start_time">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">End Date & Time</label>
+        <input type="datetime-local"
+               id="editElectionEnd"
+               name="end_time">
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+
+       
+
+        <button type="button"
+                id="deleteElectionBtn"
+                class="btn btn-danger"
+                onclick="confirmDeleteElection()">
+          Delete
+        </button>
+
+        <button type="button"
+                id="forceDeleteElectionBtn"
+                class="btn btn-outline"
+                onclick="confirmForceDeleteElection()">
+          Force Delete
+        </button>
+
+        <button class="btn btn-primary">
+          Save Changes
+        </button>
+
+      </div>
 
     </form>
+
   </div>
 </div>
+
 
 <!-- MANAGE CANDIDATES -->
 <div id="manageCandidatesModal" class="modal">
   <div class="modal-box">
-    <h3 id="mcTitle">Manage Candidates</h3>
-    <form method="POST"
-      action="/admin/add-candidate"
-      enctype="multipart/form-data"
-      onsubmit="return handleCandidateImageSubmit(this)">
 
-      <input type="hidden" id="mcElectionId" name="election_id">
-      <input name="name" placeholder="Candidate name" required>
-      <input name="party" placeholder="Party">
-      <input type="file" name="photo">
-      <textarea name="description" placeholder="Description"></textarea>
-      <button class="btn btn-primary">Add Candidate</button>
-    </form>
-    <input id="mcSearchInput" placeholder="Search candidates">
-    <div id="mcList"></div>
-    <button class="btn btn-outline" onclick="closeModals()">Close</button>
+    <div class="modal-header">
+      <div class="modal-title" id="mcTitle">Manage Candidates</div>
+      <button class="modal-close" onclick="closeModals()">✕</button>
+    </div>
+
+    <div class="modal-body modal-form">
+
+      <form method="POST"
+            action="/admin/add-candidate"
+            enctype="multipart/form-data"
+            onsubmit="return handleCandidateImageSubmit(this)"
+            class="modal-form">
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" id="mcElectionId" name="election_id">
+
+        <div class="form-group">
+          <label class="form-label">Candidate Name</label>
+          <input name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Party</label>
+          <input name="party">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Photo (1:1 Square)</label>
+          <input type="file" name="photo">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary">
+            Add Candidate
+          </button>
+        </div>
+      </form>
+
+      <div class="form-group">
+        <label class="form-label">Search Candidates</label>
+        <input id="mcSearchInput" placeholder="Search candidates">
+      </div>
+
+      <div id="mcList"></div>
+
+    </div>
   </div>
 </div>
+
 
 <!-- EDIT CANDIDATE -->
 <div id="editCandidateModal" class="modal">
   <div class="modal-box">
-    <h3>Edit Candidate</h3>
-  <form method="POST"
-        action="/admin/candidate/update"
-        enctype="multipart/form-data"
-        onsubmit="return handleCandidateImageSubmit(this)">
+
+    <div class="modal-header">
+      <div class="modal-title">Edit Candidate</div>
+      <button class="modal-close" onclick="closeModals()">✕</button>
+    </div>
+
+    <form method="POST"
+          action="/admin/candidate/update"
+          enctype="multipart/form-data"
+          onsubmit="return handleCandidateImageSubmit(this)"
+          class="modal-body modal-form">
+
       <input type="hidden" id="editCandidateId" name="candidate_id">
-      <input id="editCandidateName" disabled>
-      <input id="editCandidateParty" name="party">
-      <textarea id="editCandidateDesc" name="description"></textarea>
-      <input type="file" name="photo">
-      <button class="btn btn-primary">Save</button>
-      <button type="button" class="btn btn-danger" onclick="confirmDeleteCandidate()">Delete</button>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label">Candidate Name</label>
+        <input id="editCandidateName" disabled>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Party</label>
+        <input id="editCandidateParty" name="party">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea id="editCandidateDesc" name="description"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Update Photo</label>
+        <input type="file" name="photo">
+      </div>
+
+      <div class="modal-footer">
+  
+
+        <button type="button"
+                class="btn btn-danger"
+                onclick="confirmDeleteCandidate()">
+          Delete
+        </button>
+
+        <button class="btn btn-primary">
+          Save Changes
+        </button>
+      </div>
+
     </form>
   </div>
 </div>
+
 
 <!-- WHITELIST -->
 <div id="whitelistModal" class="modal">
   <div class="modal-box">
 
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 id="wlTitle">Whitelist</h3>
+    <!-- HEADER -->
+    <div class="modal-header">
+      <div class="modal-title" id="wlTitle">Whitelist</div>
+      <button class="modal-close" onclick="closeModals()">✕</button>
+    </div>
+
+    <!-- BODY -->
+    <div class="modal-body modal-form">
+
+      <!-- Count -->
+      <div class="form-group">
+        <label class="form-label">Total Entries</label>
+        <div id="wlCount" style="color:var(--muted);font-weight:600">
+          Total: 0
+        </div>
+      </div>
+
+      <!-- ADD EMAILS -->
+      <form method="POST"
+            action="/admin/whitelist/bulk-add"
+            class="modal-form">
+
+        <input type="hidden" id="wlElectionId" name="election_id">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+          <label class="form-label">Add Emails</label>
+          <textarea name="emails"
+                    placeholder="Enter emails separated by commas"
+                    rows="4"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary">
+            Add Emails
+          </button>
+        </div>
+      </form>
+
+      <!-- SEARCH -->
+      <div class="form-group">
+        <label class="form-label">Search Whitelist</label>
+        <input id="wlSearchInput"
+               placeholder="Search email">
+      </div>
+
+      <!-- ACTION BAR -->
+      <div class="wl-action-bar">
+
+        <div class="wl-left">
+          <button id="wlSelectBtn"
+                  class="btn btn-outline"
+                  onclick="enableWhitelistSelection()">
+            Select
+          </button>
+
+          <label id="wlSelectAllWrap"
+                 class="wl-select-all">
+            <input type="checkbox" id="wlSelectAll">
+            Select All
+          </label>
+        </div>
+
+        <div class="wl-right">
+          <button id="wlDeleteSelectedBtn"
+                  class="btn btn-danger"
+                  onclick="confirmBulkDelete()">
+            Delete Selected
+          </button>
+
+          <button id="wlCancelBtn"
+                  class="btn btn-outline"
+                  onclick="cancelWhitelistSelection()">
+            Cancel
+          </button>
+        </div>
+
+      </div>
+
+      <!-- LIST -->
+      <div id="wlList"></div>
+
+      <!-- CLOSE -->
+      <div class="modal-footer">
+        <button class="btn btn-outline"
+                onclick="closeModals()">
+          Close
+        </button>
+      </div>
 
     </div>
 
-    <div id="wlCount"
-         style="font-size:13px;color:var(--muted);margin-bottom:10px">
-      Total: 0
-    </div>
-
-    <!-- ADD EMAILS -->
-    <form method="POST" action="/admin/whitelist/bulk-add">
-      <input type="hidden" id="wlElectionId" name="election_id">
-      <textarea name="emails" placeholder="Enter emails (comma or @gmail.com)"></textarea>
-      <button class="btn btn-primary">Add</button>
-    </form>
-
-    <input id="wlSearchInput" placeholder="Search email">
-   <!-- ACTION BAR -->
-<div class="wl-action-bar">
-
-  <!-- LEFT GROUP -->
-  <div class="wl-left">
-    <button id="wlSelectBtn"
-            class="btn btn-outline"
-            onclick="enableWhitelistSelection()">
-      Select
-    </button>
-
-    <label id="wlSelectAllWrap" class="wl-select-all">
-      <input type="checkbox" id="wlSelectAll">
-      Select All
-    </label>
-  </div>
-
-  <!-- RIGHT GROUP -->
-  <div class="wl-right">
-    <button id="wlDeleteSelectedBtn"
-            class="btn btn-danger"
-            onclick="confirmBulkDelete()">
-      Delete 
-    </button>
-
-    <button id="wlCancelBtn"
-            class="btn btn-outline"
-            onclick="cancelWhitelistSelection()">
-      ✕
-    </button>
-  </div>
-
-</div>
-
-
-    <div id="wlList"></div>
-
-    <button class="btn btn-outline" onclick="closeModals()">Close</button>
-
   </div>
 </div>
 
-{% endraw %}
 <div id="alertModal" class="modal">
-  <div class="modal-box" style="max-width:380px;text-align:center">
-    <h3 id="alertTitle">Notice</h3>
-    <p id="alertMessage" style="margin:14px 0;color:var(--muted)"></p>
-    <button class="btn btn-primary" onclick="closeAlert()">OK</button>
+  <div class="modal-box" style="max-width:420px">
+
+    <div class="modal-header">
+      <div class="modal-title">Notice</div>
+      <button class="modal-close" onclick="closeAlert()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p id="alertMessage"
+         style="color:var(--muted);line-height:1.6">
+      </p>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeAlert()">
+          OK
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>
+
+
 <!-- LOGOUT CONFIRMATION -->
 <div id="logoutConfirmModal" class="modal">
-  <div class="modal-box" style="max-width:360px;text-align:center">
-    
-    <div style="font-size:36px;margin-bottom:6px">
-      <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
-  <path d="M10 17v-2h4v-2h-4v-2l-3 3 3 3zm9-14H9v4h2V5h6v14h-6v-2H9v4h10V3z"/>
-</svg>
+  <div class="modal-box" style="max-width:380px">
 
+    <div class="modal-header">
+      <div class="modal-title">Confirm Logout</div>
+      <button class="modal-close" onclick="closeLogoutConfirm()">✕</button>
     </div>
 
-    <h3 style="margin-bottom:6px">Confirm Logout</h3>
+    <div class="modal-body">
 
-    <p style="color:var(--muted);font-size:14px;line-height:1.5">
-      Are you sure you want to log out of the admin panel?
-    </p>
+      <p style="color:var(--muted);line-height:1.6">
+        Are you sure you want to log out of the admin panel?
+      </p>
 
-    <div style="display:flex;gap:12px;justify-content:center;margin-top:18px">
-      <button class="btn btn-outline" onclick="closeLogoutConfirm()">
-        Cancel
-      </button>
-      <button class="btn btn-danger" onclick="confirmLogout()">
-        Logout
-      </button>
+      <div class="modal-footer">
+        <button class="btn btn-outline"
+                onclick="closeLogoutConfirm()">
+          Cancel
+        </button>
+
+<button class="btn btn-danger"
+        style="display:flex;align-items:center;justify-content:center;gap:8px"
+        onclick="confirmLogout()">
+  <svg class="icon"><use href="#icon-logout"></use></svg>
+  Logout
+</button>
+
+      </div>
+
     </div>
-
   </div>
+</div>
+
 </div>
 <!-- GLOBAL CONFIRM MODAL -->
 <div id="confirmModal" class="modal">
-  <div class="modal-box" style="max-width:380px;text-align:center">
+  <div class="modal-box" style="max-width:400px">
 
-    <div style="font-size:34px;margin-bottom:6px;color:var(--yellow)">
-      
+    <div class="modal-header">
+      <div class="modal-title" id="confirmTitle">Confirm Action</div>
+      <button class="modal-close" onclick="closeConfirm()">✕</button>
     </div>
 
-    <h3 id="confirmTitle">Confirm?</h3>
+    <div class="modal-body">
+      <p id="confirmMessage"
+         style="color:var(--muted);line-height:1.6">
+      </p>
 
-    <p id="confirmMessage"
-       style="margin:14px 0;color:var(--muted);font-size:14px;line-height:1.5">
-    </p>
+      <div class="modal-footer">
+        <button class="btn btn-outline"
+                onclick="closeConfirm()">
+          Cancel
+        </button>
 
-    <div style="display:flex;gap:12px;justify-content:center;margin-top:18px">
-      <button class="btn btn-outline" onclick="closeConfirm()">
-        Cancel
-      </button>
-      <button id="confirmYesBtn" class="btn btn-danger">
-        OK
-      </button>
+        <button id="confirmYesBtn"
+                class="btn btn-danger">
+          Confirm
+        </button>
+      </div>
     </div>
 
   </div>
 </div>
+
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div id="flash-overlay">
-  <div class="flash-box">
+<script>
+  document.addEventListener("DOMContentLoaded",function(){
     {% for category, message in messages %}
-      <div class="flash-message {{ category }}">
-        {{ message }}
-      </div>
+      showToast({{ message|tojson }}, "{{ category.replace('_','-') }}");
     {% endfor %}
-    <button onclick="closeFlash()">OK</button>
-  </div>
-</div>
+  });
+</script>
 {% endif %}
 {% endwith %}
+
+
 
 <script>
   const VIEW_ORDER = [
@@ -2303,13 +3065,24 @@ function closeFlash(){
 }
 let confirmAction = null;
 
-function openConfirm(message, onConfirm){
+function openConfirm(message, onConfirm, type="danger"){
   $("#confirmMessage").textContent = message;
   confirmAction = onConfirm;
+
+  const yesBtn = $("#confirmYesBtn");
+
+  yesBtn.classList.remove("btn-danger","btn-primary");
+
+  if(type === "danger"){
+    yesBtn.classList.add("btn-danger");
+  } else {
+    yesBtn.classList.add("btn-primary");
+  }
 
   $("#confirmModal").style.display = "flex";
   document.body.style.overflow = "hidden";
 }
+
 
 function closeConfirm(){
   $("#confirmModal").style.display = "none";
@@ -2353,6 +3126,31 @@ document.addEventListener("keydown", e => {
   }
 });
 
+function toggleResultVisibility(id){
+
+  fetch(`/admin/toggle-results/${id}`,{
+    method:"POST",
+    headers:{
+      "X-CSRFToken":"{{ csrf_token() }}"
+    }
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    if(!res.success){
+      showToast(res.message || "Operation failed","error");
+      return;
+    }
+
+    showToast("Result visibility updated","success");
+
+    setTimeout(()=>{
+      location.reload();
+    },800);
+  })
+  .catch(()=>{
+    showToast("Network error","error");
+  });
+}
 
 /* ======================================================
    EDIT / DELETE ELECTION
@@ -2360,8 +3158,16 @@ document.addEventListener("keydown", e => {
 function openEditElection(id, name, start, end){
   $("#editElectionId").value = id;
   $("#editElectionName").value = name;
-  $("#editElectionStart").value = start || "";
-  $("#editElectionEnd").value = end || "";
+function formatForDateTimeLocal(value){
+  if(!value) return "";
+  const d = new Date(value);
+  if(isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0,16);
+}
+
+$("#editElectionStart").value = formatForDateTimeLocal(start);
+$("#editElectionEnd").value   = formatForDateTimeLocal(end);
+
 
   // ---- LOCK RULES ----
   const now = Date.now();
@@ -2423,10 +3229,12 @@ function confirmForceDeleteElection(){
   const id=$("#editElectionId").value;
   if(!id) return;
 
-  openConfirm(
-    "⚠ FORCE DELETE will permanently remove the election, candidates, and votes.",
-    () => location.href=`/admin/election/force-delete/${id}`
-  );
+openConfirm(
+  "⚠ FORCE DELETE will permanently remove the election, candidates, and votes.",
+  () => location.href=`/admin/election/force-delete/${id}`,
+  "danger"
+);
+
 }
 
 
@@ -2465,21 +3273,37 @@ function openManageCandidates(eid, name, start, end){
                 : "");
       }
 
-      const list = $("#mcList");
+const list = $("#mcList");
+const searchInput = $("#mcSearchInput");
 
-      if(!data.candidates.length){
-        list.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-title">No candidates added</div>
-            <div class="empty-text">
-              ${isEnded
-                ? "This election has ended."
-                : "Add candidates to allow voting."}
-            </div>
-          </div>
-        `;
-        return;
-      }
+if(!data.candidates.length){
+
+  // Hide search input
+  if(searchInput) searchInput.style.display = "none";
+
+  list.innerHTML = `
+    <div class="empty-card">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24">
+          <use href="#icon-user"></use>
+        </svg>
+      </div>
+
+      <div class="empty-title">No Candidates Added</div>
+
+      <div class="empty-text">
+        Add candidates before the election begins.
+      </div>
+
+      <div class="empty-meta">
+        A minimum of 2 candidates is required to conduct voting.
+      </div>
+    </div>
+  `;
+
+  return;
+}
+
 
 list.innerHTML = data.candidates.map(c => `
   <div class="card" style="padding:12px;display:flex;gap:12px;align-items:center">
@@ -2519,11 +3343,10 @@ list.innerHTML = data.candidates.map(c => `
           onclick="
             openConfirm(
               'Delete ${c.name}? This action cannot be undone.',
-              () => location.href='/admin/candidate/delete/${c.id}'
+              () => location.href='/admin/candidate/delete/${c.id}',
+              'danger'
             );
           "
-
-          
         ">
         Delete
       </button>
@@ -2604,20 +3427,25 @@ if(!data.whitelist.length){
   if(deleteBtn)   deleteBtn.style.display = "none";
   if(cancelBtn)   cancelBtn.style.display = "none";
   if(searchInput) searchInput.style.display = "none";
-
   list.innerHTML = `
-    <div class="empty-state">
-      <div class="empty-icon">
-        <svg class="icon" style="width:36px;height:36px" viewBox="0 0 24 24">
-          <use href="#icon-mail"></use>
-        </svg>
-      </div>
-      <div class="empty-title">Whitelist is empty</div>
+  <div class="empty-card">
+  <div class="empty-icon">
+    <svg viewBox="0 0 24 24">
+      <use href="#icon-mail"></use>
+    </svg>
+  </div>
+
+  <div class="empty-title">Whitelist is Empty</div>
+
       <div class="empty-text">
         Only whitelisted voters can participate in this private election.
         ${isEnded ? "This election has ended." : "Add voter emails to enable access."}
       </div>
-    </div>
+
+  <div class="empty-meta">
+    Add voter emails to grant participation rights.
+  </div>
+</div>
   `;
   return;
 }
@@ -2629,7 +3457,6 @@ if(selectBtn)   selectBtn.style.display = "inline-flex";
 if(searchInput) searchInput.style.display = "block";
 
 // reset selection state every open
-cancelWhitelistSelection();
 
       list.innerHTML = data.whitelist
         .sort((a,b)=>a.email.localeCompare(b.email))
@@ -2652,8 +3479,12 @@ cancelWhitelistSelection();
 
           </div>
         `).join("");
+// reset selection state AFTER rows exist
+cancelWhitelistSelection();
+updateWhitelistUIState();
 
     })
+    
   openModal("whitelistModal");
 }
 let whitelistSelectionMode = false;
@@ -2661,33 +3492,62 @@ let whitelistSelectionMode = false;
 function enableWhitelistSelection(){
   whitelistSelectionMode = true;
 
-  document.getElementById("wlSelectBtn").style.display = "none";
-  document.getElementById("wlSelectAllWrap").style.display = "flex";
-  document.getElementById("wlCancelBtn").style.display = "inline-flex";
-
   document.querySelectorAll(".wl-check").forEach(c=>{
-    c.style.display = "inline-grid";
+    if(c.closest(".wl-row").style.display !== "none"){
+      c.style.display = "inline-grid";
+    }
   });
+
+  updateWhitelistUIState();
 }
 
 function cancelWhitelistSelection(){
   whitelistSelectionMode = false;
 
-  // buttons
-  document.getElementById("wlSelectBtn").style.display = "inline-flex";
-  document.getElementById("wlSelectAllWrap").style.display = "none";
-  document.getElementById("wlDeleteSelectedBtn").style.display = "none";
-  document.getElementById("wlCancelBtn").style.display = "none";
-
-  // reset select-all
-  const selectAll = document.getElementById("wlSelectAll");
-  if(selectAll) selectAll.checked = false;
-
-  // hide & uncheck all row checkboxes
   document.querySelectorAll(".wl-check").forEach(c=>{
     c.checked = false;
     c.style.display = "none";
   });
+
+  const selectAll = document.getElementById("wlSelectAll");
+  if(selectAll) selectAll.checked = false;
+
+  updateWhitelistUIState();
+}
+
+function updateWhitelistUIState(){
+  const rows = document.querySelectorAll(".wl-row");
+  const visibleRows = Array.from(rows).filter(r => r.style.display !== "none");
+
+  const selectBtn   = document.getElementById("wlSelectBtn");
+  const selectAll   = document.getElementById("wlSelectAllWrap");
+  const deleteBtn   = document.getElementById("wlDeleteSelectedBtn");
+  const cancelBtn   = document.getElementById("wlCancelBtn");
+
+  const anyVisible = visibleRows.length > 0;
+  const anyChecked = document.querySelectorAll(".wl-check:checked").length > 0;
+
+  // ❌ No visible rows → hide everything
+  if(!anyVisible){
+    if(selectBtn) selectBtn.style.display = "none";
+    if(selectAll) selectAll.style.display = "none";
+    if(deleteBtn) deleteBtn.style.display = "none";
+    if(cancelBtn) cancelBtn.style.display = "none";
+    return;
+  }
+
+  // 🟢 Visible rows exist
+  if(!whitelistSelectionMode){
+    if(selectBtn) selectBtn.style.display = "inline-flex";
+    if(selectAll) selectAll.style.display = "none";
+    if(deleteBtn) deleteBtn.style.display = "none";
+    if(cancelBtn) cancelBtn.style.display = "none";
+  } else {
+    if(selectBtn) selectBtn.style.display = "none";
+    if(selectAll) selectAll.style.display = "flex";
+    if(cancelBtn) cancelBtn.style.display = "inline-flex";
+    if(deleteBtn) deleteBtn.style.display = anyChecked ? "inline-flex" : "none";
+  }
 }
 
 
@@ -2698,17 +3558,29 @@ function updateWhitelistDeleteVisibility(){
 }
 
 document.addEventListener("change", e=>{
+
+  // Individual checkbox changed
   if(e.target.classList.contains("wl-check")){
+    updateWhitelistDeleteVisibility();
+    syncSelectAllState();   // 🔥 ADD THIS
+  }
+
+  // Select All changed
+  if(e.target.id === "wlSelectAll"){
+    document.querySelectorAll(".wl-row").forEach(row=>{
+      if(row.style.display === "none") return;
+
+      const checkbox = row.querySelector(".wl-check");
+      if(!checkbox) return;
+
+      checkbox.checked = e.target.checked;
+    });
+
     updateWhitelistDeleteVisibility();
   }
 
-  if(e.target.id === "wlSelectAll"){
-    document.querySelectorAll(".wl-check").forEach(c=>{
-      c.checked = e.target.checked;
-    });
-    updateWhitelistDeleteVisibility();
-  }
 });
+
 
 /* ======================================================
    SEARCH FILTERS
@@ -2719,27 +3591,118 @@ function attachCandidateSearch(){
   if(!input || !list) return;
 
   input.addEventListener("input", () => {
-    const q = input.value.toLowerCase();
+    const q = input.value.toLowerCase().trim();
+    let visibleCount = 0;
+
     list.querySelectorAll(".card").forEach(card => {
       const name = card.querySelector("b")?.innerText.toLowerCase() || "";
-      card.style.display = name.includes(q) ? "" : "none";
+
+      if(name.includes(q)){
+        card.style.display = "";
+        visibleCount++;
+      } else {
+        card.style.display = "none";
+      }
     });
+
+    // Remove previous "no result" card if exists
+    const oldEmpty = document.getElementById("mcSearchEmpty");
+    if(oldEmpty) oldEmpty.remove();
+
+    if(q && visibleCount === 0){
+      list.insertAdjacentHTML("beforeend", `
+        <div id="mcSearchEmpty" class="empty-card">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24">
+              <use href="#icon-user"></use>
+            </svg>
+          </div>
+          <div class="empty-title">No Candidate Found</div>
+          <div class="empty-text">
+            No candidate matches "<b>${q}</b>"
+          </div>
+        </div>
+      `);
+    }
   });
 }
+function syncSelectAllState(){
+  const selectAll = document.getElementById("wlSelectAll");
+  if(!selectAll) return;
+
+  const visibleChecks = Array.from(
+    document.querySelectorAll(".wl-row")
+  )
+  .filter(row => row.style.display !== "none")
+  .map(row => row.querySelector(".wl-check"))
+  .filter(c => c); // ignore rows without checkbox (voted users)
+
+  if(visibleChecks.length === 0){
+    selectAll.checked = false;
+    return;
+  }
+
+  const allChecked = visibleChecks.every(c => c.checked);
+  selectAll.checked = allChecked;
+}
+
 function attachWhitelistSearch(){
   const input = document.getElementById("wlSearchInput");
   const list  = document.getElementById("wlList");
   if(!input || !list) return;
 
   input.addEventListener("input", () => {
-    const q = input.value.toLowerCase();
-    list.querySelectorAll(".card").forEach(card => {
-      const email = card.querySelector(".wl-email")?.innerText.toLowerCase() || "";
+    const q = input.value.toLowerCase().trim();
+    let visibleCount = 0;
 
-      card.style.display = email.includes(q) ? "" : "none";
+    list.querySelectorAll(".wl-row").forEach(row => {
+      const email = row.querySelector(".wl-email")?.innerText.toLowerCase() || "";
+      const match = email.includes(q);
+
+      row.style.display = match ? "" : "none";
+
+      const checkbox = row.querySelector(".wl-check");
+      if(checkbox){
+        if(match){
+          if(whitelistSelectionMode){
+            checkbox.style.display = "inline-grid";
+          }
+        } else {
+          // just hide visually — DO NOT change checked state
+          checkbox.style.display = "none";
+        }
+
+      }
+
+      if(match) visibleCount++;
     });
+
+    // Remove old empty card
+    document.getElementById("wlSearchEmpty")?.remove();
+
+    if(q && visibleCount === 0){
+      list.insertAdjacentHTML("beforeend", `
+        <div id="wlSearchEmpty" class="empty-card">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24">
+              <use href="#icon-mail"></use>
+            </svg>
+          </div>
+          <div class="empty-title">No Whitelist Found</div>
+          <div class="empty-text">
+            No email matches "<b>${q}</b>"
+          </div>
+        </div>
+      `);
+    }
+
+    updateWhitelistUIState();
+    syncSelectAllState();
+
   });
 }
+
+
 attachCandidateSearch();
 attachWhitelistSearch();
 
@@ -2771,6 +3734,61 @@ function format(ms){
     s%60
   ].map(v=>String(v).padStart(2,"0")).join(":");
 }
+let toastTimeout = null;
+
+function showToast(message,type="success",duration=4000){
+
+  const container=document.getElementById("toastContainer");
+  if(!container) return;
+
+  const toast=document.createElement("div");
+  toast.className=`toast toast-${type}`;
+
+  toast.innerHTML=`
+    <div class="toast-icon">
+      ${getToastIcon(type)}
+    </div>
+    <div>${message}</div>
+    <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(()=>{
+    toast.remove();
+  },duration);
+}
+
+function getToastIcon(type){
+  if(type==="success"){
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2">
+      <path d="M20 6L9 17l-5-5"/>
+    </svg>`;
+  }
+  if(type==="error"){
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2">
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>`;
+  }
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2">
+    <circle cx="12" cy="12" r="10"/>
+  </svg>`;
+}
+
+
+function formatDateTime(ts){
+  const d = new Date(ts);
+  if(isNaN(d.getTime())) return "";
+
+  return d.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
 
 function updateCountdowns(){
   const now=Date.now();
@@ -2796,8 +3814,14 @@ function updateCountdowns(){
       timer.textContent="Ends in: "+format(end-now);
       return;
     }
-    note.textContent="Election ended";
-    timer.textContent="Ended";
+note.textContent = "Election ended";
+
+if(end){
+  timer.textContent = "Ended at: " + formatDateTime(end);
+} else {
+  timer.textContent = "Ended";
+}
+
   });
 
   $$("[data-ov-card]").forEach(card=>{
@@ -2807,7 +3831,14 @@ function updateCountdowns(){
     if(!timer) return;
     if(start&&now<start) timer.textContent="Starts in: "+format(start-now);
     else if(end&&now<end) timer.textContent="Ends in: "+format(end-now);
-    else timer.textContent="Ended";
+    else{
+  if(end){
+    timer.textContent = "Ended at: " + formatDateTime(end);
+  } else {
+    timer.textContent = "Ended";
+  }
+}
+
   });
   updateStatusChips();
 }
@@ -2918,19 +3949,42 @@ function applyElectionFilters(){
   const type = $("#electionTypeFilter")?.value || "all";
   const status = $("#electionStatusFilter")?.value || "all";
 
-  $$("[data-election-card]").forEach(card=>{
-    const name = card.querySelector("h3")?.innerText.toLowerCase() || "";
+  const allCards = $$("[data-election-card]");
+
+  // 🔒 If no elections exist at all → do nothing
+  if(allCards.length === 0){
+    $("#electionsEmpty").style.display = "none";
+    return;
+  }
+
+  let visible = 0;
+
+  allCards.forEach(card=>{
+    const name = card.dataset.name || "";
+    const code = card.dataset.code || "";
+
     const eType = card.dataset.type;
     const eStatus = getElectionStatus(card);
 
-    const match =
-      name.includes(q) &&
-      (type === "all" || eType === type) &&
-      (status === "all" || eStatus === status);
+const textMatch =
+  name.includes(q) || code.includes(q);
+
+const match =
+  textMatch &&
+  (type === "all" || eType === type) &&
+  (status === "all" || eStatus === status);
+
 
     card.style.display = match ? "" : "none";
+    if(match) visible++;
   });
+
+  // Show filter-empty only if elections exist
+  $("#electionsEmpty").style.display =
+    visible === 0 ? "block" : "none";
 }
+
+
 
 ["electionSearch","electionTypeFilter","electionStatusFilter"]
   .forEach(id=>$("#"+id)?.addEventListener("input",applyElectionFilters));
@@ -2943,17 +3997,25 @@ function applyResultsFilters(){
   const status = $("#resultsStatusFilter")?.value || "all";
 
   $$("[data-result-card]").forEach(card => {
-    const name = card.querySelector("b")?.innerText.toLowerCase() || "";
+    const name = card.dataset.name || "";
+    const code = card.dataset.code || "";
+
     const eType = card.dataset.type;
     const eStatus = getElectionStatus(card);
+const textMatch =
+  name.includes(q) || code.includes(q);
 
-    const match =
-      name.includes(q) &&
-      (type === "all" || eType === type) &&
-      (status === "all" || eStatus === status);
+const match =
+  textMatch &&
+  (type === "all" || eType === type) &&
+  (status === "all" || eStatus === status);
+
 
     card.style.display = match ? "" : "none";
   });
+  const visible = $$("[data-result-card]").filter(c=>c.style.display!=="none").length;
+$("#resultsEmpty").style.display = visible === 0 ? "block" : "none";
+
 }
 
 ["resultsSearch","resultsTypeFilter","resultsStatusFilter"]
@@ -2963,19 +4025,28 @@ function applyOverviewFilters(){
   const q = $("#overviewSearch")?.value.toLowerCase() || "";
   const type = $("#overviewTypeFilter")?.value || "all";
   const status = $("#overviewStatusFilter")?.value || "all";
-
+  
   $$("[data-ov-card]").forEach(card=>{
     const name = card.dataset.name || "";
+    const code = card.dataset.code || "";
+
     const eType = card.dataset.type || "";
     const eStatus = getElectionStatus(card);
 
-    const match =
-      name.includes(q) &&
-      (type === "all" || eType === type) &&
-      (status === "all" || eStatus === status);
+const textMatch =
+  name.includes(q) || code.includes(q);
+
+const match =
+  textMatch &&
+  (type === "all" || eType === type) &&
+  (status === "all" || eStatus === status);
+
 
     card.style.display = match ? "" : "none";
   });
+  const visible = $$("[data-ov-card]").filter(c=>c.style.display!=="none").length;
+$("#overviewEmpty").style.display = visible === 0 ? "block" : "none";
+
 }
 
 ["overviewSearch","overviewTypeFilter","overviewStatusFilter"]
@@ -3208,9 +4279,13 @@ function updateHeaderActions(viewId){
   }
   if(viewId === "profile"){
     actions.innerHTML = `
-<button class="btn btn-danger" onclick="openLogoutConfirm()">
+<button class="btn btn-danger"
+        style="display:flex;align-items:center;gap:8px"
+        onclick="openLogoutConfirm()">
+  <svg class="icon"><use href="#icon-logout"></use></svg>
   Logout
 </button>
+
 
 
 
@@ -3228,103 +4303,91 @@ function updateHeaderActions(viewId){
   }
 }
 function toggleEdit(field){
-  const input = document.getElementById("profile" + field + "Input");
-  if(!input) return;
+  const row = document.querySelector(
+    `.profile-row[data-field="${field}"]`
+  );
+  if(!row) return;
 
-  // Always show input (no toggle back)
-  input.style.display = "block";
-
-  // Show Save button when ANY edit happens
-  const saveBtn = document.getElementById("saveProfileBtn");
-  if(saveBtn) saveBtn.style.display = "inline-flex";
-}
-
-
-let lastProfileDraft = null;
-
-function saveProfile(){
-  const nameEl = document.getElementById("profileNameInput");
-  const userEl = document.getElementById("profileUsernameInput");
-  const mobEl  = document.getElementById("profileMobileInput");
-  const waEl   = document.getElementById("profileWhatsappInput");
-  const saveBtn = document.getElementById("saveProfileBtn");
-
-  if(!nameEl || !userEl || !mobEl || !waEl){
-    showAlert("Profile inputs not found");
-    return;
+  if(row.classList.contains("editing")){
+    row.classList.remove("editing");
+  } else {
+    row.classList.add("editing");
   }
 
-  const name = toTitleCase(nameEl.value.trim());
-  const username = userEl.value.trim();
-  const mobile = mobEl.value.trim();
-  const whatsapp = waEl.value.trim();
+  const anyEditing = document.querySelectorAll(".profile-row.editing").length > 0;
+  const saveBtn = document.getElementById("saveProfileBtn");
 
-  // Save draft BEFORE request
-  lastProfileDraft = { name, username, mobile, whatsapp };
+  if(saveBtn){
+    saveBtn.style.display = anyEditing ? "inline-flex" : "none";
+  }
+}
+
+function saveProfile(){
+
+  const nameEl = $("#profileNameInput");
+  const userEl = $("#profileUsernameInput");
+  const mobEl  = $("#profileMobileInput");
+  const waEl   = $("#profileWhatsappInput");
+  const saveBtn = $("#saveProfileBtn");
+
+  if(!nameEl || !userEl) return;
+
+  const payload = {
+    name: toTitleCase(nameEl.value.trim()),
+    username: userEl.value.trim(),
+    mobile: mobEl.value.trim(),
+    whatsapp: waEl.value.trim()
+  };
+
+  // loading state
+  saveBtn.classList.add("loading");
+  saveBtn.disabled = true;
 
   fetch("/admin/profile/update",{
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify(lastProfileDraft)
+    headers:{
+      "Content-Type":"application/json",
+      "X-CSRFToken":"{{ csrf_token() }}"
+    },
+    body:JSON.stringify(payload)
   })
-  .then(r => r.json())
-  .then(res => {
+  .then(r=>r.json())
+  .then(res=>{
 
-    /* ❌ FAILURE */
     if(!res.success){
-      showAlert(res.message || "Profile update failed");
-      restoreProfileDraft();
-
-      // Keep inputs visible
-      ["Name","Username","Mobile","Whatsapp"].forEach(f=>{
-        const i = document.getElementById("profile"+f+"Input");
-        if(i) i.style.display = "block";
-      });
-
-      // Keep Save button visible
-      if(saveBtn) saveBtn.style.display = "inline-flex";
+      showToast(res.message || "Profile update failed","error");
+      saveBtn.classList.remove("loading");
+      saveBtn.disabled = false;
       return;
     }
 
-    /* ✅ SUCCESS */
-    document.getElementById("profileName").textContent = name;
-    document.getElementById("profileUsername").textContent = username;
-    document.getElementById("profileMobile").textContent = mobile || "Not set";
-    document.getElementById("profileWhatsapp").textContent = whatsapp || "Not set";
+    // Update display values
+    $("#profileName").textContent = payload.name;
+    $("#profileUsername").textContent = payload.username;
+    $("#profileMobile").textContent =
+      payload.mobile || "Not set";
+    $("#profileWhatsapp").textContent =
+      payload.whatsapp || "Not set";
 
-    // Hide inputs
-    ["Name","Username","Mobile","Whatsapp"].forEach(f=>{
-      const i = document.getElementById("profile"+f+"Input");
-      if(i) i.style.display = "none";
+    // Remove editing state
+    $$(".profile-row").forEach(r=>{
+      r.classList.remove("editing");
     });
 
-    // Hide Save button
-    if(saveBtn) saveBtn.style.display = "none";
+    saveBtn.style.display = "none";
+    saveBtn.classList.remove("loading");
+    saveBtn.disabled = false;
 
-    showAlert("Profile updated successfully");
+    showToast("Profile updated successfully","success");
+
   })
-  .catch(err=>{
-    console.error(err);
-    showAlert("Network error while saving profile");
-    restoreProfileDraft();
-
-    if(saveBtn) saveBtn.style.display = "inline-flex";
+  .catch(()=>{
+    showToast("Network error","error");
+    saveBtn.classList.remove("loading");
+    saveBtn.disabled = false;
   });
 }
 
-function restoreProfileDraft(){
-  if(!lastProfileDraft) return;
-
-  const nameEl = document.getElementById("profileNameInput");
-  const userEl = document.getElementById("profileUsernameInput");
-  const mobEl  = document.getElementById("profileMobileInput");
-  const waEl   = document.getElementById("profileWhatsappInput");
-
-  if(nameEl) nameEl.value = lastProfileDraft.name;
-  if(userEl) userEl.value = lastProfileDraft.username;
-  if(mobEl)  mobEl.value  = lastProfileDraft.mobile;
-  if(waEl)   waEl.value   = lastProfileDraft.whatsapp;
-}
 function handleDashboardAlert(action, id, name, start, end){
   // Always go to elections view first
   currentViewIndex = VIEW_ORDER.indexOf("elections");
@@ -3342,9 +4405,10 @@ function handleDashboardAlert(action, id, name, start, end){
     }
 
     if(action === "scroll"){
-      const card = document.querySelector(
-        `[data-election-card][onclick*="'${id}'"]`
-      );
+const card = document.querySelector(
+  `[data-election-card][data-election-id="${id}"]`
+);
+
       if(card){
         card.scrollIntoView({ behavior:"smooth", block:"center" });
         card.style.boxShadow = "0 0 0 2px var(--yellow)";
@@ -3358,7 +4422,7 @@ function handleDashboardAlert(action, id, name, start, end){
 ====================================================== */
 function updateStatusChips(){
   $$("[data-status-chip]").forEach(chip=>{
-    const card = chip.closest("[data-start]");
+    const card = chip.closest("[data-start], [data-result-card]");
     if(!card) return;
 
     const status = getElectionStatus(card);
@@ -3454,17 +4518,18 @@ function confirmBulkDelete(){
     showAlert("Select at least one email to delete.");
     return;
   }
-
   openConfirm(
     `Delete ${ids.length} selected whitelist entries?`,
-    () => submitBulkDelete(ids)
+    () => submitBulkDelete(ids),
+    "danger"
   );
+
 }
 
 function submitBulkDelete(ids){
   fetch("/admin/whitelist/bulk-delete",{
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
+    headers:{ "Content-Type":"application/json","X-CSRFToken":"{{ csrf_token() }}" },
     body:JSON.stringify({ ids })
   })
   .then(r => r.json())

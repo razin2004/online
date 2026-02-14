@@ -5,9 +5,14 @@ import string
 import re
 import secrets
 import requests
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 from datetime import datetime, timedelta
 from datetime import timezone
-
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from flask import (
     Flask, render_template, request, redirect,
@@ -15,17 +20,58 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from flask_talisman import Talisman
 
 # -------------------------------------------------
 # APP CONFIG
 # -------------------------------------------------
 
 app = Flask(__name__)
-app.secret_key = "SUPER_SECRET_KEY"
 
+if os.environ.get("REDIS_URL"):
+    app.config["RATELIMIT_STORAGE_URL"] = os.environ.get("REDIS_URL")
+else:
+    # fallback for local dev
+    app.config["RATELIMIT_STORAGE_URL"] = "memory://"
+
+app.secret_key = "SUPER_SECRET_KEY"
+csrf = CSRFProtect(app)
+csp = {
+    "default-src": ["'self'"],
+    "style-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com"
+    ],
+    "font-src": [
+        "'self'",
+        "https://fonts.gstatic.com"
+    ],
+    "script-src": [
+        "'self'",
+        "'unsafe-inline'"
+    ],
+    "img-src": [
+        "'self'",
+        "data:"
+    ]
+}
+
+Talisman(
+    app,
+    content_security_policy=csp
+)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///voting.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
+
+is_on_render = os.environ.get("RENDER") == "true"
+
+app.config.update(
+    SESSION_COOKIE_SECURE=is_on_render,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax"
+)
 
 db = SQLAlchemy(app)
 UPLOAD_FOLDER = "static/uploads"
@@ -42,7 +88,12 @@ PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 SMTP_EMAIL = "control.your.voting@gmail.com"
 SMTP_PASSWORD = "sydpdtgkauovfiee"
 
-USE_PROMAIL = True   # 🔁 switch here if needed
+USE_PROMAIL = False   # 🔁 switch here if needed
+limiter = Limiter(
+    key_func=lambda: request.form.get("email") or get_remote_address(),
+    app=app,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 
 # -------------------------------------------------
@@ -88,12 +139,21 @@ def send_otp_email(to, subject, html, text=None):
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.starttls()
             smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
-            message = f"Subject: {subject}\n\n{text or html}"
-            smtp.sendmail(SMTP_EMAIL, to, message)
+
+            msg = MIMEMultipart()
+            msg["From"] = f"VoteCentral <{SMTP_EMAIL}>"
+            msg["To"] = to
+            msg["Subject"] = subject
+
+            msg.attach(MIMEText(text or html, "plain", "utf-8"))
+
+            smtp.sendmail(SMTP_EMAIL, to, msg.as_string())
             return True
+
     except Exception as e:
         print("SMTP OTP ERROR:", e)
         return False
+
 
 
 # -------------------------------------------------
@@ -146,33 +206,33 @@ def send_vote_central_email(to_email, subject, body):
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.starttls()
             smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
-            message = f"""From: VoteCentral <{SMTP_EMAIL}>
-To: {to_email}
-Subject: {subject}
 
-{body}
-"""
-            smtp.sendmail(SMTP_EMAIL, to_email, message)
+            msg = MIMEMultipart()
+            msg["From"] = f"VoteCentral <{SMTP_EMAIL}>"
+            msg["To"] = to_email
+            msg["Subject"] = subject
+
+            msg.attach(MIMEText(body, "plain", "utf-8"))
+
+            smtp.sendmail(SMTP_EMAIL, to_email, msg.as_string())
             return True
+
     except Exception as e:
         print("SMTP SYS ERROR:", e)
         return False
+
 
 
 # 1. Get your API Key from https://www.promailer.xyz/
 # 2. Add PROMAIL_API_KEY to Render Environment Variables
 
 
-
-
 def generate_otp():
-    return str(random.randint(100000, 999999))
-
+    return str(secrets.randbelow(1000000)).zfill(6)
 
 def generate_admin_code():
-    chars = string.ascii_letters + string.digits
+    chars = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(chars) for _ in range(8))
-
 
 
 def generate_public_code():
@@ -181,7 +241,7 @@ def generate_public_code():
 def election_has_ended(election):
     if not election.end_time:
         return False
-    return datetime.now() >= datetime.fromisoformat(election.end_time)
+    return datetime.now(timezone.utc) >= datetime.fromisoformat(election.end_time)
 
 def store_new_otp(email, code, role, admin_id=None):
 
@@ -190,18 +250,19 @@ def store_new_otp(email, code, role, admin_id=None):
 
     otp_record = OTPStore(
         email=email,
-        code=code,
+        code_hash=generate_password_hash(code),
         role=role,
         admin_id=admin_id,
         created_at=datetime.now(timezone.utc),
         expires_at=datetime.now(timezone.utc) + timedelta(minutes=5)
     )
 
+
     db.session.add(otp_record)
     db.session.commit()
 
 def voter_can_view_results(election):
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     # PUBLIC — allow viewing anytime if admin enabled visibility
     if election.election_type == "public":
@@ -230,12 +291,32 @@ def require_voter_login():
     return True
 
 from werkzeug.utils import secure_filename
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+
+def allowed_file(filename):
+    return "." in filename and \
+           filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+from PIL import Image
 
 def save_uploaded_file(file):
     if not file or file.filename == "":
         return None
 
+    if not allowed_file(file.filename):
+        return None
+
+    try:
+        # Validate actual image content
+        image = Image.open(file)
+        image.verify()  # verify image integrity
+        file.seek(0)    # reset pointer after verify
+    except Exception:
+        return None
+
     filename = secure_filename(file.filename)
+    filename = f"{secrets.token_hex(8)}_{filename}"
+
     path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
     file.save(path)
 
@@ -253,6 +334,25 @@ def ensure_utc(dt):
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt
+from datetime import datetime, timezone
+
+from zoneinfo import ZoneInfo
+
+IST = ZoneInfo("Asia/Kolkata")
+
+def parse_local_datetime(dt_string):
+    if not dt_string:
+        return None
+
+    # Parse as naive local time
+    naive = datetime.strptime(dt_string, "%Y-%m-%dT%H:%M")
+
+    # Attach IST timezone
+    local_dt = naive.replace(tzinfo=IST)
+
+    # Convert to UTC
+    return local_dt.astimezone(timezone.utc)
+
 
 def admin_register_otp_email(name, username, otp):
     return {
@@ -446,10 +546,25 @@ class Vote(db.Model):
 
     election_id = db.Column(db.Integer, db.ForeignKey("election.id"))
     candidate_id = db.Column(db.Integer, db.ForeignKey("candidate.id"))
-
     email = db.Column(db.String(120))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)   # 🔒 immutable
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow) 
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            'election_id',
+            'email',
+            name='unique_vote_per_election'
+        ),
+    )
+
     
 class VoterWhitelist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -461,11 +576,16 @@ class OTPStore(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     email = db.Column(db.String(120))
-    code = db.Column(db.String(10))
+    code_hash = db.Column(db.String(200))
+    attempts = db.Column(db.Integer, default=0)
     role = db.Column(db.String(20))
     admin_id = db.Column(db.Integer, nullable=True)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc)
+    )
+
     expires_at = db.Column(db.DateTime)
 
 
@@ -488,7 +608,7 @@ def index():
 # -------------------------------------------------
 # ADMIN LOGIN
 # -------------------------------------------------
-
+@limiter.limit("5 per minute")
 @app.route("/admin/login", methods=["POST"])
 def admin_login():
 
@@ -503,13 +623,16 @@ def admin_login():
 
         return redirect("/")
 
+    session.clear()
     session["admin_id"] = admin.id
+
     return redirect("/admin/dashboard")
 
 from flask import jsonify
 
 @app.route("/admin/check-username")
 def check_username():
+    
     username = (request.args.get("username") or "").strip().lower()
 
     if not USERNAME_REGEX.match(username):
@@ -524,7 +647,7 @@ def check_username():
 # -------------------------------------------------
 # ADMIN REGISTRATION (OTP FLOW)
 # -------------------------------------------------
-
+@limiter.limit("3 per minute")
 @app.route("/admin/register", methods=["POST"])
 def admin_register():
 
@@ -618,6 +741,7 @@ def admin_register():
           "admin_register_success")
 
     return redirect("/verify-otp")
+@limiter.limit("5 per minute")
 @app.route("/verify-otp", methods=["GET", "POST"])
 def verify_otp():
 
@@ -625,7 +749,7 @@ def verify_otp():
     if request.method == "GET":
         return render_template("otp.html", context="admin")
 
-    otp = request.form["otp"]
+    otp = request.form.get("otp", "").strip()
 
     pending = session.get("pending_admin")
     if not pending:
@@ -640,14 +764,26 @@ def verify_otp():
     ).order_by(OTPStore.id.desc()).first()
 
     # ---- invalid ----
-    if not record or record.code != otp:
-        flash("Invalid or expired OTP. Please try again.", "otp_error")
+    if not record:
+        flash("Invalid or expired OTP.", "otp_error")
         return redirect("/verify-otp")
 
-    # ---- expired ----
     if ensure_utc(record.expires_at) < datetime.now(timezone.utc):
-        flash("OTP expired — request a new one", "otp_error")
-        return redirect("/voter/otp")
+        db.session.delete(record)
+        db.session.commit()
+        flash("OTP expired.", "otp_error")
+        return redirect("/verify-otp")
+
+
+    if record.attempts >= 5:
+        flash("Too many attempts.", "otp_error")
+        return redirect("/verify-otp")
+
+    if not check_password_hash(record.code_hash, otp):
+        record.attempts += 1
+        db.session.commit()
+        flash("Invalid OTP.", "otp_error")
+        return redirect("/verify-otp")
 
 
     # ---- delete OTP ----
@@ -706,7 +842,8 @@ def verify_otp():
 # -------------------------------------------------
 # ADMIN FORGOT PASSWORD — REQUEST RESET OTP
 # -------------------------------------------------
-@app.route("/admin/forgot-username", methods=["POST"])
+@limiter.limit("3 per minute")
+@app.route("/admin/forgot-username", methods=["GET","POST"])
 def admin_forgot_username():
 
     email = request.form["email"].strip().lower()
@@ -743,7 +880,7 @@ Secure • Verified • One Vote Per User
         "admin_login_success"
     )
     return redirect("/")
-
+@limiter.limit("3 per minute")
 @app.route("/admin/forgot-password", methods=["POST"])
 def admin_forgot_password():
 
@@ -799,13 +936,29 @@ def admin_reset_verify():
         role="admin_reset"
     ).order_by(OTPStore.id.desc()).first()
 
-    if not record or record.code != otp:
-        flash("Invalid or expired OTP. Please try again.", "otp_error")
+    # 1️⃣ No record
+    if not record:
+        flash("Invalid or expired OTP.", "otp_error")
         return redirect("/verify-otp?context=reset")
 
+    # 2️⃣ Expired
     if ensure_utc(record.expires_at) < datetime.now(timezone.utc):
-        flash("OTP expired — request new reset link", "otp_error")
+        db.session.delete(record)
+        db.session.commit()
+        flash("OTP expired — request new reset link.", "otp_error")
         return redirect("/")
+
+    # 3️⃣ Too many attempts
+    if record.attempts >= 5:
+        flash("Too many invalid attempts. Request a new OTP.", "otp_error")
+        return redirect("/")
+
+    # 4️⃣ Wrong OTP
+    if not check_password_hash(record.code_hash, otp):
+        record.attempts += 1
+        db.session.commit()
+        flash("Invalid OTP.", "otp_error")
+        return redirect("/verify-otp?context=reset")
 
     # delete otp after verification
     db.session.delete(record)
@@ -862,13 +1015,13 @@ def admin_reset_password():
 
 from flask import jsonify
 
-@app.route("/admin/profile/update", methods=["POST"])
+@app.route("/admin/profile/update",methods=["POST"])
 def admin_profile_update():
 
     if not require_admin_login():
         return jsonify(success=False, message="Unauthorized"), 403
 
-    admin = Admin.query.get(session["admin_id"])
+    admin = db.session.get(Admin, session["admin_id"])
     if not admin:
         return jsonify(success=False, message="Admin not found"), 404
 
@@ -916,7 +1069,7 @@ def check_email():
         valid=True,
         available=not bool(exists)
     )
-
+@limiter.limit("3 per minute")
 @app.route("/admin/reset-resend")
 def admin_reset_resend():
 
@@ -959,7 +1112,7 @@ def admin_reset_cancel():
         "admin_login_success"
     )
     return redirect("/")
-
+@limiter.limit("3 per minute")
 @app.route("/voter/resend-otp")
 def voter_resend_otp():
 
@@ -1010,7 +1163,7 @@ def admin_register_resend():
 # -------------------------------------------------
 # VOTER LOGIN — PUBLIC
 # -------------------------------------------------
-
+@limiter.limit("3 per minute")
 @app.route("/voter/login/public", methods=["POST"])
 def voter_public_login():
 
@@ -1030,7 +1183,7 @@ def voter_public_login():
         body=email_data["body"]
     )
 
-
+    session["otp_context"] = "voter_public"
     session["voter_email"] = email
 
     flash("OTP sent to your email", "voter_public_success")
@@ -1067,7 +1220,7 @@ def voter_private_login():
         body=email_data["body"]
     )
 
-
+    session["otp_context"] = "voter_private"
     session["voter_email"] = email
     session["voter_admin_id"] = admin.id
 
@@ -1079,16 +1232,14 @@ def voter_private_login():
 # -------------------------------------------------
 # VERIFY VOTER OTP
 # -------------------------------------------------
-
+@limiter.limit("5 per minute")
 @app.route("/voter/otp", methods=["GET", "POST"])
 def voter_verify():
 
     # only clear reset context if this is NOT a reset flow
-    if session.get("otp_context") != "admin_reset":
+    if request.method == "GET" and session.get("otp_context") != "admin_reset":
         session.pop("otp_reset_verified", None)
         session.pop("reset_email", None)
-        session.pop("otp_context", None)
-
 
     if request.method == "GET":
         return render_template("otp.html",context="voter")
@@ -1101,30 +1252,34 @@ def voter_verify():
         role="voter_public" if "voter_admin_id" not in session else "voter_private"
     ).order_by(OTPStore.id.desc()).first()
 
-    if not record or record.code != otp:
-        flash("Invalid or expired OTP. Please try again.", "otp_error")
-
+    
+    if not record:
+        flash("Invalid or expired OTP", "otp_error")
         return redirect("/voter/otp")
 
     if ensure_utc(record.expires_at) < datetime.now(timezone.utc):
-        flash("OTP expired — request a new OTP", "otp_error")
-        return redirect("/")
+        db.session.delete(record)
+        db.session.commit()
+        flash("OTP expired", "otp_error")
+        return redirect("/voter/otp")
+
+
+    if record.attempts >= 5:
+        flash("Too many attempts - Request a new OTP", "otp_error")
+        return redirect("/voter/otp")
+
+    if not check_password_hash(record.code_hash, otp):
+        record.attempts += 1
+        db.session.commit()
+        flash("Invalid OTP", "otp_error")
+        return redirect("/voter/otp")
+
     # OTP verified — delete it permanently
     db.session.delete(record)
     db.session.commit()
 
-    if not record:
-        flash("Invalid or expired OTP. Please try again.", "otp_error")
-
-        return redirect("/voter/otp")
-
     session["voter_logged"] = True
     return redirect("/voter/dashboard")
-
-
-# -------------------------------------------------
-# VOTER DASHBOARD
-# -------------------------------------------------
 # -------------------------------------------------
 # VOTER DASHBOARD
 # -------------------------------------------------
@@ -1230,7 +1385,7 @@ def voter_results_list():
 
     result_rows = []
 
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     for e in elections:
 
@@ -1245,10 +1400,10 @@ def voter_results_list():
 
         total_votes = Vote.query.filter_by(election_id=e.id).count()
 
-        start = datetime.fromisoformat(e.start_time) if e.start_time else None
+        start = ensure_utc(datetime.fromisoformat(e.start_time)) if e.start_time else None
         end   = datetime.fromisoformat(e.end_time)   if e.end_time else None
 
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
 
         is_upcoming = False
         is_running  = False
@@ -1440,30 +1595,37 @@ def view_election(eid):
 # -------------------------------------------------
 # CAST VOTE
 # -------------------------------------------------
-
+@limiter.limit("10 per minute")
 @app.route("/vote", methods=["POST"])
 def cast_vote():
 
-    email = request.form["email"]
+    email = session.get("voter_email")
+    if not email:
+        flash("Session expired")
+        return redirect("/")
+
     election_id = request.form["election_id"]
     candidate_id = request.form["candidate_id"]
+
+    reveal_vote = request.form.get("reveal_vote") == "yes"
 
     if request.form.get("confirm_flag") != "yes":
         flash("Vote not submitted — confirmation required")
         return redirect("/voter/dashboard")
 
     election = Election.query.get_or_404(election_id)
+    now = datetime.now(timezone.utc)
 
-    # ---- schedule checks ----
-    if election.start_time and datetime.now() < datetime.fromisoformat(election.start_time):
+    # Schedule checks
+    if election.start_time and now < datetime.fromisoformat(election.start_time):
         flash("Election has not started yet")
         return redirect("/voter/dashboard")
 
-    if election.end_time and datetime.now() > datetime.fromisoformat(election.end_time):
+    if election.end_time and now > datetime.fromisoformat(election.end_time):
         flash("Election has ended")
         return redirect("/voter/dashboard")
 
-    # ---- whitelist ----
+    # Private whitelist
     if election.election_type == "private":
         allowed = VoterWhitelist.query.filter_by(
             election_id=election_id,
@@ -1478,40 +1640,45 @@ def cast_vote():
         email=email
     ).first()
 
-    # -----------------------------
     # FIRST VOTE
-    # -----------------------------
     if not existing_vote:
-        db.session.add(Vote(
+
+        vote = Vote(
             election_id=election_id,
             candidate_id=candidate_id,
             email=email,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
-        ))
+            created_at=now,
+            updated_at=now
+        )
+        db.session.add(vote)
         db.session.commit()
+
+        # Store reveal preference
+        session[f"reveal_vote_{election_id}"] = reveal_vote
+        session[f"voted_candidate_{election_id}"] = candidate_id
 
         flash("Vote recorded successfully. You may change it for 45 seconds.")
         return redirect(f"/election/{election_id}")
 
-    # -----------------------------
+    # MODIFY within 45 sec
     # MODIFY WITHIN 45 SECONDS
-    # -----------------------------
-    elapsed = (
-        datetime.now(timezone.utc) - ensure_utc(existing_vote.created_at)
-    ).total_seconds()
+    elapsed = (now - ensure_utc(existing_vote.created_at)).total_seconds()
 
     if elapsed <= 45:
+
         existing_vote.candidate_id = candidate_id
-        existing_vote.updated_at = datetime.now(timezone.utc)
+        existing_vote.updated_at = now
         db.session.commit()
 
-        flash(f"Vote updated. {int(45-elapsed)} seconds remaining.")
+        # ✅ UPDATE reveal preference also
+        session[f"reveal_vote_{election_id}"] = reveal_vote
+        session[f"voted_candidate_{election_id}"] = candidate_id
+
+        flash(f"Vote updated. {int(45 - elapsed)} seconds remaining.")
         return redirect(f"/election/{election_id}")
 
-    # -----------------------------
+
     # LOCKED
-    # -----------------------------
     flash("Modification window closed. Your vote is already cast.")
     return redirect(f"/election/{election_id}")
 
@@ -1527,47 +1694,47 @@ def admin_dashboard():
     if not require_admin_login():
         return redirect("/")
 
-    # block voter session
     if "voter_logged" in session:
         flash("Voters cannot access admin panel")
         return redirect("/voter/dashboard")
 
     admin = db.session.get(Admin, session.get("admin_id"))
-
     elections = Election.query.filter_by(admin_id=admin.id).all()
-    from datetime import datetime
+
+    now = datetime.now(timezone.utc)
 
     for e in elections:
 
-        total_votes = Vote.query.filter_by(election_id=e.id).count()
-        e.total_votes = total_votes
+        e.total_votes = Vote.query.filter_by(election_id=e.id).count()
 
-        # ----- TIME FLAGS (safe boolean states) -----
         e.is_upcoming = False
-        e.is_running  = False
-        e.is_ended    = False
+        e.is_running = False
+        e.is_ended = False
+        e.starts_within_24h = False  # ✅ NEW FLAG
 
-        if e.start_time and e.end_time:
-            start = datetime.fromisoformat(e.start_time)
-            end   = datetime.fromisoformat(e.end_time)
-            now   = datetime.now()
+        start = ensure_utc(ensure_utc(datetime.fromisoformat(e.start_time))) if e.start_time else None
+        end   = ensure_utc(datetime.fromisoformat(e.end_time)) if e.end_time else None
 
+        if start and end:
             if now < start:
                 e.is_upcoming = True
+
+                # ✅ 24-hour highlight logic (SAFE)
+                seconds_until_start = (start - now).total_seconds()
+                if 0 < seconds_until_start <= 86400:
+                    e.starts_within_24h = True
+
             elif start <= now <= end:
                 e.is_running = True
             else:
                 e.is_ended = True
 
-
+        # ---------- RESULTS ----------
         results = []
 
         for c in e.candidates:
             vote_count = Vote.query.filter_by(candidate_id=c.id).count()
 
-            # ===== RULE =====
-            # PUBLIC → show candidate votes always
-            # PRIVATE → hide until election ends
             if e.election_type == "private" and not election_has_ended(e):
                 display_count = "—"
             else:
@@ -1583,13 +1750,7 @@ def admin_dashboard():
                 "raw_count": vote_count
             })
 
-
-        # winner calculation only when votes are visible
-        visible_counts = [
-            r["raw_count"]
-            for r in results
-            if isinstance(r["count"], int)
-        ]
+        visible_counts = [r["raw_count"] for r in results if isinstance(r["count"], int)]
 
         if visible_counts:
             max_votes = max(visible_counts)
@@ -1601,13 +1762,12 @@ def admin_dashboard():
 
         e.results = results
 
-
     return render_template(
         "admin_dashboard.html",
-        admin=admin,          # ← REQUIRED
-        elections=elections,
-        datetime=datetime
+        admin=admin,
+        elections=elections
     )
+
 
 @app.route("/admin/api/candidates/<eid>")
 def api_candidates(eid):
@@ -1616,6 +1776,9 @@ def api_candidates(eid):
         return {"error": "not authorized"}, 403
 
     election = Election.query.get_or_404(eid)
+
+    if election.admin_id != session["admin_id"]:
+        return {"error": "forbidden"}, 403
 
     data = []
     for c in election.candidates:
@@ -1637,6 +1800,9 @@ def api_whitelist(eid):
         return {"error": "not authorized"}, 403
 
     election = Election.query.get_or_404(eid)
+
+    if election.admin_id != session["admin_id"]:
+        return {"error": "forbidden"}, 403
 
     entries = VoterWhitelist.query.filter_by(
         election_id=election.id
@@ -1665,30 +1831,53 @@ def admin_results_page():
     if not require_admin_login():
         return redirect("/")
 
-    admin = Admin.query.get(session["admin_id"])
+    admin = db.session.get(Admin, session["admin_id"])
     elections = Election.query.filter_by(admin_id=admin.id).all()
 
     result_list = []
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     for e in elections:
         total_votes = Vote.query.filter_by(election_id=e.id).count()
-        
-        # Determine timing
-        ended = False
-        if e.end_time:
-            # Handle both string and datetime objects if necessary
-            end_dt = datetime.fromisoformat(e.end_time) if isinstance(e.end_time, str) else e.end_time
-            ended = now >= end_dt
 
-        # Determine accessibility and reason
+        # ----- Normalize Start & End Time -----
+        start_dt = None
+        end_dt = None
+
+        if e.start_time:
+            start_dt = ensure_utc(
+                ensure_utc(datetime.fromisoformat(e.start_time))
+                if isinstance(e.start_time, str)
+                else e.start_time
+            )
+
+        if e.end_time:
+            end_dt = ensure_utc(
+                datetime.fromisoformat(e.end_time)
+                if isinstance(e.end_time, str)
+                else e.end_time
+            )
+
+        # ----- Determine Status -----
+        running = False
+        upcoming = False
+        ended = False
+
+        if start_dt and now < start_dt:
+            upcoming = True
+        elif start_dt and end_dt and start_dt <= now < end_dt:
+            running = True
+        elif end_dt and now >= end_dt:
+            ended = True
+
+        # ----- Determine Result Accessibility -----
         can_open = False
         reason = ""
 
         if not e.result_visible:
-            reason = "This election is currently set to 'Hidden' by Admin settings."
-        elif e.election_type == 'private' and not ended:
-            reason = f"Private election results remain locked until the end time ({e.end_time})."
+            reason = "This election is currently hidden by admin settings."
+        elif e.election_type == "private" and not ended:
+            reason = f"Private election results unlock after {end_dt.strftime('%Y-%m-%d %H:%M')}."
         else:
             can_open = True
 
@@ -1696,14 +1885,21 @@ def admin_results_page():
             "id": e.id,
             "name": e.name,
             "type": e.election_type,
+            "public_code": e.public_code,
             "total_votes": total_votes,
+            "running": running,
+            "upcoming": upcoming,
             "ended": ended,
-            "visible": e.result_visible,
             "can_open": can_open,
             "reason": reason
         })
 
-    return render_template("admin_results.html", elections=result_list, admin=admin)
+    return render_template(
+        "admin_results.html",
+        elections=result_list,
+        admin=admin
+    )
+
 
 @app.route("/admin/results/<eid>")
 def admin_result_detail(eid):
@@ -1713,7 +1909,11 @@ def admin_result_detail(eid):
 
     election = Election.query.get_or_404(eid)
 
-    now = datetime.now()
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized access")
+        return redirect("/admin/dashboard")
+
+    now = datetime.now(timezone.utc)
     ended = False
     if election.end_time:
         ended = now >= datetime.fromisoformat(election.end_time)
@@ -1782,43 +1982,33 @@ def create_election():
     etype = request.form["type"]
     name  = request.form["name"].strip()
 
-    start_raw = request.form.get("start_time") or None
-    end_raw   = request.form.get("end_time") or None
+    start_raw = request.form.get("start_time")
+    end_raw   = request.form.get("end_time")
 
-    try:
-        start = datetime.fromisoformat(start_raw) if start_raw else None
-        end   = datetime.fromisoformat(end_raw) if end_raw else None
-    except ValueError:
-        flash("Invalid date or time format. Please select a valid date and time.")
-        return redirect("/admin/dashboard?open=create")
+    start = parse_local_datetime(start_raw)
+    end   = parse_local_datetime(end_raw)
 
+    now = datetime.now(timezone.utc)
 
-    now = datetime.now()
-
-    # ---------------- VALIDATIONS ----------------
-
-    # ❌ Start time cannot be before creation time
+    # ❌ Start in past
     if start and start < now:
         flash("Start time cannot be in the past.")
         return redirect("/admin/dashboard?open=create")
 
-    # ❌ End time must be after current time
+    # ❌ End in past
     if end and end <= now:
         flash("End time must be after the current time.")
         return redirect("/admin/dashboard?open=create")
 
-    # ❌ Start must be before end
+    # ❌ Start after end
     if start and end and start >= end:
         flash("Start time must be before the end time.")
         return redirect("/admin/dashboard?open=create")
 
-    # ❌ Private election requires both times
+    # ❌ Private must have both times
     if etype == "private" and (not start or not end):
         flash("Private elections must have both start and end time.")
         return redirect("/admin/dashboard?open=create")
-
-
-    # ---------------- CREATE ----------------
 
     election = Election(
         admin_id=session["admin_id"],
@@ -1847,6 +2037,7 @@ def create_election():
 
 
 
+
 # -------------------------------------------------
 # ADD CANDIDATE
 # -------------------------------------------------
@@ -1854,6 +2045,9 @@ def create_election():
 def add_candidate():
 
     election = Election.query.get_or_404(request.form["election_id"])
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
 
     now = datetime.now(timezone.utc)
 
@@ -1929,6 +2123,9 @@ def edit_candidate():
         return redirect("/admin/dashboard")
 
     election = Election.query.get(candidate.election_id)
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
 
     if election_has_ended(election):
         flash("Cannot edit candidate — election already ended")
@@ -1946,7 +2143,7 @@ def edit_candidate():
 # -------------------------------------------------
 # DELETE CANDIDATE (only if no votes)
 # -------------------------------------------------
-@app.route("/admin/candidate/delete/<cid>")
+@app.route("/admin/candidate/delete/<cid>", methods=["GET"])
 def delete_candidate(cid):
 
     candidate = db.session.get(Candidate, cid)
@@ -1955,6 +2152,10 @@ def delete_candidate(cid):
         return redirect(request.referrer or "/admin/dashboard")
 
     election = db.session.get(Election, candidate.election_id)
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
+
     if not election:
         flash("Election not found.")
         return redirect(request.referrer or "/admin/dashboard")
@@ -2011,6 +2212,9 @@ def update_candidate():
         return redirect("/admin/dashboard")
 
     election = Election.query.get(c.election_id)
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
 
     if election_has_ended(election):
         flash("Cannot edit candidate — election already ended")
@@ -2040,6 +2244,10 @@ from flask import request
 def whitelist_add():
 
     election = Election.query.get(request.form.get("election_id"))
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
+
     if not election:
         flash("Election not found")
         return redirect(request.referrer or "/admin/dashboard")
@@ -2073,8 +2281,8 @@ def whitelist_add():
     db.session.add(
         VoterWhitelist(
             election_id=election.id,
-            email=email,
-            total_whitelisted=total_whitelisted
+            email=email
+            
         )
     )
     db.session.commit()
@@ -2099,6 +2307,9 @@ def whitelist_bulk_delete():
         return jsonify(success=False, message="Nothing to delete")
 
     election = Election.query.get(entries[0].election_id)
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
 
     if election_has_ended(election):
         return jsonify(
@@ -2139,6 +2350,9 @@ import re
 def whitelist_bulk_add():
 
     election = Election.query.get(request.form.get("election_id"))
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
 
     if not election:
         flash("Election not found")
@@ -2227,7 +2441,7 @@ def whitelist_bulk_add():
     return redirect(request.referrer or "/admin/dashboard")
 
 
-@app.route("/admin/whitelist/remove/<wid>")
+@app.route("/admin/whitelist/remove/<wid>", methods=["GET","POST"])
 def whitelist_remove(wid):
 
     entry = VoterWhitelist.query.get(wid)
@@ -2237,6 +2451,10 @@ def whitelist_remove(wid):
         return redirect("/admin/dashboard")
 
     election = Election.query.get(entry.election_id)
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
+
     has_voted = Vote.query.filter_by(
         election_id=election.id,
         email=entry.email
@@ -2262,32 +2480,47 @@ def whitelist_remove(wid):
 # -------------------------------------------------
 # TOGGLE RESULT VISIBILITY
 # -------------------------------------------------
+from flask import jsonify
 
-@app.route("/admin/toggle-results/<id>")
+@app.route("/admin/toggle-results/<int:id>", methods=["POST"])
 def toggle_results(id):
 
     e = Election.query.get(id)
+
+    if not e:
+        return jsonify({"success": False, "message": "Election not found"}), 404
+
+    if e.admin_id != session.get("admin_id"):
+        return jsonify({"success": False, "message": "Unauthorized action"}), 403
+
     e.result_visible = not e.result_visible
     db.session.commit()
 
-    flash("Result visibility updated")
-    return redirect("/admin/dashboard")
+    return jsonify({
+        "success": True,
+        "visible": e.result_visible
+    })
 
 
 # -------------------------------------------------
 # DELETE ELECTION (safe)
 # -------------------------------------------------
 
-@app.route("/admin/election/delete/<eid>")
+@app.route("/admin/election/delete/<eid>", methods=["GET","POST"])
 def delete_election(eid):
 
     election = Election.query.get(eid)
+    
     if not election:
         flash("Election not found")
         return redirect("/admin/dashboard")
 
-    now = datetime.now()
-    start = datetime.fromisoformat(election.start_time) if election.start_time else None
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
+
+    now = datetime.now(timezone.utc)
+    start = ensure_utc(datetime.fromisoformat(election.start_time)) if election.start_time else None
 
     # ❌ STARTED → block normal delete
     if start and now >= start:
@@ -2311,16 +2544,22 @@ def delete_election(eid):
 # FORCE DELETE (danger — removes votes)
 # -------------------------------------------------
 
-@app.route("/admin/election/force-delete/<eid>")
+@app.route("/admin/election/force-delete/<eid>", methods=["GET","POST"])
 def force_delete_election(eid):
 
     election = Election.query.get(eid)
+    
     if not election:
         flash("Election not found")
         return redirect("/admin/dashboard")
+    
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
+    
 
-    now = datetime.now()
-    start = datetime.fromisoformat(election.start_time) if election.start_time else None
+    now = datetime.now(timezone.utc)
+    start = ensure_utc(datetime.fromisoformat(election.start_time)) if election.start_time else None
 
     # ❌ NOT STARTED → block force delete
     if not start or now < start:
@@ -2337,6 +2576,10 @@ def force_delete_election(eid):
 def edit_election_time():
 
     election = Election.query.get(request.form["election_id"])
+    if election.admin_id != session["admin_id"]:
+        flash("Unauthorized action")
+        return redirect("/admin/dashboard")
+
 
     if election_has_ended(election):
         flash("Cannot change time — election already ended")
@@ -2365,10 +2608,11 @@ def update_election():
             end=e.end_time or ""
         ))
 
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
-    start_old = datetime.fromisoformat(e.start_time) if e.start_time else None
-    end_old   = datetime.fromisoformat(e.end_time) if e.end_time else None
+    start_old = ensure_utc(ensure_utc(datetime.fromisoformat(e.start_time))) if e.start_time else None
+    end_old = ensure_utc(datetime.fromisoformat(e.end_time)) if e.end_time else None
+
 
     # 🚫 ENDED → nothing editable
     if end_old and now >= end_old:
@@ -2387,8 +2631,9 @@ def update_election():
     end_raw   = request.form.get("end_time") or None
 
     try:
-        start_new = datetime.fromisoformat(start_raw) if start_raw else None
-        end_new   = datetime.fromisoformat(end_raw) if end_raw else None
+        start_new = ensure_utc(datetime.fromisoformat(start_raw)) if start_raw else None
+        end_new   = ensure_utc(datetime.fromisoformat(end_raw)) if end_raw else None
+
     except ValueError:
         flash("Invalid date/time format")
         return redirect(url_for(

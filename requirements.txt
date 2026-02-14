@@ -5,3 +5,8 @@ flask-mail
 requests
 werkzeug
 gunicorn
+flask-wtf
+flask-limiter
+flask-talisman
+pillow
+redis

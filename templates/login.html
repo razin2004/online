@@ -751,6 +751,7 @@ margin-top: 2px;
 
 
     <form method="POST" action="/admin/login">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <div class="field">
         <label>Username</label>
@@ -826,6 +827,7 @@ margin-top: 2px;
     {% endif %}
 
     <form method="POST" action="/admin/register">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <div class="field"><label>Full Name</label>
         <input name="name" 
@@ -962,6 +964,8 @@ margin-top: 2px;
       <p class="sub">Enter your registered admin email to receive OTP.</p>
 
       <form method="POST" action="/admin/forgot-password">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
         <div class="field">
           <label>Email Address</label>
           <input type="email" name="email" required>
@@ -983,6 +987,8 @@ margin-top: 2px;
       <p class="sub">OTP verified. Create a new password.</p>
 
       <form method="POST" action="/admin/reset-password">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
         <div class="field">
           <label>New Password</label>
           <input type="password" name="password" required>
@@ -1021,6 +1027,8 @@ margin-top: 2px;
       <div class="field">
         <label>Email Address</label>
         <input type="email" name="email" required>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
       </div>
 
       <button class="btn blue">Send Username</button>
@@ -1076,6 +1084,8 @@ margin-top: 2px;
     {% endif %}
 
     <form method="POST" action="/voter/login/public" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
 
       <div class="field">
         <label>Email Address</label>
@@ -1121,6 +1131,8 @@ margin-top: 2px;
     {% endif %}
 
     <form method="POST" action="/voter/login/private" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
 
       <div class="field">
         <label>Admin Code</label>
@@ -1556,7 +1568,7 @@ if (!USERNAME_REGEX.test(v)) {
           .then(r => r.json())
           .then(data => {
             if (!data.valid) {
-              usernameStatus.textContent = "Invalid email address. Please enter a valid email.";
+              usernameStatus.textContent = "Invalid username format";
               usernameStatus.style.color = "#facc15";
             } else if (!data.available) {
               usernameStatus.textContent = "Username already exists";

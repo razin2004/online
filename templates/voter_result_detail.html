@@ -239,19 +239,13 @@
 <div class="summary-grid">
     <div class="stat-item">
         <span class="stat-label">Status</span>
-        <span class="stat-value" style="color: var(--success)">Voting Ended</span>
+        <span class="stat-value" style="color: var(--success)">Ended</span>
     </div>
     <div class="stat-item">
         <span class="stat-label">Total Participation</span>
         <span class="stat-value">{{ total_votes }} <small style="font-size: 0.8rem; color: var(--text-dim)">Votes</small></span>
     </div>
-    <div class="stat-item">
-        <span class="stat-label">Concluded On</span>
-        <span class="stat-value" style="font-size: 1.1rem;">
-            {{ election.end_time if election.end_time else 'Recently' }}
-
-        </span>
-    </div>
+   
     <div class="stat-item">
         <span class="stat-label">Election Type</span>
         <span class="stat-value" style="text-transform: uppercase;">{{ election.election_type }}</span>

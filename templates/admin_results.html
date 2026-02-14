@@ -1,300 +1,663 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>VoteCentral — Election Results</title>
-    <style>
-        :root {
-            --bg: #020617;
-            --card-bg: rgba(15, 23, 42, 0.8);
-            --border: rgba(255, 255, 255, 0.1);
-            --accent: #3b82f6;
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-            --glass: blur(12px);
-        }
+<link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VoteCentral — Election Results</title>
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text-main); line-height: 1.5; padding-bottom: 40px; }
-
-        /* NAVIGATION */
-        .nav-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            background: rgba(11, 18, 32, 0.5);
-            backdrop-filter: var(--glass);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .btn-dash {
-            background: var(--accent);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            transition: 0.3s;
-        }
-
-        .container { width: 1000px; max-width: 95%; margin: 20px auto; }
-
-        /* FILTER AREA */
-        .filter-card {
-            background: var(--card-bg);
-            backdrop-filter: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .filter-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 12px;
-            margin-top: 15px;
-        }
-
-        input, select {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: white;
-            padding: 12px;
-            border-radius: 10px;
-            outline: none;
-        }
-
-        /* PREMIUM TABLE (Desktop) */
-        .results-container { overflow-x: auto; }
-        .desktop-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 8px;
-        }
-
-        .desktop-table th { padding: 15px; text-align: left; color: var(--text-dim); font-size: 13px; text-transform: uppercase; }
-        .desktop-table tr { background: var(--card-bg); transition: 0.2s; }
-        .desktop-table td { padding: 16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-        .desktop-table td:first-child { border-left: 1px solid var(--border); border-radius: 12px 0 0 12px; }
-        .desktop-table td:last-child { border-right: 1px solid var(--border); border-radius: 0 12px 12px 0; }
-
-        /* MOBILE CARDS (Hidden on Desktop) */
-        .mobile-card {
-            display: none;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-        }
-
-        /* STATUS COLORS */
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-        .badge-pub { background: #065f46; color: #34d399; }
-        .badge-pri { background: #1e3a8a; color: #93c5fd; }
-        
-        .btn-open { background: var(--accent); border: none; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
-        .btn-locked { background: #334155; color: #94a3b8; border: none; padding: 8px 16px; border-radius: 8px; cursor: not-allowed; }
-
-        /* MODAL POPUP */
-        .modal-overlay {
-            position: fixed; top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .modal-content {
-            background: #1e293b; border: 1px solid var(--accent);
-            padding: 30px; border-radius: 20px; max-width: 400px; text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        .modal-content h3 { color: #ef4444; margin-bottom: 10px; }
-        .modal-content p { color: #cbd5e1; margin-bottom: 20px; }
-
-        /* RESPONSIVE LOGIC */
-        @media (max-width: 768px) {
-            .filter-grid { grid-template-columns: 1fr; }
-            .desktop-table { display: none; }
-            .mobile-card { display: block; }
-            .nav-header h2 { font-size: 18px; }
-        }
-        .brand-title{
-  font-weight:800;
-  letter-spacing:.3px;
+<style>
+:root{
+  --bg:#020617;
+  --card:rgba(15,23,42,.95);
+  --border:rgba(148,163,184,.15);
+  --accent:#3b82f6;
+  --text:#f8fafc;
+  --muted:#94a3b8;
 }
-.brand-vote{ color:#ffffff; }
-.brand-central{ color:#3b82f6; }
-.header-title-group{
+
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif}
+body{background:var(--bg);color:var(--text);overflow-x:hidden}
+
+.container{
+  width:1100px;
+  max-width:95%;
+  margin:30px auto;
+}
+
+/* ================= NAV ================= */
+
+.nav-header{
   display:flex;
-  flex-direction:column;
-  align-items:flex-start;
+  justify-content:space-between;
+  align-items:center;
+  padding:16px 20px;
+  background:rgba(11,18,32,.6);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
 }
 
-/* hidden by default */
-.mobile-title-logo{
-    height: 40px;
+.btn-dash{
+  background:var(--accent);
+  color:#fff;
+  padding:9px 18px;
+  border-radius:10px;
+  font-weight:600;
+  text-decoration:none;
 }
-/* mobile only */
 @media (max-width:768px){
-  .mobile-title-logo{
-    height:38px;
-    margin-bottom:-10px;
+    .nav-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:start;
+  padding:12px 16px;
+  background:rgba(11,18,32,.6);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+
+.btn-dash{
+  background:var(--accent);
+  color:#fff;
+  padding:7px 13px;
+  border-radius:10px;
+  font-weight:600;
+  text-decoration:none;
+  margin-right: -7px;
+}
+}
+/* ================= HEADER ================= */
+
+.page-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:25px;
+  margin-bottom:35px;
+}
+
+.page-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:24px;
+  font-weight:800;
+}
+
+.page-title svg{
+  width:24px;
+  height:24px;
+  color:var(--accent);
+    margin-bottom: -4px;
+    
+}
+
+/* ================= SEARCH SYSTEM ================= */
+
+.page-filters{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+}
+
+/* Desktop search sizing */
+@media (min-width:769px){
+  .page-filters input{
+    width:420px;
+    max-width:480px;
+   
   }
+  
 }
-.icon{
-  width:14px;
-  height:14px;
-  fill:currentColor;
-  margin-right:6px;
-  vertical-align:middle;
+
+.page-filters input,
+.page-filters select{
+  background:linear-gradient(180deg,rgba(15,23,42,.95),rgba(2,6,23,.95));
+  border:1px solid rgba(148,163,184,.25);
+  color:var(--text);
+  padding:10px 10px;
+  border-radius:14px;
+  font-size:14px;
+  transition:.25s ease;
 }
-.media-box{
+
+.page-filters input:focus,
+.page-filters select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(59,130,246,.15);
+}
+
+/* ================= MOBILE SEARCH LAYOUT ================= */
+
+@media (max-width:768px){
+.page-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom: -10px;
+  margin-top: -20px;
+  margin-left: -150px;
+  font-size:24px;
+  font-weight:800;
+}
+
+.page-title svg{
+  width:24px;
+  height:24px;
+  color:var(--accent);
+  margin-bottom: -2px;
+}
+  .page-header{
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+
+  .page-filters{
+    width:100%;
+    flex-direction:column;
+    gap:16px;
+  }
+
+  .page-filters input{
+    width:100%;
+    min-width:0;
+    margin-top: -4px;
+  }
+
+  .filter-row{
+    width:100%;
+    display:flex;
+    gap:4px;
+    margin-top: -10px;
+  }
+
+  .filter-row select{
+    width:50%;
+  }
+  
+}
+
+/* ================= TABLE ================= */
+/* ================= PREMIUM TABLE ================= */
+
+.desktop-table{
   width:100%;
-  aspect-ratio:1/1;
+  border-collapse:separate;
+  border-spacing:0;
+  background:linear-gradient(
+    180deg,
+    rgba(15,23,42,.98),
+    rgba(2,6,23,.98)
+  );
+  border:1px solid rgba(148,163,184,.25);
+  border-radius:20px;
   overflow:hidden;
+  box-shadow:0 40px 90px rgba(0,0,0,.55);
+}
+
+/* ---------- HEADER ---------- */
+
+.desktop-table thead{
+  background:rgba(59,130,246,.08);
+}
+
+.desktop-table thead th{
+  padding:18px 22px;
+  font-size:12px;
+  letter-spacing:.8px;
+  color:#cbd5e1;
+  text-transform:uppercase;
+  font-weight:700;
+  border-bottom:1px solid rgba(104, 114, 128, 0.25);
+}
+
+/* Alignment rules */
+.desktop-table thead th:nth-child(1){
+  text-align:left;   /* Election */
+}
+
+.desktop-table thead th:nth-child(2),
+.desktop-table thead th:nth-child(3),
+.desktop-table thead th:nth-child(4){
+  text-align:center; /* Type, Votes, Status */
+}
+
+.desktop-table thead th:last-child{
+  text-align:right;  /* Action */
+}
+
+/* ---------- BODY ---------- */
+
+.desktop-table tbody tr{
+  background:transparent;
+  transition:.25s ease;
+}
+
+.desktop-table tbody tr:hover{
+  background:rgba(83, 87, 93, 0.06);
+}
+
+.desktop-table td{
+  padding:22px 22px;
+  font-size:14px;
+  border-bottom:1px solid rgba(65, 81, 102, 0.12);
+}
+
+/* Body column alignment */
+.desktop-table td:nth-child(1){
+  text-align:left;
+  font-weight:600;
+}
+
+.desktop-table td:nth-child(2),
+.desktop-table td:nth-child(3),
+.desktop-table td:nth-child(4){
+  text-align:center;
+}
+
+.desktop-table td:last-child{
+  text-align:right;
+}
+
+/* Remove border on last row */
+.desktop-table tbody tr:last-child td{
+  border-bottom:none;
+}
+
+.status{
+  padding:5px 10px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:700;
+}
+
+.status-running{
+  background:rgba(250,204,21,.15);
+  color:#facc15;
+}
+
+.status-upcoming{
+  background:rgba(96,165,250,.15);
+  color:#60a5fa;
+}
+
+.status-ended{
+  background:rgba(52,211,153,.15);
+  color:#34d399;
+}
+
+
+/* ================= BADGES ================= */
+
+.badge{
+  padding:5px 10px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:700;
+}
+
+.badge-public{background:#065f46;color:#34d399}
+.badge-private{background:#1e3a8a;color:#93c5fd}
+
+/* ================= BUTTONS ================= */
+
+.btn-open{
+  background:linear-gradient(135deg,var(--accent),#2563eb);
+  border:none;
+  color:#fff;
+  padding:9px 16px;
+  border-radius:12px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.btn-locked{
+  background:rgba(148,163,184,.15);
+  color:var(--muted);
+  border:1px solid rgba(148,163,184,.25);
+  padding:9px 16px;
   border-radius:12px;
 }
-.media-box img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
+
+/* ================= MOBILE CARDS ================= */
+
+.mobile-wrapper{display:none}
+
+@media (max-width:768px){
+  .desktop-table{display:none}
+  .mobile-wrapper{display:block}
 }
 
-    </style>
-</head>
-<body>
-<nav class="nav-header">
-  <div class="header-title-group">
-    <img src="/static/uploads/votecentral-logo.svg"
-         class="mobile-title-logo"
-         alt="VoteCentral">
-  </div>
+.mobile-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:20px;
+  margin-bottom:18px;
+}
 
+/* ================= EMPTY STATES ================= */
+
+.empty-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:60px 20px;
+  text-align:center;
+  margin-top:20px;
+}
+
+.empty-card svg{
+  width:45px;
+  height:45px;
+  color:var(--accent);
+  margin-bottom:15px;
+}
+
+.empty-card h3{
+  font-size:20px;
+  font-weight:700;
+  margin-bottom:8px;
+}
+
+.empty-card p{
+  color:var(--muted);
+}
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(2,6,23,.75);
+  backdrop-filter:blur(10px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  visibility:hidden;
+  opacity:0;
+  transition:.25s ease;
+  z-index:9999;
+}
+
+.modal-overlay.active{
+  visibility:visible;
+  opacity:1;
+}
+
+.modal-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:30px;
+  width:90%;
+  max-width:420px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
+}
+
+.modal-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+
+.modal-close{
+  background:none;
+  border:none;
+  font-size:22px;
+  color:var(--muted);
+  cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<nav class="nav-header">
+  <img src="/static/uploads/votecentral-logo.svg" height="38">
   <a href="/admin/dashboard" class="btn-dash">Dashboard</a>
 </nav>
 
 <div class="container">
-    <div class="filter-card">
-        <div class="section-title">Results Overview</div>
-        <div class="filter-grid">
-            <input id="searchBox" placeholder="Search elections...">
-            <select id="filterType">
-                <option value="">All Types</option>
-                <option value="public">Public</option>
-                <option value="private">Private</option>
-            </select>
-            <select id="filterStatus">
-                <option value="">All Status</option>
-                <option value="available">Available</option>
-                <option value="locked">Locked</option>
-            </select>
-        </div>
+
+<div class="page-header">
+
+  <div class="page-title">
+    <svg viewBox="0 0 24 24">
+      <path fill="currentColor" d="M3 13h8V3H3v10zm10 8h8V3h-8v18zM3 21h8v-6H3v6z"/>
+    </svg>
+    Election Results
+  </div>
+
+  {% if elections|length > 0 %}
+  <div class="page-filters">
+
+    <input id="searchBox" placeholder="Search election name or code">
+
+    <div class="filter-row">
+      <select id="filterType">
+        <option value="">All Types</option>
+        <option value="public">Public</option>
+        <option value="private">Private</option>
+      </select>
+
+      <select id="filterStatus">
+        <option value="">All Status</option>
+        <option value="running">Ongoing</option>
+        <option value="upcoming">Upcoming</option>
+        <option value="ended">Ended</option>
+      </select>
     </div>
 
-    <div class="results-container">
-        <table class="desktop-table">
-            <thead>
-                <tr>
-                    <th>Election</th>
-                    <th>Type</th>
-                    <th>Votes</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for e in elections %}
-                <tr class="result-row" data-name="{{ e.name|lower }}" data-type="{{ e.type }}" data-status="{{ 'available' if e.can_open else 'locked' }}">
-                    <td><strong>{{ e.name }}</strong></td>
-                    <td><span class="badge {{ 'badge-pub' if e.type == 'public' else 'badge-pri' }}">{{ e.type.upper() }}</span></td>
-                    <td>{{ e.total_votes }}</td>
-                    <td>
-                        {% if e.can_open %}
-                            <a href="/admin/results/{{ e.id }}"><button class="btn-open">
-  <svg class="icon" viewBox="0 0 24 24">
-    <path d="M5 12h14M13 5l6 7-6 7"/>
-  </svg>
-  Open
-</button>
-</a>
-                        {% else %}
-                            <button class="btn-locked" onclick="showReason('{{ e.reason }}')">Locked</button>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  </div>
+  {% endif %}
 
-        {% for e in elections %}
-        <div class="mobile-card result-row" data-name="{{ e.name|lower }}" data-type="{{ e.type }}" data-status="{{ 'available' if e.can_open else 'locked' }}">
-            <div style="display:flex; justify-content: space-between; margin-bottom: 10px;">
-                <span class="badge {{ 'badge-pub' if e.type == 'public' else 'badge-pri' }}">{{ e.type.upper() }}</span>
-                <span style="color: var(--text-dim)">{{ e.total_votes }} votes</span>
-            </div>
-            <h3 style="margin-bottom: 15px;">{{ e.name }}</h3>
-            {% if e.can_open %}
-                <a href="/admin/results/{{ e.id }}" style="text-decoration:none;"><button class="btn-open" style="width:100%">Open Result</button></a>
-            {% else %}
-                <button class="btn-locked" style="width:100%" onclick="showReason('{{ e.reason }}')">Result Locked</button>
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
 </div>
 
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <h3>Access Restricted</h3>
-        <p id="reasonText"></p>
-        <button class="btn-open" onclick="closeModal()">Understood</button>
+{% if elections|length == 0 %}
+<div class="empty-card">
+  <svg viewBox="0 0 24 24">
+    <path fill="currentColor" d="M3 3h18v2H3V3zm2 4h14v14H5V7z"/>
+  </svg>
+  <h3>No Elections Created Yet</h3>
+  <p>Create your first election to begin collecting votes and viewing analytics.</p>
+</div>
+{% endif %}
+
+<!-- ================= DESKTOP TABLE ================= -->
+{% if elections|length > 0 %}
+<table class="desktop-table">
+<thead>
+<tr>
+<th>Election</th>
+<th>Type</th>
+<th>Total Votes</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody>
+{% for e in elections %}
+<tr class="result-row"
+data-name="{{ (e.name ~ ' ' ~ (e.public_code if e.public_code else ''))|lower }}"
+data-type="{{ e.type }}"
+data-status="{% if e.running %}running{% elif e.upcoming %}upcoming{% else %}ended{% endif %}">
+
+<td>
+{{ e.name }}
+{% if e.type == 'public' and e.public_code %}
+<span style="color:var(--muted)">({{ e.public_code }})</span>
+{% endif %}
+</td>
+
+<td>
+<span class="badge {{ 'badge-public' if e.type=='public' else 'badge-private' }}">
+{{ e.type.upper() }}
+</span>
+</td>
+
+<td>{{ e.total_votes }}</td>
+
+<td>
+  {% if e.running %}
+    <span class="status status-running">Ongoing</span>
+  {% elif e.upcoming %}
+    <span class="status status-upcoming">Upcoming</span>
+  {% else %}
+    <span class="status status-ended">Ended</span>
+  {% endif %}
+</td>
+
+
+<td>
+{% if e.can_open %}
+<a href="/admin/results/{{ e.id }}"><button class="btn-open">Open</button></a>
+{% else %}
+<button class="btn-locked"
+        onclick='showReason({{ e.reason|tojson }})'>
+  View
+</button>
+
+{% endif %}
+</td>
+
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+<!-- Desktop Not Found -->
+<div id="desktopNoResults" class="empty-card" style="display:none;">
+<svg viewBox="0 0 24 24">
+<path fill="currentColor" d="M9.5 3a6.5 6.5 0 015.2 10.4l4 4-1.4 1.4-4-4A6.5 6.5 0 119.5 3z"/>
+</svg>
+<h3>No Matching Elections</h3>
+<p>Try adjusting your search or filters.</p>
+</div>
+
+<!-- ================= MOBILE ================= -->
+
+<div class="mobile-wrapper">
+{% for e in elections %}
+<div class="mobile-card result-row"
+data-name="{{ (e.name ~ ' ' ~ (e.public_code if e.public_code else ''))|lower }}"
+data-type="{{ e.type }}"
+data-status="{% if e.running %}running{% elif e.upcoming %}upcoming{% else %}ended{% endif %}">
+
+<div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+<span class="badge {{ 'badge-public' if e.type=='public' else 'badge-private' }}">
+{{ e.type.upper() }}
+</span>
+<span>
+
+  {% if e.running %}
+    <span class="status status-running">Ongoing</span>
+  {% elif e.upcoming %}
+    <span class="status status-upcoming">Upcoming</span>
+  {% else %}
+    <span class="status status-ended">Ended</span>
+  {% endif %}
+
+
+</span>
+</div>
+
+<h3 style="margin-bottom:6px;">
+  {{ e.name }}
+  {% if e.type == 'public' and e.public_code %}
+    <span style="color:var(--muted);font-size:13px;">
+      ({{ e.public_code }})
+    </span>
+  {% endif %}
+</h3>
+
+<div style="color:var(--muted);margin-bottom:14px;">{{ e.total_votes }} votes</div>
+
+{% if e.can_open %}
+<a href="/admin/results/{{ e.id }}"><button class="btn-open" style="width:100%">Open</button></a>
+{% else %}
+<button class="btn-locked" style="width: 100%;"
+        onclick='showReason({{ e.reason|tojson }})'>
+  View
+</button>
+
+{% endif %}
+
+</div>
+{% endfor %}
+
+
+
+</div>
+
+</div>
+<!-- ================= PREMIUM MODAL ================= -->
+<div id="reasonModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Access Restricted</h3>
+      <button onclick="closeModal()" class="modal-close">&times;</button>
     </div>
+    <p id="reasonText"></p>
+    <button onclick="closeModal()" class="btn-open" style="width:100%;margin-top:20px;">
+      OK
+    </button>
+  </div>
 </div>
 
 <script>
-function showReason(msg) {
-  document.getElementById('reasonText').innerText = msg;
-  document.getElementById('modalOverlay').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+function applyFilters(){
+const q = searchBox ? searchBox.value.toLowerCase().trim() : "";
+const type = filterType ? filterType.value : "";
+const status = filterStatus ? filterStatus.value : "";
+
+let desktopVisible=0;
+let mobileVisible=0;
+
+document.querySelectorAll(".desktop-table .result-row").forEach(row=>{
+let show=true;
+if(q && !row.dataset.name.includes(q)) show=false;
+if(type && row.dataset.type!==type) show=false;
+if(status && row.dataset.status!==status) show=false;
+row.style.display=show?"":"none";
+if(show) desktopVisible++;
+});
+
+document.querySelectorAll(".mobile-wrapper .result-row").forEach(row=>{
+let show=true;
+if(q && !row.dataset.name.includes(q)) show=false;
+if(type && row.dataset.type!==type) show=false;
+if(status && row.dataset.status!==status) show=false;
+row.style.display=show?"":"none";
+if(show) mobileVisible++;
+});
+
+document.getElementById("desktopNoResults").style.display = desktopVisible===0 ? "block":"none";
+document.getElementById("mobileNoResults").style.display = mobileVisible===0 ? "block":"none";
 }
 
-function closeModal() {
-  document.getElementById('modalOverlay').style.display = 'none';
-  document.body.style.overflow = 'auto';
+const searchBox=document.getElementById("searchBox");
+const filterType=document.getElementById("filterType");
+const filterStatus=document.getElementById("filterStatus");
+
+if(searchBox) searchBox.addEventListener("keyup",applyFilters);
+if(filterType) filterType.addEventListener("change",applyFilters);
+if(filterStatus) filterStatus.addEventListener("change",applyFilters);
+function showReason(message){
+  document.getElementById("reasonText").innerText = message;
+  document.getElementById("reasonModal").classList.add("active");
+  document.body.style.overflow="hidden";
 }
 
+function closeModal(){
+  document.getElementById("reasonModal").classList.remove("active");
+  document.body.style.overflow="auto";
+}
 
-    // Filter Logic
-    const searchBox = document.getElementById("searchBox");
-    const filterType = document.getElementById("filterType");
-    const filterStatus = document.getElementById("filterStatus");
-
-    function applyFilters(){
-        const q = searchBox.value.toLowerCase();
-        const type = filterType.value;
-        const status = filterStatus.value;
-
-        document.querySelectorAll(".result-row").forEach(row => {
-            const name = row.dataset.name;
-            const t = row.dataset.type;
-            const s = row.dataset.status;
-            let show = true;
-            if(q && !name.includes(q)) show = false;
-            if(type && t !== type) show = false;
-            if(status && s !== status) show = false;
-            row.style.display = show ? "" : "none";
-        });
-    }
-
-    searchBox.onkeyup = applyFilters;
-    filterType.onchange = applyFilters;
-    filterStatus.onchange = applyFilters;
 </script>
+
 </body>
 </html>

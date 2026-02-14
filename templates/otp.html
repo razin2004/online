@@ -137,6 +137,8 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
           {% else %}
             /verify-otp
           {% endif %}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
 
   <div class="field">
     <label>Enter 6-Digit OTP Code</label>
@@ -220,6 +222,8 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
 
 
 <form method="POST" action="/admin/reset-password">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
 
   <div class="field">
     <label>New Password</label>
