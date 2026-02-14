@@ -88,7 +88,7 @@ PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 SMTP_EMAIL = "control.your.voting@gmail.com"
 SMTP_PASSWORD = "sydpdtgkauovfiee"
 
-USE_PROMAIL = False   # 🔁 switch here if needed
+USE_PROMAIL = True   # 🔁 switch here if needed
 limiter = Limiter(
     key_func=lambda: request.form.get("email") or get_remote_address(),
     app=app,
