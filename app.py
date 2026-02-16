@@ -82,11 +82,11 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # EMAIL CONFIG
 # -------------------------------------------------
 
-PROMAIL_API_KEY = "ee34a2c8-2dfa-44e8-862e-d7124cbadfb4"
+PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
 PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 
-SMTP_EMAIL = "control.your.voting@gmail.com"
-SMTP_PASSWORD = "sydpdtgkauovfiee"
+SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
 USE_PROMAIL = True   # 🔁 switch here if needed
 limiter = Limiter(
@@ -716,12 +716,30 @@ def admin_register():
     otp = generate_otp()
     store_new_otp(email, otp, "admin_register")
 
+
     email_data = admin_register_otp_email(name, username, otp)
-    send_vote_central_email(
+
+    success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
         body=email_data["body"]
     )
+
+    if not success:
+        # Remove stored OTP if email failed
+        OTPStore.query.filter_by(
+            email=email,
+            role="admin_register"
+        ).delete()
+        db.session.commit()
+
+        flash("Email service temporarily unavailable. Please try again.",
+            "admin_register_error")
+        return render_template(
+            "login.html",
+            open_panel="register",
+            form=request.form
+        )
 
 
 
@@ -904,11 +922,23 @@ def admin_forgot_password():
         store_new_otp(email, otp, "admin_reset")
 
         email_data = admin_reset_otp_email(admin.name, admin.username, otp)
-        send_vote_central_email(
+
+        success = send_vote_central_email(
             to_email=admin.email,
             subject=email_data["subject"],
             body=email_data["body"]
         )
+
+        if not success:
+            OTPStore.query.filter_by(
+                email=email,
+                role="admin_reset"
+            ).delete()
+            db.session.commit()
+
+            flash("Email service temporarily unavailable. Please try again.",
+                "otp_error")
+            return redirect("/")
 
         session["reset_email"] = email
 
@@ -1089,11 +1119,23 @@ def admin_reset_resend():
         otp
     )
 
-    send_vote_central_email(
+    success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
         body=email_data["body"]
     )
+
+    if not success:
+        OTPStore.query.filter_by(
+            email=email,
+            role="admin_reset"
+        ).delete()
+        db.session.commit()
+
+        flash("Email service temporarily unavailable. Please try again.",
+            "otp_error")
+        return redirect("/verify-otp?context=reset")
+
 
 
     flash("New OTP sent to your email", "otp_success")
@@ -1127,11 +1169,22 @@ def voter_resend_otp():
     store_new_otp(email, otp, role)
 
     email_data = voter_otp_email(otp)
-    send_vote_central_email(
+    success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
         body=email_data["body"]
     )
+
+    if not success:
+        OTPStore.query.filter_by(
+            email=email,
+            role=role
+        ).delete()
+        db.session.commit()
+
+        flash("Email service temporarily unavailable. Please try again.",
+            "otp_error")
+        return redirect("/voter/otp")
 
 
     flash("A new OTP has been sent", "otp_success")
@@ -1150,11 +1203,23 @@ def admin_register_resend():
     store_new_otp(email, otp, "admin_register")
 
     email_data = resend_otp_email(otp, "Admin Registration")
-    send_vote_central_email(
+    success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
         body=email_data["body"]
     )
+
+    if not success:
+        OTPStore.query.filter_by(
+            email=email,
+            role="admin_register"
+        ).delete()
+        db.session.commit()
+
+        flash("Email service temporarily unavailable. Please try again.",
+            "otp_error")
+        return redirect("/?panel=register")
+
 
 
     flash("New OTP sent to your email", "otp_success")
@@ -1175,13 +1240,24 @@ def voter_public_login():
 
     otp = generate_otp()
     store_new_otp(email, otp, "voter_public")
-
     email_data = voter_otp_email(otp)
-    send_vote_central_email(
+
+    success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
         body=email_data["body"]
     )
+
+    if not success:
+        OTPStore.query.filter_by(
+            email=email,
+            role="voter_public"
+        ).delete()
+        db.session.commit()
+
+        flash("Email service temporarily unavailable. Please try again.",
+            "voter_public_error")
+        return render_template("login.html", open_panel="voter")
 
     session["otp_context"] = "voter_public"
     session["voter_email"] = email
@@ -1214,11 +1290,24 @@ def voter_private_login():
     store_new_otp(email, otp, "voter_private", admin.id)
 
     email_data = voter_otp_email(otp)
-    send_vote_central_email(
+
+    success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
         body=email_data["body"]
     )
+
+    if not success:
+        OTPStore.query.filter_by(
+            email=email,
+            role="voter_private"
+        ).delete()
+        db.session.commit()
+
+        flash("Email service temporarily unavailable. Please try again.",
+            "voter_private_error")
+        return render_template("login.html", open_panel="voter")
+
 
     session["otp_context"] = "voter_private"
     session["voter_email"] = email
