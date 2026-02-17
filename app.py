@@ -1329,17 +1329,27 @@ def voter_verify():
     if request.method == "GET" and session.get("otp_context") != "admin_reset":
         session.pop("otp_reset_verified", None)
         session.pop("reset_email", None)
+    if not session.get("voter_email"):
+        flash("Session expired — start login again", "otp_error")
+        return redirect("/")
 
     if request.method == "GET":
         return render_template("otp.html",context="voter")
 
-    otp = request.form["otp"]
-    email = session["voter_email"]
+    otp = request.form.get("otp", "").strip()
+
+    email = session.get("voter_email")
+    if not email:
+        flash("Session expired — start login again", "otp_error")
+        return redirect("/")
+
+    role = "voter_private" if "voter_admin_id" in session else "voter_public"
 
     record = OTPStore.query.filter_by(
         email=email,
-        role="voter_public" if "voter_admin_id" not in session else "voter_private"
+        role=role
     ).order_by(OTPStore.id.desc()).first()
+
 
     
     if not record:
