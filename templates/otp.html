@@ -260,20 +260,49 @@ if(form){
     btn.innerText = "Verifying…";
   });
 }
-let remaining = 30;
 const timerSpan = document.getElementById("timer");
 const resendLink = document.getElementById("resendLink");
+const resendBox = document.getElementById("resendBox");
 
-const interval = setInterval(()=>{
-  remaining--;
-  timerSpan.innerText = remaining;
+const OTP_DURATION = 30;
 
-  if(remaining <= 0){
-    clearInterval(interval);
-    document.getElementById("resendBox").style.display = "none";
+// Get saved expiry timestamp
+let expiry = sessionStorage.getItem("otp_expiry");
+
+// If no expiry stored → create one
+if (!expiry) {
+  expiry = Date.now() + OTP_DURATION * 1000;
+  sessionStorage.setItem("otp_expiry", expiry);
+} else {
+  expiry = parseInt(expiry);
+}
+
+function updateTimer() {
+  const remaining = Math.max(
+    0,
+    Math.floor((expiry - Date.now()) / 1000)
+  );
+
+  if (remaining > 0) {
+    timerSpan.innerText = remaining;
+  } else {
+    resendBox.style.display = "none";
     resendLink.style.display = "block";
+    sessionStorage.removeItem("otp_expiry");
+    clearInterval(timerInterval);
   }
-},1000);
+}
+
+updateTimer();
+const timerInterval = setInterval(updateTimer, 1000);
+if (resendLink) {
+  resendLink.addEventListener("click", () => {
+    // Reset expiry only when resend is clicked
+    const newExpiry = Date.now() + OTP_DURATION * 1000;
+    sessionStorage.setItem("otp_expiry", newExpiry);
+  });
+}
+
 
 </script>
 
