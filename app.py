@@ -82,7 +82,7 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # EMAIL CONFIG
 # -------------------------------------------------
 
-PROMAIL_API_KEY ="ee34a2c8-2dfa-44e8-862e-d7124cbadfb4" #os.environ.get("PROMAIL_API_KEY")  
+PROMAIL_API_KEY ="3dddbdaa-275f-4619-8400-fefc4cbeb09c" #os.environ.get("PROMAIL_API_KEY")  
 PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 
 SMTP_EMAIL = "control.your.voting@gmail.com"#os.environ.get("SMTP_EMAIL")
@@ -603,7 +603,6 @@ PASSWORD_REGEX = re.compile(r'^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$')
 @app.route("/")
 def index():
     return render_template("login.html")
-
 
 # -------------------------------------------------
 # ADMIN LOGIN
