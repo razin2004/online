@@ -155,26 +155,26 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
     Verify OTP
   </button>
 
-  <p class="link-text" id="resendBox">
+  <p class="link-text" id="resendBox" style="text-align: start;">
     Resend OTP in <span id="timer">30</span>s
   </p>
 
   {% if session.get('otp_context') == 'admin_reset' %}
-    <p class="link-text">
+    <p class="link-text" style="text-align: start;">
       <a id="resendLink" href="/admin/reset-resend" style="display:none;">
         Resend OTP
       </a>
     </p>
 
   {% elif context == 'voter' %}
-    <p class="link-text">
+    <p class="link-text" style="text-align: start;">
       <a id="resendLink" href="/voter/resend-otp" style="display:none;">
         Resend OTP
       </a>
     </p>
 
   {% else %}
-    <p class="link-text">
+    <p class="link-text" style="text-align: start;">
       <a id="resendLink" href="/admin/register-resend" style="display:none;">
         Resend OTP
       </a>

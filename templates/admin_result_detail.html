@@ -16,6 +16,9 @@
             --text-main: #f8fafc;
             --text-dim: #94a3b8;
             --glass: blur(16px);
+            --brand-blue:#2563eb;
+            --blue:var(--brand-blue);
+            --indigo:#6366f1;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
@@ -46,13 +49,13 @@
         .topbar-brand .sub { font-size: 0.75rem; color: var(--text-dim); }
 
         .btn-nav {
-            background: var(--accent);
-            color: white;
+            background:linear-gradient(135deg,var(--blue),var(--indigo));
+            color:#020617;
             text-decoration: none;
             padding: 8px 18px;
             border-radius: 10px;
             font-size: 0.85rem;
-            font-weight: 600;
+            font-weight: 800;
             transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .btn-nav:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4); }
@@ -252,7 +255,7 @@
   <div class="sub">{{ election.name }}</div>
 </div>
     
-    <a href="/admin/dashboard" class="btn-nav">Dashboard</a>
+    <a href="/admin/dashboard" class="btn-nav"> ← Dashboard</a>
 </nav>
 
 <div class="container">

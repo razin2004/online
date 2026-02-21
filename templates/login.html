@@ -2,11 +2,14 @@
 <html lang="en">
 <head>
 <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta charset="UTF-8" />
 <title>VoteCentral — Secure Online Voting</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
+
+
 *{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI, Arial;}
 html, body{
   height:100%;
@@ -658,12 +661,11 @@ margin-top: 2px;
 }
 
 
-
-
 </style>
 </head>
 
 <body>
+
 <!-- ========== MOBILE HEADER (MEDIA VIEW ONLY) ========== -->
 <div class="mobile-header">
  
@@ -723,8 +725,8 @@ margin-top: 2px;
 
   <div class="panel login-panel">
 
-    <h1>Welcome to the Voting Portal</h1>
-    <p class="sub">Please select your login mode to continue.</p>
+    <h1>Welcome to VoteCentral</h1>
+    <p class="sub">Select your access type to proceed</p>
 
     <h1>Admin Login</h1>
     <p class="sub">Sign in to manage elections, candidates, and results securely.
@@ -792,7 +794,7 @@ margin-top: 2px;
     </button>
 
     <div style="margin-top:6px;font-size:12px;color:#9ca3af;">
-      A one-time password (OTP) will be sent to verify your identity before voting.
+      Identity verification required before voting
 
     </div>
 
@@ -890,14 +892,15 @@ margin-top: 2px;
     <rect x="5" y="11" width="14" height="10" rx="2"/>
     <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
   </svg>
-  Private Election — Admin Approved Access
+  Private Election — Restricted Access
 </div>
 
 
     <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
-      Want to switch back?
+      
       <a href="javascript:void(0)" id="backLogin2" style="color:#7dd3fc;">
-        Return to main login
+       Return Back
+      
       </a>
     </p>
 
@@ -933,7 +936,7 @@ margin-top: 2px;
       {% if session.get("otp_reset_verified") %}style="display:none;"{% endif %}>
 
     <h1>Account Recovery</h1>
-    <p class="sub">Choose how you want to recover your account.</p>
+    <p class="sub">Select recovery method</p>
 
     <button class="btn blue" id="choosePassword">
       Reset Password
@@ -961,7 +964,7 @@ margin-top: 2px;
     {% if not session.get("otp_reset_verified") %}
 
       <h1>Reset Password</h1>
-      <p class="sub">Enter your registered admin email to receive OTP.</p>
+      <p class="sub">Enter your registered email to receive verification code</p>
 
       <form method="POST" action="/admin/forgot-password">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -984,7 +987,7 @@ margin-top: 2px;
     {% else %}
 
       <h1>Create New Password</h1>
-      <p class="sub">OTP verified. Create a new password.</p>
+      <p class="sub">Verification successful. Set a new password</p>
 
       <form method="POST" action="/admin/reset-password">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -1117,7 +1120,7 @@ margin-top: 2px;
     <div class="reset-title">Private Voting — Secure Access</div>
 
     <div class="reset-sub">
-      Enter Admin Code and your Email — OTP verification required.
+      Enter access code and email for secure verification
     </div>
     {% if messages %}
       {% for cat,msg in messages %}
@@ -1157,6 +1160,12 @@ margin-top: 2px;
 
   </div>
 </div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("skip_loader") === "1") {
+      sessionStorage.setItem("skip_loader", "true");
+  }
+</script>
 
 <script>
 function confirmCancelReset(){
@@ -1670,13 +1679,13 @@ if (emailInput && emailStatus) {
           emailStatus.textContent = "Unable to check email";
           emailStatus.style.color = "#f97316";
         });
-    }, 350);
+    }, 800);
   });
 }
 
 });
-</script>
 
+</script>
 
 </body>
 </html>

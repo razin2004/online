@@ -82,11 +82,11 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # EMAIL CONFIG
 # -------------------------------------------------
 
-PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
+PROMAIL_API_KEY ="ee34a2c8-2dfa-44e8-862e-d7124cbadfb4" #os.environ.get("PROMAIL_API_KEY")  
 PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 
-SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+SMTP_EMAIL = "control.your.voting@gmail.com"#os.environ.get("SMTP_EMAIL")
+SMTP_PASSWORD = "sydpdtgkauovfiee"#os.environ.get("SMTP_PASSWORD")
 
 USE_PROMAIL = True   # 🔁 switch here if needed
 limiter = Limiter(
