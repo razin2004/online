@@ -10,3 +10,4 @@ flask-limiter
 flask-talisman
 pillow
 redis
+gevent
