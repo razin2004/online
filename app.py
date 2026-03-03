@@ -857,13 +857,16 @@ def verify_otp():
         body=email_data["body"]
     )
 
-
     # cleanup
     session.pop("pending_admin", None)
     session.pop("otp_context", None)
 
-    flash("Registration successful — you may login now", "otp_success")
-    return redirect("/?panel=login")
+    flash(
+        "Account created successfully. Please login to continue.",
+        "admin_login_success"
+    )
+
+    return redirect(url_for("index", panel="login"))
 
 # -------------------------------------------------
 # ADMIN FORGOT PASSWORD — REQUEST RESET OTP
