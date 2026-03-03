@@ -116,7 +116,7 @@ USE_PROMAIL = True   # 🔁 switch here if needed
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
-    default_limits=["400 per hour"]
+    default_limits=["10000 per hour"]
 )
 
 # -------------------------------------------------
@@ -159,7 +159,7 @@ def send_otp_email(to, subject, html, text=None):
 
     # ---------- SMTP FALLBACK ----------
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=5) as smtp:
             smtp.starttls()
             smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
 
