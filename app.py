@@ -87,6 +87,10 @@ else:
         print("Using local SQLite database.")
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///voting.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 
 is_on_render = os.environ.get("RENDER") == "true"
@@ -103,7 +107,7 @@ db = SQLAlchemy(app)
 # -------------------------------------------------
 
 PROMAIL_API_KEY =os.environ.get("PROMAIL_API_KEY")  
-PROMAIL_URL = os.environ.get("PROMAIL_URL") or "https://www.promailer.xyz/api/v1/messages/send" 
+PROMAIL_URL = os.environ.get("PROMAIL_URL")
 
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
