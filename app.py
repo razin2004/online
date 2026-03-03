@@ -112,7 +112,7 @@ PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
-USE_PROMAIL = True   # 🔁 switch here if needed
+USE_PROMAIL = os.environ.get("USE_PROMAIL", "true") == "true"  # 🔁 switch here if needed
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
@@ -244,11 +244,8 @@ def send_vote_central_email(to_email, subject, body):
         print("SMTP SYS ERROR:", e)
         return False
 
-
-
 # 1. Get your API Key from https://www.promailer.xyz/
 # 2. Add PROMAIL_API_KEY to Render Environment Variables
-
 
 def generate_otp():
     return str(secrets.randbelow(1000000)).zfill(6)
