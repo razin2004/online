@@ -107,7 +107,7 @@ db = SQLAlchemy(app)
 # -------------------------------------------------
 
 PROMAIL_API_KEY =os.environ.get("PROMAIL_API_KEY")  
-PROMAIL_URL = os.environ.get("PROMAIL_URL")
+PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
