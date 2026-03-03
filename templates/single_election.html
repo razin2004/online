@@ -523,7 +523,7 @@ button{
 <div class="candidate"
      id="cand-card-{{ c.id }}"
      data-id="{{ c.id }}">
-      {% if c.photo %}<img src="/static/uploads/{{ c.photo }}">{% endif %}
+      {% if c.photo %}<img src="{{ c.photo }}">{% endif %}
       <div class="candidate-name">{{ c.name }}</div>
       {% if c.description %}<div class="desc">{{ c.description }}</div>{% endif %}
       

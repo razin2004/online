@@ -67,7 +67,9 @@ html,body{
   height:100%;
   overflow-x: hidden;
 }
-
+html {
+  scrollbar-gutter: stable;
+}
 body{
   background:
     radial-gradient(1200px 600px at 80% -10%,rgba(56,189,248,.08),transparent),
@@ -80,7 +82,7 @@ body{
 }
 @media (max-width:768px){
   body{
-    overflow: hidden;
+    overflow-x: hidden;
   }
 }
 
@@ -200,6 +202,7 @@ body{
 }
 .modal-box{
   position:relative;
+  max-width: 100%;
 }
 
 /* ======================================================
@@ -232,6 +235,10 @@ body{
   overflow-y:auto;
   display:none;
   animation:fadeUp .35s ease;
+}
+.view-container{
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .view-container.active{
@@ -386,12 +393,13 @@ input:focus,select:focus,textarea:focus{
 
 #toastContainer{
   position:fixed;
-  top:88px;              /* below sticky header */
+  top:88px;
   right:24px;
   display:flex;
   flex-direction:column;
   gap:14px;
-  z-index:4000;
+
+  z-index:20000;   /* MUST be higher than modal (12000) */
   pointer-events:none;
 }
 
@@ -520,11 +528,12 @@ input:focus,select:focus,textarea:focus{
   backdrop-filter:blur(10px);
   z-index:12000;
   padding:20px;
+  overflow: hidden;
 }
 
 .modal-box{
   width:520px;
-  max-width:95%;
+  max-width:100%;
   background:linear-gradient(180deg,#0b1220,#020617);
   border:1px solid var(--border);
   border-radius:22px;
@@ -1650,6 +1659,16 @@ input:focus,select:focus,textarea:focus{
     transform:none !important;
   }
 }
+.flash-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999; /* higher than modal */
+}
+body.modal-open {
+  overflow: hidden;
+}
 </style>
 </head>
 
@@ -2279,6 +2298,7 @@ input:focus,select:focus,textarea:focus{
     {% for e in elections %}
 <div class="card"
      data-election-card
+     data-election-id="{{ e.id }}"
      data-type="{{ e.election_type }}"
      data-name="{{ e.name|lower }}"
      data-code="{{ e.public_code|lower if e.public_code }}"
@@ -2993,7 +3013,7 @@ input:focus,select:focus,textarea:focus{
   </div>
 </div>
 
-
+<div class="flash-container">
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <script>
@@ -3005,7 +3025,7 @@ input:focus,select:focus,textarea:focus{
 </script>
 {% endif %}
 {% endwith %}
-
+</div>
 
 <script>
   const VIEW_ORDER = [
@@ -3030,6 +3050,9 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 let currentViewIndex = 0;
 
 function switchView(viewId){
+
+  const wrapper = document.querySelector(".main-wrapper");
+
   const views = $$(".view-container");
   const newIndex = VIEW_ORDER.indexOf(viewId);
   if(newIndex === -1) return;
@@ -3057,28 +3080,28 @@ function switchView(viewId){
 
   currentViewIndex = newIndex;
 
-  /* Title update */
-  const titles = {
-    dashboard:"Dashboard",
-    overview:"Election Overview",
-    elections:"Manage Elections",
-    results:"Results",
-    profile:"Admin Profile"
-  };
-  $("#view-title").textContent = titles[viewId] || "Admin Panel";
+  // ✅ FIX 1: Save current view
+  localStorage.setItem("admin_active_view", viewId);
+
+  // ✅ FIX 2: Update header buttons
   updateHeaderActions(viewId);
 
-
-  /* Sidebar + mobile active states */
-  $$(".nav-item").forEach(i=>{
-    i.classList.toggle("active", i.textContent.toLowerCase().includes(viewId));
+  // ✅ FIX 3: Update sidebar active highlight
+  $$(".nav-item").forEach(item=>{
+    item.classList.remove("active");
+    if(item.getAttribute("onclick")?.includes(viewId)){
+      item.classList.add("active");
+    }
   });
-  $$(".m-nav-item").forEach(i=>{
-    i.classList.toggle("active", i.dataset.view === viewId);
+
+  $$(".m-nav-item").forEach(item=>{
+    item.classList.remove("active");
+    if(item.dataset.view === viewId){
+      item.classList.add("active");
+    }
   });
 
-  localStorage.setItem("admin_active_view", viewId);
-  view.scrollTo({ top:0 });
+
 }
 
 function showAlert(message){
@@ -3134,7 +3157,7 @@ function openModal(id){
   const m = document.getElementById(id);
   if(!m) return;
   m.style.display="flex";
-  document.body.style.overflow="hidden";
+  document.body.classList.add("modal-open");
 }
 function closeModals(targetId){
 
@@ -3148,7 +3171,7 @@ function closeModals(targetId){
     $$(".modal").forEach(m=>m.style.display="none");
   }
 
-  document.body.style.overflow="auto";
+  document.body.classList.remove("modal-open");
 
   document.querySelectorAll(".btn.loading").forEach(btn=>{
     btn.classList.remove("loading");
@@ -3202,9 +3225,17 @@ function openEditElection(id, name, start, end){
   $("#editElectionName").value = name;
 function formatForDateTimeLocal(value){
   if(!value) return "";
+
   const d = new Date(value);
   if(isNaN(d.getTime())) return "";
-  return d.toISOString().slice(0,16);
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  const hour = String(d.getHours()).padStart(2,"0");
+  const min = String(d.getMinutes()).padStart(2,"0");
+
+  return `${year}-${month}-${day}T${hour}:${min}`;
 }
 
 $("#editElectionStart").value = formatForDateTimeLocal(start);
@@ -3213,7 +3244,7 @@ $("#editElectionEnd").value   = formatForDateTimeLocal(end);
 
   // ---- LOCK RULES ----
   const now = Date.now();
-  const startTs = start ? Date.parse(start) : null;
+  const startTs = start ? parseLocal(start) : null;
   const endTs   = end   ? Date.parse(end)   : null;
 
   const startInput = $("#editElectionStart");
@@ -3351,7 +3382,7 @@ list.innerHTML = data.candidates.map(c => `
   <div class="card" style="padding:12px;display:flex;gap:12px;align-items:center">
 
     <div class="media-box" style="width:64px;flex-shrink:0">
-      <img src="/static/uploads/${c.photo || 'default-candidate.png'}">
+      <img src="${c.photo ? c.photo : '/static/uploads/default-candidate.jpg'}">
     </div>
 
     <div style="flex:1">
@@ -3624,7 +3655,10 @@ document.addEventListener("change", e=>{
 
 });
 
-
+function parseUTC(value){
+  if(!value) return null;
+  return new Date(value).getTime();
+}
 /* ======================================================
    SEARCH FILTERS
 ====================================================== */
@@ -3837,8 +3871,8 @@ function updateCountdowns(){
   const now=Date.now();
 
   $$("[data-election-card]").forEach(card=>{
-    const start=card.dataset.start?Date.parse(card.dataset.start):null;
-    const end=card.dataset.end?Date.parse(card.dataset.end):null;
+    const start=card.dataset.start?parseLocal(card.dataset.start):null;
+    const end=card.dataset.end?parseLocal(card.dataset.end):null;
     const note=card.querySelector(".election-state-note");
     const timer=card.querySelector(".countdown-timer");
 
@@ -3868,8 +3902,8 @@ if(end){
   });
 
   $$("[data-ov-card]").forEach(card=>{
-    const start=card.dataset.start?Date.parse(card.dataset.start):null;
-    const end=card.dataset.end?Date.parse(card.dataset.end):null;
+    const start=card.dataset.start?parseLocal(card.dataset.start):null;
+    const end=card.dataset.end?parseLocal(card.dataset.end):null;
     const timer=card.querySelector(".countdown-timer");
     if(!timer) return;
     if(start&&now<start) timer.textContent="Starts in: "+format(start-now);
@@ -3893,26 +3927,44 @@ function startCountdown(){
   timer=setInterval(updateCountdowns,1000);
 }
 document.addEventListener("visibilitychange",()=>{
-  document.hidden?clearInterval(timer):startCountdown();
+  if(document.hidden){
+    clearInterval(timer);
+    timer = null;
+  } else {
+    startCountdown();
+  }
 });
 startCountdown();
+function parseLocal(value){
+  if(!value) return null;
+
+  // Let browser treat it as local time
+  const d = new Date(value);
+  if(isNaN(d.getTime())) return null;
+
+  return d.getTime();
+}
 /* ======================================================
    STATUS RESOLVER (single source of truth)
 ====================================================== */
 function getElectionStatus(card){
   const now = Date.now();
-  const start = card.dataset.start ? Date.parse(card.dataset.start) : null;
-  const end   = card.dataset.end   ? Date.parse(card.dataset.end)   : null;
+  const start = parseLocal(card.dataset.start);
+  const end   = parseLocal(card.dataset.end);
 
   if(start && now < start) return "upcoming";
-  if(end && now > end) return "ended";
-  if(start && end && now >= start && now <= end) return "running";
+  if(end && now >= end) return "ended";
+
+  if(start && !end && now >= start) return "running";
+  if(!start && end && now < end) return "running";
+  if(start && end && now >= start && now < end) return "running";
+
   return "unknown";
 }
 function getSortKey(card, mode){
   const status = getElectionStatus(card);
-  const start  = card.dataset.start ? Date.parse(card.dataset.start) : Infinity;
-  const end    = card.dataset.end   ? Date.parse(card.dataset.end)   : Infinity;
+  const start  = card.dataset.start ? parseLocal(card.dataset.start) : Infinity;
+  const end    = card.dataset.end   ? parseLocal(card.dataset.end)   : Infinity;
   const now    = Date.now();
 
   /*

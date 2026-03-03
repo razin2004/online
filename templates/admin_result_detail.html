@@ -265,10 +265,24 @@
         <div class="summary-grid">
             <div class="stat-item">
                 <span class="stat-label">Status</span>
-                <span class="stat-value" style="color: {{ '#22c55e' if ended else '#eab308' }}">
-                    {{ 'Official Results Published' if ended else 'Results Pending' }}
+<span class="stat-value"
+      style="color:
+        {% if not election.result_visible %}#ef4444
+        {% elif upcoming %}#eab308
+        {% elif running %}#3b82f6
+        {% elif ended %}#22c55e
+        {% endif %};">
 
-                </span>
+    {% if not election.result_visible %}
+        Hidden by Admin
+    {% elif upcoming %}
+        Upcoming
+    {% elif running %}
+        Election Running
+    {% elif ended %}
+         Result Published
+    {% endif %}
+</span>
             </div>
             <div class="stat-item">
                 <span class="stat-label">Total Participation</span>
@@ -299,7 +313,7 @@
                 {% endif %}
 
 <div class="media-box">
-  <img src="/static/uploads/{{ r.photo if r.photo else 'default.png' }}">
+  <img src="{{ r.photo if r.photo else url_for('static', filename='uploads/default-candidate.jpg') }}">
 </div>
                 
                 <div class="cand-info">
@@ -339,7 +353,7 @@
         <div>
             <img src="/static/uploads/votecentral.svg" style="height: 100px; margin-bottom: -27px; margin-left: -20px;">
             <h1 style="font-size: 38px; margin: 0; letter-spacing: -1px; color: #0f172a;">Official Election Audit</h1>
-            <p style="font-size: 18px; color: #64748b; margin-top: 5px;">Generated on {{ now.strftime('%Y-%m-%d %H:%M:%S') if now else '2026-01-20' }}</p>
+            <p style="font-size: 18px; color: #64748b; margin-top: 5px;">Generated on {{ end_fmt if end_fmt != "N/A" else "Schedule Not Defined" }}</p>
         </div>
         <div style="text-align: right;">
             <span style="background: #eff6ff; color: #3b82f6; padding: 8px 16px; border-radius: 50px; font-weight: 800; font-size: 14px; text-transform: uppercase;">
@@ -386,10 +400,10 @@
         </thead>
         <tbody>
             {% for r in result %}
-            <tr style="background: {{ '#f0fdf4' if r.winner else '#ffffff' }}; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <tr style="background: {{ '#f0fdf4' if ended and r.winner else '#ffffff' }}; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
                 <td style="padding: 20px; border-radius: 12px 0 0 12px; display: flex; align-items: center; gap: 20px;">
                     <span style="font-weight: 900; color: #94a3b8; font-size: 20px;">#{{ loop.index }}</span>
-                    <img src="/static/uploads/{{ r.photo if r.photo else 'default.png' }}" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <img src="{{ r.photo if r.photo else url_for('static', filename='uploads/default-candidate.jpg') }}" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
                     <div>
                         <div style="font-weight: 800; font-size: 18px; color: #1e293b;">{{ r.name }}</div>
                         {% if r.winner %}<span style="font-size: 10px; background: #16a34a; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 900;">WINNER</span>{% endif %}

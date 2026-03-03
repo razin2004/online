@@ -5,11 +5,13 @@ import string
 import re
 import secrets
 import requests
+import cloudinary
+import cloudinary.uploader
+
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from datetime import datetime, timedelta
-from datetime import timezone
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -49,11 +51,13 @@ csp = {
     ],
     "script-src": [
         "'self'",
-        "'unsafe-inline'"
+        "'unsafe-inline'",
+        "https://cdnjs.cloudflare.com"
     ],
     "img-src": [
         "'self'",
-        "data:"
+        "data:",
+        "https://res.cloudinary.com"
     ]
 }
 
@@ -61,7 +65,27 @@ Talisman(
     app,
     content_security_policy=csp
 )
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///voting.db"
+cloudinary.config(
+    cloud_name= os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET")
+)
+database_url = os.environ.get("DATABASE_URL")
+
+is_production = os.environ.get("RENDER") == "true"
+
+if database_url:
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+
+else:
+    if is_production:
+        raise RuntimeError("DATABASE_URL not set in production.")
+    else:
+        print("Using local SQLite database.")
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///voting.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 
@@ -74,27 +98,22 @@ app.config.update(
 )
 
 db = SQLAlchemy(app)
-UPLOAD_FOLDER = "static/uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # -------------------------------------------------
 # EMAIL CONFIG
 # -------------------------------------------------
 
-PROMAIL_API_KEY ="3dddbdaa-275f-4619-8400-fefc4cbeb09c" #os.environ.get("PROMAIL_API_KEY")  
-PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
+PROMAIL_API_KEY =os.environ.get("PROMAIL_API_KEY")  
+PROMAIL_URL = os.environ.get("PROMAIL_URL") or "https://www.promailer.xyz/api/v1/messages/send" 
 
-SMTP_EMAIL = "control.your.voting@gmail.com"#os.environ.get("SMTP_EMAIL")
-SMTP_PASSWORD = "sydpdtgkauovfiee"#os.environ.get("SMTP_PASSWORD")
+SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
 USE_PROMAIL = True   # 🔁 switch here if needed
 limiter = Limiter(
-    key_func=lambda: request.form.get("email") or get_remote_address(),
+    key_func=get_remote_address,
     app=app,
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=["400 per hour"]
 )
-
 
 # -------------------------------------------------
 # OTP EMAIL (ProMailer preferred, SMTP fallback)
@@ -239,9 +258,10 @@ def generate_public_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 def election_has_ended(election):
-    if not election.end_time:
+    end = to_local_naive(election.end_time)
+    if not end:
         return False
-    return datetime.now(timezone.utc) >= datetime.fromisoformat(election.end_time)
+    return datetime.now() >= end
 
 def store_new_otp(email, code, role, admin_id=None):
 
@@ -253,8 +273,8 @@ def store_new_otp(email, code, role, admin_id=None):
         code_hash=generate_password_hash(code),
         role=role,
         admin_id=admin_id,
-        created_at=datetime.now(timezone.utc),
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=5)
+        created_at=datetime.now(),
+        expires_at=datetime.now() + timedelta(minutes=5)
     )
 
 
@@ -262,7 +282,7 @@ def store_new_otp(email, code, role, admin_id=None):
     db.session.commit()
 
 def voter_can_view_results(election):
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
 
     # PUBLIC — allow viewing anytime if admin enabled visibility
     if election.election_type == "public":
@@ -272,7 +292,9 @@ def voter_can_view_results(election):
     if not election.end_time:
         return False
 
-    if now < datetime.fromisoformat(election.end_time):
+    end = to_local_naive(election.end_time)
+
+    if end and now < end:
         return False
 
     return election.result_visible
@@ -307,20 +329,24 @@ def save_uploaded_file(file):
         return None
 
     try:
-        # Validate actual image content
-        image = Image.open(file)
-        image.verify()  # verify image integrity
-        file.seek(0)    # reset pointer after verify
-    except Exception:
+        result = cloudinary.uploader.upload(
+            file,
+            folder="voting_candidates",
+            resource_type="image"
+        )
+
+        return result["secure_url"]
+
+    except Exception as e:
+        print("Cloudinary Upload Error:", e)
         return None
-
-    filename = secure_filename(file.filename)
-    filename = f"{secrets.token_hex(8)}_{filename}"
-
-    path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-    file.save(path)
-
-    return filename
+    
+def to_local_naive(dt):
+    if not dt:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone().replace(tzinfo=None)
+    return dt
 
 def clear_reset_session():
     session.pop("otp_reset_verified", None)
@@ -328,30 +354,12 @@ def clear_reset_session():
     session.pop("otp_context", None)
 from datetime import timezone
 
-def ensure_utc(dt):
-    if dt is None:
-        return None
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt
 from datetime import datetime, timezone
-
-from zoneinfo import ZoneInfo
-
-IST = ZoneInfo("Asia/Kolkata")
 
 def parse_local_datetime(dt_string):
     if not dt_string:
         return None
-
-    # Parse as naive local time
-    naive = datetime.strptime(dt_string, "%Y-%m-%dT%H:%M")
-
-    # Attach IST timezone
-    local_dt = naive.replace(tzinfo=IST)
-
-    # Convert to UTC
-    return local_dt.astimezone(timezone.utc)
+    return datetime.strptime(dt_string, "%Y-%m-%dT%H:%M")
 
 
 def admin_register_otp_email(name, username, otp):
@@ -518,8 +526,8 @@ class Election(db.Model):
     election_type = db.Column(db.String(20))  # public / private
     public_code = db.Column(db.String(20), nullable=True)
 
-    start_time = db.Column(db.String(40), nullable=True)
-    end_time = db.Column(db.String(40), nullable=True)
+    start_time = db.Column(db.DateTime, nullable=True)
+    end_time   = db.Column(db.DateTime, nullable=True)
 
     result_visible = db.Column(db.Boolean, default=True)
 
@@ -549,12 +557,12 @@ class Vote(db.Model):
     email = db.Column(db.String(120))
     created_at = db.Column(
         db.DateTime,
-        default=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now()
     )
 
     updated_at = db.Column(
         db.DateTime,
-        default=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now()
     )
 
     __table_args__ = (
@@ -583,7 +591,7 @@ class OTPStore(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now()
     )
 
     expires_at = db.Column(db.DateTime)
@@ -785,7 +793,7 @@ def verify_otp():
         flash("Invalid or expired OTP.", "otp_error")
         return redirect("/verify-otp")
 
-    if ensure_utc(record.expires_at) < datetime.now(timezone.utc):
+    if record.expires_at < datetime.now():
         db.session.delete(record)
         db.session.commit()
         flash("OTP expired.", "otp_error")
@@ -971,7 +979,7 @@ def admin_reset_verify():
         return redirect("/verify-otp?context=reset")
 
     # 2️⃣ Expired
-    if ensure_utc(record.expires_at) < datetime.now(timezone.utc):
+    if record.expires_at < datetime.now():
         db.session.delete(record)
         db.session.commit()
         flash("OTP expired — request new reset link.", "otp_error")
@@ -1355,7 +1363,7 @@ def voter_verify():
         flash("Invalid or expired OTP", "otp_error")
         return redirect("/voter/otp")
 
-    if ensure_utc(record.expires_at) < datetime.now(timezone.utc):
+    if record.expires_at < datetime.now():
         db.session.delete(record)
         db.session.commit()
         flash("OTP expired", "otp_error")
@@ -1483,7 +1491,7 @@ def voter_results_list():
 
     result_rows = []
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
 
     for e in elections:
 
@@ -1497,16 +1505,13 @@ def voter_results_list():
                 continue
 
         total_votes = Vote.query.filter_by(election_id=e.id).count()
-
-        start = ensure_utc(datetime.fromisoformat(e.start_time)) if e.start_time else None
-        end = ensure_utc(datetime.fromisoformat(e.end_time)) if e.end_time else None
-
-
-        now = datetime.now(timezone.utc)
+        now = datetime.now()
+        start = to_local_naive(e.start_time)
+        end = to_local_naive(e.end_time)
 
         is_upcoming = False
-        is_running  = False
-        is_ended    = False
+        is_running = False
+        is_ended = False
 
         if start and end:
             if now < start:
@@ -1516,7 +1521,6 @@ def voter_results_list():
             else:
                 is_ended = True
         else:
-            # elections without schedule are treated as running
             is_running = True
 
         can_view = voter_can_view_results(e)
@@ -1594,12 +1598,10 @@ def voter_result_detail(eid):
     not_voted_count = max(0, total_whitelisted - voted_count) if election.election_type == 'private' else 0
     total_votes = Vote.query.filter_by(election_id=election.id).count()
     # 5. Premium Date Formatting
-    def format_date(date_str):
-        if not date_str: return "N/A"
-        try:
-            dt = datetime.fromisoformat(date_str)
-            return dt.strftime("%b %d, %Y • %I:%M %p") # e.g. Jan 20, 2026 • 04:30 PM
-        except: return date_str
+    def format_date(dt):
+        if not dt:
+            return "N/A"
+        return dt.strftime("%b %d, %Y • %I:%M %p")
 
     return render_template(
         "voter_result_detail.html", # or admin_result_detail.html
@@ -1608,8 +1610,8 @@ def voter_result_detail(eid):
         total_votes=total_votes,
         total_whitelisted=total_whitelisted,
         not_voted_count=not_voted_count,
-        start_fmt=format_date(election.start_time),
-        end_fmt=format_date(election.end_time)
+        start_fmt=format_date(to_local_naive(election.start_time)),
+        end_fmt=format_date(to_local_naive(election.end_time))
     )
 
 from datetime import datetime
@@ -1622,7 +1624,7 @@ def view_election(eid):
 
     email = session["voter_email"]
     election = Election.query.get_or_404(eid)
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
 
     # 🚫 Block viewing private elections of other admins
     if election.election_type == "private" and "voter_admin_id" in session:
@@ -1659,7 +1661,7 @@ def view_election(eid):
     remaining_seconds = 0
 
     if voted:
-        elapsed = (now - ensure_utc(voted.created_at)).total_seconds()
+        elapsed = (now - voted.created_at).total_seconds()
 
         if elapsed < LOCK_SECONDS:
             can_change = True
@@ -1668,12 +1670,11 @@ def view_election(eid):
     # -----------------------------------
     # ⏱️ ELECTION STATE (FOR UI)
     # -----------------------------------
-    start_time = datetime.fromisoformat(election.start_time) if election.start_time else None
-    end_time   = datetime.fromisoformat(election.end_time) if election.end_time else None
+    start_time = to_local_naive(election.start_time)
+    end_time   = to_local_naive(election.end_time)
 
-    has_started = start_time and now >= ensure_utc(start_time)
-    has_ended   = end_time and now > ensure_utc(end_time)
-
+    has_started = start_time and now >= start_time
+    has_ended   = end_time and now > end_time
 
     return render_template(
         "single_election.html",
@@ -1713,14 +1714,15 @@ def cast_vote():
         return redirect("/voter/dashboard")
 
     election = Election.query.get_or_404(election_id)
-    now = datetime.now(timezone.utc)
-
+    now = datetime.now()
+    start = to_local_naive(election.start_time)
+    end   = to_local_naive(election.end_time)
     # Schedule checks
-    if election.start_time and now < datetime.fromisoformat(election.start_time):
+    if start and now < start:
         flash("Election has not started yet")
         return redirect("/voter/dashboard")
 
-    if election.end_time and now > datetime.fromisoformat(election.end_time):
+    if end and now > end:
         flash("Election has ended")
         return redirect("/voter/dashboard")
 
@@ -1761,7 +1763,7 @@ def cast_vote():
 
     # MODIFY within 45 sec
     # MODIFY WITHIN 45 SECONDS
-    elapsed = (now - ensure_utc(existing_vote.created_at)).total_seconds()
+    elapsed = (now - existing_vote.created_at).total_seconds()
 
     if elapsed <= 45:
 
@@ -1800,7 +1802,7 @@ def admin_dashboard():
     admin = db.session.get(Admin, session.get("admin_id"))
     elections = Election.query.filter_by(admin_id=admin.id).all()
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
 
     for e in elections:
 
@@ -1811,19 +1813,28 @@ def admin_dashboard():
         e.is_ended = False
         e.starts_within_24h = False  # ✅ NEW FLAG
 
-        start = ensure_utc(ensure_utc(datetime.fromisoformat(e.start_time))) if e.start_time else None
-        end   = ensure_utc(datetime.fromisoformat(e.end_time)) if e.end_time else None
+        start = to_local_naive(e.start_time)
+        end   = to_local_naive(e.end_time)
 
         if start and end:
             if now < start:
                 e.is_upcoming = True
-
-                # ✅ 24-hour highlight logic (SAFE)
                 seconds_until_start = (start - now).total_seconds()
                 if 0 < seconds_until_start <= 86400:
                     e.starts_within_24h = True
-
             elif start <= now <= end:
+                e.is_running = True
+            else:
+                e.is_ended = True
+
+        elif start and not end:
+            if now < start:
+                e.is_upcoming = True
+            else:
+                e.is_running = True
+
+        elif end and not start:
+            if now <= end:
                 e.is_running = True
             else:
                 e.is_ended = True
@@ -1844,7 +1855,7 @@ def admin_dashboard():
                 "candidate": c.name,
                 "party": c.party,
                 "description": c.description,
-                "photo": f"/static/uploads/{c.photo}" if c.photo else None,
+                "photo": c.photo if c.photo else url_for("static", filename="uploads/default-candidate.jpg"),
                 "count": display_count,
                 "raw_count": vote_count
             })
@@ -1924,9 +1935,9 @@ def api_whitelist(eid):
     ]
 
     return {"whitelist": data}
-
 @app.route("/admin/results")
 def admin_results_page():
+
     if not require_admin_login():
         return redirect("/")
 
@@ -1934,49 +1945,61 @@ def admin_results_page():
     elections = Election.query.filter_by(admin_id=admin.id).all()
 
     result_list = []
-    now = datetime.now(timezone.utc)
+    now = datetime.now()  # Local time
 
     for e in elections:
+
         total_votes = Vote.query.filter_by(election_id=e.id).count()
 
-        # ----- Normalize Start & End Time -----
-        start_dt = None
-        end_dt = None
+        # --- STRICT LOCAL NORMALIZATION ---
+        start_dt = to_local_naive(e.start_time)
+        end_dt   = to_local_naive(e.end_time)
 
-        if e.start_time:
-            start_dt = ensure_utc(
-                ensure_utc(datetime.fromisoformat(e.start_time))
-                if isinstance(e.start_time, str)
-                else e.start_time
-            )
-
-        if e.end_time:
-            end_dt = ensure_utc(
-                datetime.fromisoformat(e.end_time)
-                if isinstance(e.end_time, str)
-                else e.end_time
-            )
-
-        # ----- Determine Status -----
-        running = False
+        # --- DETERMINE STATUS ---
         upcoming = False
-        ended = False
+        running  = False
+        ended    = False
 
-        if start_dt and now < start_dt:
-            upcoming = True
-        elif start_dt and end_dt and start_dt <= now < end_dt:
+        if start_dt and end_dt:
+            if now < start_dt:
+                upcoming = True
+            elif start_dt <= now <= end_dt:
+                running = True
+            else:
+                ended = True
+
+        elif start_dt and not end_dt:
+            if now < start_dt:
+                upcoming = True
+            else:
+                running = True
+
+        elif end_dt and not start_dt:
+            if now <= end_dt:
+                running = True
+            else:
+                ended = True
+
+        else:
+            # No schedule defined → treat as running
             running = True
-        elif end_dt and now >= end_dt:
-            ended = True
 
-        # ----- Determine Result Accessibility -----
+        # --- RESULT ACCESS CONTROL ---
         can_open = False
         reason = ""
 
         if not e.result_visible:
-            reason = "This election is currently hidden by admin settings."
+            reason = "Results are hidden by admin."
+
         elif e.election_type == "private" and not ended:
-            reason = f"Private election results unlock after {end_dt.strftime('%Y-%m-%d %H:%M')}."
+            if end_dt:
+                reason = (
+                    "Private election results unlock after "
+                    f"{end_dt.strftime('%b %d, %Y • %I:%M %p')}."
+                )
+            else:
+                reason = "Private election results are not yet available."
+
         else:
             can_open = True
 
@@ -1986,8 +2009,8 @@ def admin_results_page():
             "type": e.election_type,
             "public_code": e.public_code,
             "total_votes": total_votes,
-            "running": running,
             "upcoming": upcoming,
+            "running": running,
             "ended": ended,
             "can_open": can_open,
             "reason": reason
@@ -1998,8 +2021,6 @@ def admin_results_page():
         elections=result_list,
         admin=admin
     )
-
-
 @app.route("/admin/results/<eid>")
 def admin_result_detail(eid):
 
@@ -2011,11 +2032,37 @@ def admin_result_detail(eid):
     if election.admin_id != session["admin_id"]:
         flash("Unauthorized access")
         return redirect("/admin/dashboard")
+    now = datetime.now()
 
-    now = datetime.now(timezone.utc)
-    ended = False
-    if election.end_time:
-        ended = now >= datetime.fromisoformat(election.end_time)
+    start = to_local_naive(election.start_time)
+    end   = to_local_naive(election.end_time)
+
+    upcoming = False
+    running  = False
+    ended    = False
+
+    if start and end:
+        if now < start:
+            upcoming = True
+        elif start <= now <= end:
+            running = True
+        else:
+            ended = True
+
+    elif start and not end:
+        if now < start:
+            upcoming = True
+        else:
+            running = True
+
+    elif end and not start:
+        if now <= end:
+            running = True
+        else:
+            ended = True
+
+    else:
+        running = True
 
     # PRIVATE — block viewing before end time
     if election.election_type == "private" and not ended:
@@ -2049,12 +2096,10 @@ def admin_result_detail(eid):
     not_voted_count = max(0, total_whitelisted - voted_count) if election.election_type == 'private' else 0
     total_votes = Vote.query.filter_by(election_id=election.id).count()
     # 5. Premium Date Formatting
-    def format_date(date_str):
-        if not date_str: return "N/A"
-        try:
-            dt = datetime.fromisoformat(date_str)
-            return dt.strftime("%b %d, %Y • %I:%M %p") # e.g. Jan 20, 2026 • 04:30 PM
-        except: return date_str
+    def format_date(dt):
+        if not dt:
+            return "N/A"
+        return dt.strftime("%b %d, %Y • %I:%M %p")
 
     return render_template(
         "admin_result_detail.html", # or admin_result_detail.html
@@ -2063,8 +2108,11 @@ def admin_result_detail(eid):
         total_votes=total_votes,
         total_whitelisted=total_whitelisted,
         not_voted_count=not_voted_count,
-        start_fmt=format_date(election.start_time),
-        end_fmt=format_date(election.end_time)
+        start_fmt=format_date(to_local_naive(election.start_time)),
+        end_fmt=format_date(to_local_naive(election.end_time)),
+        upcoming=upcoming,
+        running=running,
+        ended=ended
     )
 
 
@@ -2087,7 +2135,7 @@ def create_election():
     start = parse_local_datetime(start_raw)
     end   = parse_local_datetime(end_raw)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
 
     # ❌ Start in past
     if start and start < now:
@@ -2113,8 +2161,8 @@ def create_election():
         admin_id=session["admin_id"],
         name=name,
         election_type=etype,
-        start_time=start.isoformat() if start else None,
-        end_time=end.isoformat() if end else None
+        start_time=start,
+        end_time=end
     )
 
     if etype == "public":
@@ -2148,16 +2196,11 @@ def add_candidate():
         flash("Unauthorized action")
         return redirect("/admin/dashboard")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
 
-    start = (
-        ensure_utc(datetime.fromisoformat(election.start_time))
-        if election.start_time else None
-    )
-    end = (
-        ensure_utc(datetime.fromisoformat(election.end_time))
-        if election.end_time else None
-    )
+    start = to_local_naive(election.start_time) if election.start_time else None
+    end   = to_local_naive(election.end_time) if election.end_time else None
+    
 
     # 🔴 RULE 1: Election ended → never allow
     if end and now > end:
@@ -2184,7 +2227,7 @@ def add_candidate():
     if uploaded and uploaded.filename:
         photo = save_uploaded_file(uploaded)
     else:
-        photo = "default-candidate.jpg"
+        photo = None
 
 
     candidate = Candidate(
@@ -2259,16 +2302,10 @@ def delete_candidate(cid):
         flash("Election not found.")
         return redirect(request.referrer or "/admin/dashboard")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
 
-    start = (
-        ensure_utc(datetime.fromisoformat(election.start_time))
-        if election.start_time else None
-    )
-    end = (
-        ensure_utc(datetime.fromisoformat(election.end_time))
-        if election.end_time else None
-    )
+    start = to_local_naive(election.start_time) if election.start_time else None
+    end = to_local_naive(election.end_time) if election.end_time else None
 
     # ❌ RULE 1: Election ended → never allow
     if end and now > end:
@@ -2294,7 +2331,7 @@ def delete_candidate(cid):
     if start and now >= start:
         flash("Candidate deleted successfully (no votes were cast).")
     else:
-        flash("Candidate deleted successfully before the election started.")
+        flash("Candidate deleted successfully")
 
     return redirect(request.referrer or "/admin/dashboard")
 
@@ -2618,8 +2655,8 @@ def delete_election(eid):
         flash("Unauthorized action")
         return redirect("/admin/dashboard")
 
-    now = datetime.now(timezone.utc)
-    start = ensure_utc(datetime.fromisoformat(election.start_time)) if election.start_time else None
+    now = datetime.now()
+    start = to_local_naive(election.start_time) if election.start_time else None
 
     # ❌ STARTED → block normal delete
     if start and now >= start:
@@ -2657,8 +2694,8 @@ def force_delete_election(eid):
         return redirect("/admin/dashboard")
     
 
-    now = datetime.now(timezone.utc)
-    start = ensure_utc(datetime.fromisoformat(election.start_time)) if election.start_time else None
+    now = datetime.now()
+    start = to_local_naive(election.start_time) if election.start_time else None
 
     # ❌ NOT STARTED → block force delete
     if not start or now < start:
@@ -2683,34 +2720,29 @@ def edit_election_time():
     if election_has_ended(election):
         flash("Cannot change time — election already ended")
         return redirect("/admin/dashboard")
+    start_raw = request.form.get("start_time")
+    end_raw   = request.form.get("end_time")
 
-    election.start_time = request.form.get("start_time") or None
-    election.end_time = request.form.get("end_time") or None
+    election.start_time = parse_local_datetime(start_raw) if start_raw else None
+    election.end_time   = parse_local_datetime(end_raw) if end_raw else None
 
     db.session.commit()
 
     flash("Election time updated")
     return redirect(request.referrer or "/admin/dashboard")
-from datetime import datetime, timezone
+
 @app.route("/admin/election/update", methods=["POST"])
 def update_election():
 
     e = Election.query.get(request.form["election_id"])
     if not e:
         flash("Election not found")
-        return redirect(url_for(
-            "admin_dashboard",
-            open="edit",
-            eid=e.id,
-            name=e.name,
-            start=e.start_time or "",
-            end=e.end_time or ""
-        ))
+        return redirect(url_for("admin_dashboard"))
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
 
-    start_old = ensure_utc(ensure_utc(datetime.fromisoformat(e.start_time))) if e.start_time else None
-    end_old = ensure_utc(datetime.fromisoformat(e.end_time)) if e.end_time else None
+    start_old = to_local_naive(e.start_time) if e.start_time else None
+    end_old = to_local_naive(e.end_time) if e.end_time else None
 
 
     # 🚫 ENDED → nothing editable
@@ -2730,8 +2762,8 @@ def update_election():
     end_raw   = request.form.get("end_time") or None
 
     try:
-        start_new = ensure_utc(datetime.fromisoformat(start_raw)) if start_raw else None
-        end_new   = ensure_utc(datetime.fromisoformat(end_raw)) if end_raw else None
+        start_new = parse_local_datetime(start_raw) if start_raw else None
+        end_new   = parse_local_datetime(end_raw) if end_raw else None
 
     except ValueError:
         flash("Invalid date/time format")
@@ -2808,8 +2840,8 @@ def update_election():
 
     # ✅ SAVE
     e.name = name
-    e.start_time = start_new.isoformat() if start_new else None
-    e.end_time   = end_new.isoformat() if end_new else None
+    e.start_time = start_new
+    e.end_time   = end_new
 
     db.session.commit()
 

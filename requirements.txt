@@ -9,5 +9,7 @@ flask-wtf
 flask-limiter
 flask-talisman
 pillow
+psycopg2-binary
 redis
 gevent
+cloudinary
