@@ -1699,7 +1699,67 @@ if (emailInput && emailStatus) {
 }
 
 });
+/* =====================================================
+   MOBILE SWIPE PANEL NAVIGATION
+===================================================== */
+document.addEventListener("DOMContentLoaded", () => {
 
+let wrap = document.getElementById("wrap");
+
+let startX = 0;
+let endX = 0;
+
+const panelOrder = ["login","register","voter","reset"];
+
+function getCurrentPanel(){
+  if (wrap.classList.contains("register")) return "register";
+  if (wrap.classList.contains("voter")) return "voter";
+  if (wrap.classList.contains("reset")) return "reset";
+  return "login";
+}
+
+function goToPanel(panel){
+
+  wrap.className = "wrapper";
+
+  if(panel !== "login"){
+    wrap.classList.add(panel);
+  }
+
+  if(panel === "login"){
+    sessionStorage.removeItem("active_panel");
+  }else{
+    sessionStorage.setItem("active_panel", panel);
+  }
+}
+
+wrap.addEventListener("touchstart", e=>{
+  startX = e.touches[0].clientX;
+});
+
+wrap.addEventListener("touchend", e=>{
+  endX = e.changedTouches[0].clientX;
+
+  const diff = startX - endX;
+
+  if(Math.abs(diff) < 60) return;
+
+  const current = getCurrentPanel();
+  const index = panelOrder.indexOf(current);
+
+  if(diff > 0){
+    const next = panelOrder[index+1];
+    if(next) goToPanel(next);
+  }
+
+  if(diff < 0){
+    const prev = panelOrder[index-1];
+    if(prev) goToPanel(prev);
+  }
+
+});
+
+});
 </script>
 
 </body>
