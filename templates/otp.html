@@ -307,7 +307,16 @@ if (resendLink) {
   });
 }
 
+/* AUTO HIDE OTP FLASH MESSAGES */
 
+setTimeout(() => {
+  document.querySelectorAll(".msg").forEach(el => {
+    el.style.transition = "opacity .35s ease";
+    el.style.opacity = "0";
+
+    setTimeout(() => el.remove(), 350);
+  });
+}, 3500);
 </script>
 
 
