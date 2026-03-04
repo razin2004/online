@@ -4644,6 +4644,49 @@ function submitBulkDelete(ids){
   .catch(() => showAlert("Network error"));
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+
+  if(window.innerWidth > 768) return; // mobile only
+
+  const wrapper = document.querySelector(".main-wrapper");
+  if(!wrapper) return;
+
+  let startX = 0;
+  let endX = 0;
+
+  wrapper.addEventListener("touchstart", e=>{
+    startX = e.touches[0].clientX;
+  }, {passive:true});
+
+  wrapper.addEventListener("touchend", e=>{
+    endX = e.changedTouches[0].clientX;
+
+    const diff = startX - endX;
+
+    // ignore tiny swipes
+    if(Math.abs(diff) < 60) return;
+
+    const currentView =
+      document.querySelector(".view-container.active")?.id;
+
+    const index = VIEW_ORDER.indexOf(currentView);
+    if(index === -1) return;
+
+    // swipe left → next page
+    if(diff > 0){
+      const next = VIEW_ORDER[index + 1];
+      if(next) switchView(next);
+    }
+
+    // swipe right → previous page
+    if(diff < 0){
+      const prev = VIEW_ORDER[index - 1];
+      if(prev) switchView(prev);
+    }
+
+  }, {passive:true});
+
+});
 </script>
 
 </body>
