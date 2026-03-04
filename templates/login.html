@@ -93,6 +93,8 @@ h1{font-size:24px;margin-bottom:6px;}
   font-weight:600;
   cursor:pointer;
   margin-top:12px;
+  color:#fff;
+  -webkit-appearance:none;
 }
 
 .primary { background:#2563eb; }
@@ -696,7 +698,7 @@ margin-top: 2px;
   {% for cat,msg in messages %}
 
     {# --- force open REGISTER panel on any admin register alert --- #}
-    {% if "register" in cat or "admin_register" in cat %}
+    {% if cat == "admin_register_error" %}
       {% set open_panel = "register" %}
     {% endif %}
 
@@ -815,13 +817,14 @@ margin-top: 2px;
     {% if messages %}
       {% for cat,msg in messages %}
         {% if cat == "admin_register_error" %}
-          <div style="background:#7f1d1d;border:1px solid #ef4444;">
+          <div style="background:#7f1d1d;border:1px solid #ef4444;padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
+
             {{ msg }}
           </div>
         {% endif %}
 
         {% if cat == "admin_register_success" %}
-          <div style="background:#022c22;border:1px solid #22c55e;">
+          <div style="background:#022c22;border:1px solid #22c55e;padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
             {{ msg }}
           </div>
         {% endif %}
@@ -1274,7 +1277,13 @@ document.addEventListener("DOMContentLoaded", () => {
   window.closePrivateOtp = () => {
     privateOtpOverlay.style.display = "none";
   };
+/* =====================================================
+   FORCE LOGIN PANEL AFTER ACCOUNT CREATION
+===================================================== */
 
+if (document.getElementById("loginSuccess")) {
+  sessionStorage.removeItem("active_panel");
+}
   /* =====================================================
      PANEL MEMORY (SESSION STORAGE)
   ===================================================== */

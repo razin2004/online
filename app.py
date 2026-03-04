@@ -860,6 +860,7 @@ def verify_otp():
     # cleanup
     session.pop("pending_admin", None)
     session.pop("otp_context", None)
+    session.pop("register_form", None)   # <-- add this line
 
     flash(
         "Account created successfully. Please login to continue.",
