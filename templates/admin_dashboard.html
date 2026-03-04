@@ -3196,7 +3196,7 @@ function toggleResultVisibility(id){
   fetch(`/admin/toggle-results/${id}`,{
     method:"POST",
     headers:{
-      "X-CSRFToken":"{{ csrf_token() }}"
+      "X-CSRFToken":""
     }
   })
   .then(r=>r.json())
@@ -4443,7 +4443,7 @@ function saveProfile(){
     method:"POST",
     headers:{
       "Content-Type":"application/json",
-      "X-CSRFToken":"{{ csrf_token() }}"
+      "X-CSRFToken":""
     },
     body:JSON.stringify(payload)
   })
@@ -4625,7 +4625,7 @@ function confirmBulkDelete(){
 function submitBulkDelete(ids){
   fetch("/admin/whitelist/bulk-delete",{
     method:"POST",
-    headers:{ "Content-Type":"application/json","X-CSRFToken":"{{ csrf_token() }}" },
+    headers:{ "Content-Type":"application/json","X-CSRFToken":"" },
     body:JSON.stringify({ ids })
   })
   .then(r => r.json())

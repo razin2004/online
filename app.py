@@ -4,6 +4,7 @@ import smtplib
 import string
 import re
 import secrets
+import traceback
 import requests
 import cloudinary
 import cloudinary.uploader
@@ -2882,7 +2883,8 @@ def logout():
 def handle_500_error(e):
 
     print("Internal Server Error:", e)
-
+    traceback.print_exc()
+    
     otp_context = session.get("otp_context")
 
     # --- OTP related errors ---
@@ -2908,7 +2910,7 @@ def handle_500_error(e):
     )
 
     return redirect("/")
-
+    
 @app.errorhandler(404)
 def page_not_found(e):
 
