@@ -532,7 +532,7 @@ button{
       </div>
 
       <form method="POST" action="/vote" class="voteForm" data-name="{{ c.name }}" data-id="{{ c.id }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
         <input type="hidden" name="email" value="{{ email }}">
         <input type="hidden" name="election_id" value="{{ election.id }}">
         <input type="hidden" name="candidate_id" value="{{ c.id }}">

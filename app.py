@@ -12,7 +12,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from datetime import datetime, timedelta
-from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -36,8 +35,7 @@ else:
     # fallback for local dev
     app.config["RATELIMIT_STORAGE_URL"] = "memory://"
 
-app.secret_key = "SUPER_SECRET_KEY"
-csrf = CSRFProtect(app)
+app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 csp = {
     "default-src": ["'self'"],
     "style-src": [
@@ -151,7 +149,7 @@ def send_otp_email(to, subject, html, text=None):
 
             print("ProMailer OTP:", r.status_code, r.text)
 
-            if r.status_code == 200:
+            if 200 <= r.status_code < 300:
                 return True
 
         except Exception as e:
@@ -218,7 +216,7 @@ def send_vote_central_email(to_email, subject, body):
 
             print("ProMailer SYS:", r.status_code, r.text)
 
-            if r.status_code == 200:
+            if 200 <= r.status_code < 300:
                 return True
 
         except Exception as e:
@@ -226,7 +224,7 @@ def send_vote_central_email(to_email, subject, body):
 
     # ---------- SMTP FALLBACK ----------
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as smtp:
             smtp.starttls()
             smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
 
@@ -340,6 +338,7 @@ def save_uploaded_file(file):
 
     except Exception as e:
         print("Cloudinary Upload Error:", e)
+        flash("Image upload failed. Please try again.", "admin_error")
         return None
     
 def to_local_naive(dt):
@@ -2872,6 +2871,52 @@ def logout():
 
     return redirect("/")
 
+# -------------------------------------------------
+# GLOBAL ERROR HANDLER (PREVENT WHITE ERROR PAGE)
+# -------------------------------------------------
+# -------------------------------------------------
+# GLOBAL ERROR HANDLER (PREVENT WHITE ERROR PAGE)
+# -------------------------------------------------
+
+@app.errorhandler(500)
+def handle_500_error(e):
+
+    print("Internal Server Error:", e)
+
+    otp_context = session.get("otp_context")
+
+    # --- OTP related errors ---
+    if otp_context in ["admin_register", "admin_reset", "voter_public", "voter_private"]:
+
+        flash(
+            "Email service temporarily unavailable. Please try again.",
+            "otp_error"
+        )
+
+        if otp_context in ["voter_public", "voter_private"]:
+            return redirect("/voter/otp")
+
+        if otp_context == "admin_reset":
+            return redirect("/verify-otp?context=reset")
+
+        return redirect("/verify-otp")
+
+    # --- default fallback ---
+    flash(
+        "Unexpected system error. Please try again.",
+        "admin_login_error"
+    )
+
+    return redirect("/")
+
+@app.errorhandler(404)
+def page_not_found(e):
+
+    if request.path.startswith("/admin") or request.path.startswith("/voter"):
+        flash("Page not found.", "admin_login_error")
+        return redirect("/")
+
+    return redirect("/")
 # -------------------------------------------------
 if __name__ == "__main__":
     # Get port from environment or default to 5000

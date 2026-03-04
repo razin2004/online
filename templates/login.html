@@ -754,7 +754,7 @@ margin-top: 2px;
 
 
     <form method="POST" action="/admin/login">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      
 
       <div class="field">
         <label>Username</label>
@@ -830,7 +830,7 @@ margin-top: 2px;
     {% endif %}
 
     <form method="POST" action="/admin/register">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      
 
       <div class="field"><label>Full Name</label>
         <input name="name" 
@@ -968,7 +968,7 @@ margin-top: 2px;
       <p class="sub">Enter your registered email to receive verification code</p>
 
       <form method="POST" action="/admin/forgot-password">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
 
         <div class="field">
           <label>Email Address</label>
@@ -991,7 +991,7 @@ margin-top: 2px;
       <p class="sub">Verification successful. Set a new password</p>
 
       <form method="POST" action="/admin/reset-password">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
 
         <div class="field">
           <label>New Password</label>
@@ -1031,7 +1031,7 @@ margin-top: 2px;
       <div class="field">
         <label>Email Address</label>
         <input type="email" name="email" required>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
 
       </div>
 
@@ -1088,7 +1088,7 @@ margin-top: 2px;
     {% endif %}
 
     <form method="POST" action="/voter/login/public" novalidate>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      
 
 
       <div class="field">
@@ -1135,7 +1135,7 @@ margin-top: 2px;
     {% endif %}
 
     <form method="POST" action="/voter/login/private" novalidate>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      
 
 
       <div class="field">
