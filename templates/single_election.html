@@ -416,7 +416,7 @@ button{
   Starts At
 </div>
 
-    <div class="time-date">{{ election.start_time[:10] }}</div>
+    <div class="time-date">{{ election.start_time.strftime("%Y-%m-%d") }}</div>
     <div class="time-clock">{{ election.start_time[11:16] }}</div>
   </div>
   {% endif %}
@@ -433,7 +433,7 @@ button{
   Started At
 </div>
 
-    <div class="time-date">{{ election.start_time[:10] }}</div>
+    <div class="time-date">{{ election.start_time.strftime("%Y-%m-%d") }}</div>
     <div class="time-clock">{{ election.start_time[11:16] }}</div>
   </div>
 
