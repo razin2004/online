@@ -795,7 +795,7 @@ if (startTime && endTime) {
       badge.textContent = "Upcoming";
       clock.textContent = "Starts in: " + format(start - now);
 
-    } else if (now <= end) {
+    } else if (now < end) {
       badge.className = "badge badge-live";
       badge.textContent = "Live";
       clock.textContent = "Ends in: " + format(end - now);

@@ -36,7 +36,7 @@ else:
     # fallback for local dev
     app.config["RATELIMIT_STORAGE_URL"] = "memory://"
 
-app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+app.secret_key = "4b9d1a4a8e2c6c4a44d9e8c6f1b2a3c7d5e9f0b4c8a2d1e3f4a6b8c9d0e1f2a" #os.environ.get("SECRET_KEY", secrets.token_hex(32))
 csp = {
     "default-src": ["'self'"],
     "style-src": [
@@ -65,11 +65,11 @@ Talisman(
     content_security_policy=csp
 )
 cloudinary.config(
-    cloud_name= os.environ.get("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.environ.get("CLOUDINARY_API_KEY"),
-    api_secret=os.environ.get("CLOUDINARY_API_SECRET")
+    cloud_name= "durgkn5ib",#os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key="178917242333222",#os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret="MDulCFltiog4UVaXt85wVjRcH0k",#os.environ.get("CLOUDINARY_API_SECRET")
 )
-database_url = os.environ.get("DATABASE_URL")
+database_url ="postgresql://auto:vd5d2oKqzqnKNvWySmqxnsNAlgfWkIS8@dpg-d6jkmarh46gs73bda4g0-a.oregon-postgres.render.com/auto_4bzg" #os.environ.get("DATABASE_URL")
 
 is_production = os.environ.get("RENDER") == "true"
 
@@ -105,11 +105,11 @@ db = SQLAlchemy(app)
 # EMAIL CONFIG
 # -------------------------------------------------
 
-PROMAIL_API_KEY =os.environ.get("PROMAIL_API_KEY")  
+PROMAIL_API_KEY = "3dddbdaa-275f-4619-8400-fefc4cbeb09c"  # os.environ.get("PROMAIL_API_KEY")
 PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 
-SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+SMTP_EMAIL = "control.your.voting@gmail.com"  # os.environ.get("SMTP_EMAIL")
+SMTP_PASSWORD = "sydpdtgkauovfiee"  # os.environ.get("SMTP_PASSWORD")
 
 USE_PROMAIL = os.environ.get("USE_PROMAIL", "true") == "true"  # 🔁 switch here if needed
 limiter = Limiter(
@@ -1677,9 +1677,14 @@ def view_election(eid):
     # -----------------------------------
     start_time = to_local_naive(election.start_time)
     end_time   = to_local_naive(election.end_time)
+    has_started = False
+    has_ended = False
 
-    has_started = start_time and now >= start_time
-    has_ended   = end_time and now > end_time
+    if start_time and now >= start_time:
+        has_started = True
+
+    if end_time and now >= end_time:
+        has_ended = True
 
     return render_template(
         "single_election.html",
@@ -1723,13 +1728,14 @@ def cast_vote():
     start = to_local_naive(election.start_time)
     end   = to_local_naive(election.end_time)
     # Schedule checks
+    # Schedule checks
     if start and now < start:
         flash("Election has not started yet")
-        return redirect("/voter/dashboard")
+        return redirect(f"/election/{election_id}")
 
     if end and now > end:
         flash("Election has ended")
-        return redirect("/voter/dashboard")
+        return redirect(f"/election/{election_id}")
 
     # Private whitelist
     if election.election_type == "private":
@@ -1739,7 +1745,7 @@ def cast_vote():
         ).first()
         if not allowed:
             flash("You are not allowed to vote in this election")
-            return redirect("/voter/dashboard")
+            return redirect(f"/election/{election_id}")
 
     existing_vote = Vote.query.filter_by(
         election_id=election_id,
