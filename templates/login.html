@@ -68,7 +68,7 @@ h1{font-size:24px;margin-bottom:6px;}
 
 /* ---------- FIELDS ---------- */
 
-.field{margin-top:10px;}
+.field{margin-top:2px;}
 .field label{font-size:12px;color:#cbd5e1;}
 .field input{
   width:100%;
@@ -367,20 +367,16 @@ h1{font-size:24px;margin-bottom:6px;}
   }
 
 }
-@media (max-width: 900px){
-
-  hr{
-    margin:22px 0;
-    border:0;
-    height:1px;
-    background:linear-gradient(
-      to right,
-      transparent,
-      rgba(255,255,255,.15),
-      transparent
-    );
-  }
-
+hr{
+margin:18px 0;
+border:0;
+height:2px;
+background:linear-gradient(
+to right,
+transparent,
+rgba(255,255,255,.75),
+transparent
+);
 }
 @media (max-width: 900px){
 
@@ -685,12 +681,299 @@ pointer-events:none;
 .input-icon input{
 padding-left:34px;
 }
+/* ================= HOW IT WORKS LINK ================= */
+
+/* ================= HOW BUTTON ================= */
+
+/* HOW WORKS BUTTON */
+.how-help{
+margin-top:12px;          /* space from above */
+
+display:flex;
+justify-content:center;   /* center horizontally */
+align-items:center;
+gap:5px;
+
+font-size:11px;
+color:rgba(255,255,255,.45);
+
+cursor:pointer;
+opacity:.8;
+}
+
+.how-help:hover{
+opacity:1;
+color:rgba(255,255,255,.7);
+}
+
+.how-help-icon{
+width:12px;
+height:12px;
+fill:rgba(255,255,255,.45);
+}
+
+.how-button:hover{
+background:rgba(255,255,255,.05);
+border-color:rgba(255,255,255,.15);
+color:rgba(255,255,255,.75);
+}
+
+.how-button:active{
+transform:scale(.97);
+}
+
+
+.how-link a{
+color:#7dd3fc;
+text-decoration:none;
+}
+
+.how-link a:hover{
+text-decoration:underline;
+}
+
+
+/* ================= MODAL OVERLAY ================= */
+
+.how-overlay{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.75);
+backdrop-filter:blur(6px);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:30000;
+}
+
+/* ================= MODAL BOX ================= */
+
+.how-box{
+width:680px;
+max-width:92%;
+max-height:85vh;
+overflow-y:auto;
+
+background:linear-gradient(180deg,#0f172a,#020617);
+border-radius:18px;
+border:1px solid rgba(255,255,255,.15);
+
+box-shadow:0 40px 90px rgba(0,0,0,.7);
+padding:28px;
+}
+
+/* ================= HEADER ================= */
+
+.how-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:18px;
+}
+
+.how-header h2{
+font-size:22px;
+font-weight:700;
+}
+
+.how-close{
+background:none;
+border:none;
+color:#9ca3af;
+font-size:18px;
+cursor:pointer;
+}
+
+/* ================= CONTENT ================= */
+
+.how-content section{
+margin-bottom:22px;
+}
+
+.how-content h3{
+font-size:16px;
+font-weight:700;
+color:#38bdf8;
+margin-bottom:6px;
+}
+
+.how-content p{
+font-size:13px;
+line-height:1.6;
+color:#cbd5e1;
+margin-bottom:8px;
+}
+
+.how-content ul{
+margin-left:18px;
+font-size:13px;
+color:#cbd5e1;
+line-height:1.6;
+}
+
+.how-content ol{
+margin-left:18px;
+font-size:13px;
+color:#cbd5e1;
+line-height:1.6;
+}
+
+.highlight{
+color:#facc15;
+font-weight:600;
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width:600px){
+
+.how-box{
+padding:22px;
+border-radius:14px;
+}
+
+.how-header h2{
+font-size:18px;
+}
+
+}
+.how-close{
+background:none;
+border:none;
+color:#9ca3af;
+font-size:20px;
+cursor:pointer;
+padding:4px;
+border-radius:6px;
+}
+
+.how-close:hover{
+color:#ffffff;
+background:rgba(255,255,255,.08);
+}
 
 </style>
 </head>
 
 <body>
+<div id="howModal" class="how-overlay">
 
+<div class="how-box">
+
+<div class="how-header">
+<h2>How VoteCentral Works</h2>
+<button class="how-close" onclick="closeHowModal()">
+✕
+</button>
+</div>
+<div class="how-content">
+
+<section>
+<h3>Overview of VoteCentral</h3>
+
+<p>
+VoteCentral is a secure online voting platform designed to conduct digital elections safely and transparently. 
+The system verifies every voter before allowing access to elections and ensures that each participant can vote only once.
+</p>
+
+<ul>
+<li>Secure OTP verification for voter identity</li>
+<li>Support for both public and private elections</li>
+<li>Transparent vote counting and result management</li>
+<li>Administrator-controlled election management</li>
+</ul>
+
+</section>
+
+
+<section>
+<h3>Public Elections</h3>
+
+<p class="highlight">Public elections are open to all verified voters.</p>
+
+<p>
+When a voter selects the <b>Public Election</b> option, they only need to verify their email using a one-time password (OTP). 
+After successful verification, the voter can access all currently active public elections available on the platform.
+</p>
+
+<ul>
+<li>Accessible to any voter with email verification</li>
+<li>No special invitation required</li>
+<li>All active public elections from different administrators become visible</li>
+<li>A public election code is used to identify specific elections</li>
+<li>Voters can enter the code to join and participate in that election</li>
+</ul>
+
+</section>
+
+
+<section>
+<h3>Private Elections</h3>
+
+<p class="highlight">Private elections are restricted to specific participants.</p>
+
+<p>
+Private elections require an additional verification step. 
+The voter must enter an <b>Admin Access Code</b> provided by the election administrator along with their email address.
+</p>
+
+<ul>
+<li>Only voters with the correct admin access code can enter</li>
+<li>Used for restricted elections such as organizations, colleges, or private groups</li>
+<li>Ensures only authorized participants can vote</li>
+<li>Email OTP verification is still required for identity confirmation</li>
+</ul>
+
+</section>
+
+
+<section>
+<h3>Voting Process</h3>
+
+<ol>
+<li>Choose the election type (Public or Private).</li>
+<li>Verify your email through OTP.</li>
+<li>Access the available election.</li>
+<li>Select your preferred candidate.</li>
+<li>Confirm and submit your vote securely.</li>
+</ol>
+
+</section>
+
+
+<section>
+<h3>Security and Integrity</h3>
+
+<p>
+VoteCentral implements multiple security layers to maintain election integrity and protect voter privacy.
+</p>
+
+<ul>
+<li>Each verified voter can vote only once in an election</li>
+<li>Votes are securely stored and cannot be modified</li>
+<li>Administrators manage elections but cannot alter individual votes</li>
+<li>Results are calculated automatically by the system</li>
+</ul>
+
+</section>
+
+
+<section>
+<h3>Result Transparency</h3>
+
+<ul>
+<li>Votes are counted instantly after submission</li>
+<li>Election administrators control when results become visible</li>
+<li>Results are displayed with accurate vote counts</li>
+<li>The system ensures fairness and transparency in election outcomes</li>
+</ul>
+
+</section>
+
+</div>
+
+</div>
+</div>
 <!-- ========== MOBILE HEADER (MEDIA VIEW ONLY) ========== -->
 <div class="mobile-header">
  
@@ -833,6 +1116,15 @@ padding-left:34px;
 
     </div>
 
+<div class="how-help" id="openHowModal">
+
+<svg viewBox="0 0 24 24" class="how-help-icon" style="margin-right: -2px;margin-top: 0.7px;">
+<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 6a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm1 10h-2v-6h2v6z"/>
+</svg>
+
+<span>How VoteCentral Works</span>
+
+</div>
   </div>
 
 
@@ -998,29 +1290,30 @@ required>
     <h1>Voter Login</h1>
     <p class="sub">Choose your election type and continue with OTP verification.</p>
 
-<div class="option-box" id="optPublic">
-  <svg class="icon" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10"/>
-    <path d="M8 12l3 3 5-6"/>
-  </svg>
-  Public Election — Open Participation
-</div>
+<button class="btn blue" id="optPublic">
+
+<svg class="icon" viewBox="0 0 24 24" style="margin-left: 5px;">
+<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm7.5 9h-3.2a15.7 15.7 0 00-1.2-5A8.02 8.02 0 0119.5 11zM12 4c.9 1.2 1.7 3.2 2 5H10c.3-1.8 1.1-3.8 2-5zM4.5 11A8.02 8.02 0 018.9 6c-.6 1.4-1 3.2-1.2 5H4.5zm0 2h3.2c.2 1.8.6 3.6 1.2 5A8.02 8.02 0 014.5 13zM12 20c-.9-1.2-1.7-3.2-2-5h4c-.3 1.8-1.1 3.8-2 5zm3.1-2c.6-1.4 1-3.2 1.2-5h3.2a8.02 8.02 0 01-4.4 5z"/>
+</svg>
+
+Public Election — Open Participation
+</button>
 
 
-<div class="option-box" id="optPrivate">
-  <svg class="icon" viewBox="0 0 24 24">
-    <rect x="5" y="11" width="14" height="10" rx="2"/>
-    <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-  </svg>
-  Private Election — Restricted Access
-</div>
+<button class="btn blue" id="optPrivate">
+
+<svg class="icon" viewBox="0 0 24 24">
+<path d="M12 1l8 4v6c0 5-3.5 9.7-8 11-4.5-1.3-8-6-8-11V5l8-4zm0 3.2L6 6v5c0 3.9 2.5 7.7 6 8.9 3.5-1.2 6-5 6-8.9V6l-6-1.8z"/>
+</svg>
+
+Private Election — Restricted Access
+</button>
 
 
     <p style="margin-top:10px;font-size:12px;color:#9ca3af;">
       
       <a href="javascript:void(0)" id="backLogin2" style="color:#7dd3fc;">
-        Back
-      
+        ← Back
       </a>
     </p>
 
@@ -1958,6 +2251,18 @@ wrap.addEventListener("touchend", e=>{
 
 });
 
+});
+document.getElementById("howModal").addEventListener("click", e=>{
+if(e.target.id === "howModal"){
+closeHowModal();
+}
+});
+function closeHowModal(){
+document.getElementById("howModal").style.display="none";
+}
+
+document.getElementById("openHowModal")?.addEventListener("click",()=>{
+document.getElementById("howModal").style.display="flex";
 });
 </script>
 
