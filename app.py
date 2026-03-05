@@ -282,7 +282,7 @@ def store_new_otp(email, code, role, admin_id=None):
     db.session.commit()
 
 def voter_can_view_results(election):
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
 
     # PUBLIC — allow viewing anytime if admin enabled visibility
     if election.election_type == "public":
@@ -342,12 +342,18 @@ def save_uploaded_file(file):
         flash("Image upload failed. Please try again.", "admin_error")
         return None
     
+import pytz
+
+IST = pytz.timezone("Asia/Kolkata")
+
 def to_local_naive(dt):
     if not dt:
         return None
-    if dt.tzinfo is not None:
-        return dt.astimezone().replace(tzinfo=None)
-    return dt
+
+    if dt.tzinfo:
+        dt = dt.astimezone(IST)
+
+    return dt.replace(tzinfo=None)
 
 def clear_reset_session():
     session.pop("otp_reset_verified", None)
@@ -1496,7 +1502,7 @@ def voter_results_list():
 
     result_rows = []
 
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
 
     for e in elections:
 
@@ -1510,7 +1516,7 @@ def voter_results_list():
                 continue
 
         total_votes = Vote.query.filter_by(election_id=e.id).count()
-        now = datetime.now()
+        now = datetime.now(IST).replace(tzinfo=None)
         start = to_local_naive(e.start_time)
         end = to_local_naive(e.end_time)
 
@@ -1629,7 +1635,7 @@ def view_election(eid):
 
     email = session["voter_email"]
     election = Election.query.get_or_404(eid)
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
 
     # 🚫 Block viewing private elections of other admins
     if election.election_type == "private" and "voter_admin_id" in session:
@@ -1724,7 +1730,7 @@ def cast_vote():
         return redirect("/voter/dashboard")
 
     election = Election.query.get_or_404(election_id)
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
     start = to_local_naive(election.start_time)
     end   = to_local_naive(election.end_time)
     # Schedule checks
@@ -1812,7 +1818,7 @@ def admin_dashboard():
     admin = db.session.get(Admin, session.get("admin_id"))
     elections = Election.query.filter_by(admin_id=admin.id).all()
 
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
 
     for e in elections:
 
@@ -1993,7 +1999,7 @@ def admin_results_page():
     elections = Election.query.filter_by(admin_id=admin.id).all()
 
     result_list = []
-    now = datetime.now()  # Local time
+    now = datetime.now(IST).replace(tzinfo=None)  # Local time
 
     for e in elections:
 
@@ -2080,7 +2086,7 @@ def admin_result_detail(eid):
     if election.admin_id != session["admin_id"]:
         flash("Unauthorized access")
         return redirect("/admin/dashboard")
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
 
     start = to_local_naive(election.start_time)
     end   = to_local_naive(election.end_time)
@@ -2183,7 +2189,7 @@ def create_election():
     start = parse_local_datetime(start_raw)
     end   = parse_local_datetime(end_raw)
 
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
 
     # ❌ Start in past
     if start and start < now:
@@ -2244,7 +2250,7 @@ def add_candidate():
         flash("Unauthorized action")
         return redirect("/admin/dashboard")
 
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
 
     start = to_local_naive(election.start_time) if election.start_time else None
     end   = to_local_naive(election.end_time) if election.end_time else None
@@ -2350,7 +2356,7 @@ def delete_candidate(cid):
         flash("Election not found.")
         return redirect(request.referrer or "/admin/dashboard")
 
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
 
     start = to_local_naive(election.start_time) if election.start_time else None
     end = to_local_naive(election.end_time) if election.end_time else None
@@ -2703,7 +2709,7 @@ def delete_election(eid):
         flash("Unauthorized action")
         return redirect("/admin/dashboard")
 
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
     start = to_local_naive(election.start_time) if election.start_time else None
 
     # ❌ STARTED → block normal delete
@@ -2742,7 +2748,7 @@ def force_delete_election(eid):
         return redirect("/admin/dashboard")
     
 
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
     start = to_local_naive(election.start_time) if election.start_time else None
 
     # ❌ NOT STARTED → block force delete
@@ -2787,7 +2793,7 @@ def update_election():
         flash("Election not found")
         return redirect(url_for("admin_dashboard"))
 
-    now = datetime.now()
+    now = datetime.now(IST).replace(tzinfo=None)
 
     start_old = to_local_naive(e.start_time) if e.start_time else None
     end_old = to_local_naive(e.end_time) if e.end_time else None
