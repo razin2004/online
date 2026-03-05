@@ -1793,7 +1793,6 @@ def cast_vote():
 # -------------------------------------------------
 # ADMIN DASHBOARD
 # -------------------------------------------------
-
 @app.route("/admin/dashboard")
 def admin_dashboard():
 
@@ -1816,38 +1815,60 @@ def admin_dashboard():
         e.is_upcoming = False
         e.is_running = False
         e.is_ended = False
-        e.starts_within_24h = False  # ✅ NEW FLAG
+        e.starts_within_24h = False
 
         start = to_local_naive(e.start_time)
-        end   = to_local_naive(e.end_time)
+        end = to_local_naive(e.end_time)
+
+        # ------------------------------
+        # ELECTION STATE LOGIC
+        # ------------------------------
 
         if start and end:
+
             if now < start:
                 e.is_upcoming = True
+
                 seconds_until_start = (start - now).total_seconds()
                 if 0 < seconds_until_start <= 86400:
                     e.starts_within_24h = True
-            elif start <= now <= end:
+
+            elif start <= now < end:   # FIXED boundary
                 e.is_running = True
+
             else:
                 e.is_ended = True
+
 
         elif start and not end:
+
             if now < start:
                 e.is_upcoming = True
+
+                seconds_until_start = (start - now).total_seconds()
+                if 0 < seconds_until_start <= 86400:
+                    e.starts_within_24h = True
+
             else:
                 e.is_running = True
 
+
         elif end and not start:
-            if now <= end:
+
+            if now < end:
                 e.is_running = True
             else:
                 e.is_ended = True
 
-        # ---------- RESULTS ----------
+
+        # ------------------------------
+        # RESULTS LOGIC
+        # ------------------------------
+
         results = []
 
         for c in e.candidates:
+
             vote_count = Vote.query.filter_by(candidate_id=c.id).count()
 
             if e.election_type == "private" and not election_has_ended(e):
@@ -1860,29 +1881,45 @@ def admin_dashboard():
                 "candidate": c.name,
                 "party": c.party,
                 "description": c.description,
-                "photo": c.photo if c.photo else url_for("static", filename="uploads/default-candidate.jpg"),
+                "photo": c.photo if c.photo else url_for(
+                    "static",
+                    filename="uploads/default-candidate.jpg"
+                ),
                 "count": display_count,
                 "raw_count": vote_count
             })
 
-        visible_counts = [r["raw_count"] for r in results if isinstance(r["count"], int)]
+
+        visible_counts = [
+            r["raw_count"]
+            for r in results
+            if isinstance(r["count"], int)
+        ]
+
 
         if visible_counts:
+
             max_votes = max(visible_counts)
+
             for r in results:
-                r["is_winner"] = (r["raw_count"] == max_votes and max_votes > 0)
+                r["is_winner"] = (
+                    r["raw_count"] == max_votes and max_votes > 0
+                )
+
         else:
+
             for r in results:
                 r["is_winner"] = False
 
+
         e.results = results
+
 
     return render_template(
         "admin_dashboard.html",
         admin=admin,
         elections=elections
     )
-
 
 @app.route("/admin/api/candidates/<eid>")
 def api_candidates(eid):
@@ -2876,20 +2913,23 @@ def logout():
 # -------------------------------------------------
 # GLOBAL ERROR HANDLER (PREVENT WHITE ERROR PAGE)
 # -------------------------------------------------
-# -------------------------------------------------
-# GLOBAL ERROR HANDLER (PREVENT WHITE ERROR PAGE)
-# -------------------------------------------------
+
+from flask import request, session, redirect, flash
 
 @app.errorhandler(500)
 def handle_500_error(e):
 
     print("Internal Server Error:", e)
     traceback.print_exc()
-    
+
     otp_context = session.get("otp_context")
 
-    # --- OTP related errors ---
-    if otp_context in ["admin_register", "admin_reset", "voter_public", "voter_private"]:
+    # Only treat as OTP error if we are inside OTP routes
+    if otp_context and (
+        request.path.startswith("/voter/otp") or
+        request.path.startswith("/verify-otp") or
+        request.path.startswith("/admin/register")
+    ):
 
         flash(
             "Email service temporarily unavailable. Please try again.",
@@ -2904,7 +2944,7 @@ def handle_500_error(e):
 
         return redirect("/verify-otp")
 
-    # --- default fallback ---
+    # Normal system error
     flash(
         "Unexpected system error. Please try again.",
         "admin_login_error"

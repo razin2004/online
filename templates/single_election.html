@@ -417,7 +417,7 @@ button{
 </div>
 
     <div class="time-date">{{ election.start_time.strftime("%Y-%m-%d") }}</div>
-    <div class="time-clock">{{ election.start_time[11:16] }}</div>
+    <div class="time-clock">{{ election.start_time.strftime("%H:%M") }}</div>
   </div>
   {% endif %}
 
@@ -434,7 +434,7 @@ button{
 </div>
 
     <div class="time-date">{{ election.start_time.strftime("%Y-%m-%d") }}</div>
-    <div class="time-clock">{{ election.start_time[11:16] }}</div>
+    <div class="time-clock">{{ election.start_time.strftime("%H:%M") }}</div>
   </div>
 
   <div class="time-card">
@@ -446,8 +446,8 @@ button{
   Ends At
 </div>
 
-    <div class="time-date">{{ election.end_time[:10] }}</div>
-    <div class="time-clock">{{ election.end_time[11:16] }}</div>
+    <div class="time-date">{{ election.end_time.strftime("%Y-%m-%d") }}</div>
+    <div class="time-clock">{{ election.end_time.strftime("%H:%M") }}</div>
   </div>
   {% endif %}
 
@@ -462,8 +462,8 @@ button{
   Ended At
 </div>
 
-    <div class="time-date">{{ election.end_time[:10] }}</div>
-    <div class="time-clock">{{ election.end_time[11:16] }}</div>
+    <div class="time-date">{{ election.end_time.strftime("%Y-%m-%d") }}</div>
+    <div class="time-clock">{{ election.end_time.strftime("%H:%M") }}</div>
   </div>
   {% endif %}
 
