@@ -105,7 +105,7 @@ db = SQLAlchemy(app)
 # EMAIL CONFIG
 # -------------------------------------------------
 
-PROMAIL_API_KEY = "3dddbdaa-275f-4619-8400-fefc4cbeb09c"  # os.environ.get("PROMAIL_API_KEY")
+PROMAIL_API_KEY = "beb8f1ba-09f9-4d8f-9d14-e90f2971b6bc"  # os.environ.get("PROMAIL_API_KEY")
 PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
 
 SMTP_EMAIL = "control.your.voting@gmail.com"  # os.environ.get("SMTP_EMAIL")
