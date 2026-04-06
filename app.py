@@ -69,7 +69,7 @@ cloudinary.config(
     api_key="178917242333222",#os.environ.get("CLOUDINARY_API_KEY"),
     api_secret="MDulCFltiog4UVaXt85wVjRcH0k",#os.environ.get("CLOUDINARY_API_SECRET")
 )
-database_url ="postgresql://auto:vd5d2oKqzqnKNvWySmqxnsNAlgfWkIS8@dpg-d6jkmarh46gs73bda4g0-a.oregon-postgres.render.com/auto_4bzg" #os.environ.get("DATABASE_URL")
+database_url ="postgresql://auto:FpL4c8BC2WmNhXaELVXUoJnKLV3xbbpg@dpg-d7a06kedqaus73antc3g-a.oregon-postgres.render.com/auto_0mog" #os.environ.get("DATABASE_URL")
 
 is_production = os.environ.get("RENDER") == "true"
 
