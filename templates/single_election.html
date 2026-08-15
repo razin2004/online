@@ -2,590 +2,1280 @@
 <html lang="en">
 <head>
   <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
+  <meta charset="UTF-8" />
+  <title>{{ election.name }} — VoteCentral</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 
-<meta charset="UTF-8" />
-<title>{{ election.name }} — Secure Voting</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<style>
-  :root{
-  --bg:#020617;
-  --panel:#0f172a;
-  --border:rgba(148,163,184,.15);
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  --blue:#38bdf8;
-  --indigo:#6366f1;
+  <style>
+    /* ================= DESIGN SYSTEM & TOKENS ================= */
+    :root {
+      --bg: #020617;
+      --panel: #0f172a;
+      --panel-glass: rgba(15, 23, 42, 0.85);
+      --panel-surface: rgba(30, 41, 59, 0.6);
+      --border: rgba(148, 163, 184, 0.15);
+      --border-focus: rgba(56, 189, 248, 0.4);
 
-  --green:#10b981;
-  --red:#ef4444;
-  --yellow:#facc15;
+      --blue: #38bdf8;
+      --blue-glow: rgba(56, 189, 248, 0.25);
+      --indigo: #6366f1;
+      --indigo-glow: rgba(99, 102, 241, 0.25);
 
-  --text:#f8fafc;
-  --muted:#94a3b8;
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.2);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.2);
+      --yellow: #facc15;
+      --yellow-glow: rgba(250, 204, 21, 0.2);
 
-  --radius-xl:24px;
-  --radius-lg:18px;
-}
+      --text: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --muted: #94a3b8;
 
-/* ================= BASE ================= */
-*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Inter,Arial;}
-body{
-  min-height:100vh;
-  background:
-    radial-gradient(at 0% 0%,rgba(56,189,248,.08),transparent 50%),
-    radial-gradient(at 100% 0%,rgba(99,102,241,.08),transparent 50%),
-    var(--bg);
-  color:var(--text);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
+      --radius-2xl: 28px;
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
 
+      --shadow-card: 0 20px 45px rgba(0, 0, 0, 0.45);
+      --shadow-hover: 0 25px 60px rgba(0, 0, 0, 0.6);
+    }
 
-/* ================= TOPBAR ================= */
-.topbar{
-  width:100%;
-  padding:18px 26px;
-  background:rgba(2,6,23,.88);
-  backdrop-filter:blur(14px);
-  border-bottom:1px solid var(--border);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
 
-.title{font-size:22px;font-weight:800;letter-spacing:.3px;}
-.subtitle{color:#9ca3af;font-size:13px;opacity:.85}
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(99, 102, 241, 0.08), transparent),
+        var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
 
-/* ================= LAYOUT ================= */
-.container{width:1150px;max-width:95%;margin-top:20px}
-.card{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:var(--radius-xl);
-  padding:24px;
-  margin-top:20px;
-  box-shadow:0 20px 50px rgba(0,0,0,.35);
-  transition:.25s ease;
-}
+    /* ================= TOPBAR ================= */
+    .topbar {
+      width: 100%;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+    }
 
-@keyframes fadeUp{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:translateY(0)}
-}
-.section-title{
-  font-size:17px;
-  font-weight:700;
-  margin-bottom:10px;
-}
+    .topbar-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
 
-/* ================= STATUS BADGES ================= */
-.badge{
-  padding:6px 14px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:.3px;
-}
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
 
-.badge-live{
-  background:linear-gradient(
-    135deg,
-    rgba(16,185,129,.18),
-    rgba(16,185,129,.08)
-  );
-  color:var(--green);
-  position:relative;
-  margin-left: -5px;
-}
+    .brand-logo {
+      height: 34px;
+      width: auto;
+      display: block;
+    }
 
+    .header-info {
+      display: flex;
+      flex-direction: column;
+    }
 
-.badge-upcoming{
-  background:rgba(250,204,21,.15);
-  color:var(--yellow);
-}
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-.badge-ended{
-  background:rgba(148,163,184,.15);
-  color:var(--muted);
-}
+    .voter-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.08);
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+      max-width: 240px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-.badge-locked{
-  background:rgba(239,68,68,.15);
-  color:var(--red);
-}
+    .voter-pill svg {
+      color: var(--blue);
+      flex-shrink: 0;
+    }
 
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--blue);
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-/* ================= TIME PANEL ================= */
-.time-panel{
-  margin-top:14px;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-}
-.time-card{
-  background:linear-gradient(
-    180deg,
-    rgba(15,23,42,.95),
-    rgba(2,6,23,.95)
-  );
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:18px;
-  text-align:center;
-}
+    .back-btn:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: rgba(56, 189, 248, 0.5);
+      transform: translateX(-2px);
+      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
+    }
 
-.time-label{
-  font-size:12px;
-  color:#9ca3af;
-  margin-bottom:4px;
-}
-.time-date{
-  font-size:15px;
-  font-weight:700;
-}
-.time-clock{
-  font-size:22px;
-  font-weight:800;
-  margin-top:4px;
-  color:var(--blue);
-}
+    /* ================= MAIN CONTAINER ================= */
+    .container {
+      width: 100%;
+      max-width: 1240px;
+      padding: 24px 20px 100px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
 
+    /* ================= GLASS CARD BASE ================= */
+    .glass-card {
+      background: var(--panel-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-2xl);
+      padding: 28px;
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
 
-/* ================= SECURITY ================= */
-.security-box{
-  margin-top:14px;
-  padding:12px;
-  border-radius:14px;
-  background:#020617;
-  border:1px solid #334155;
-  font-size:13px;
-  opacity:.9;
-}
+    /* ================= HERO / ELECTION INFO HEADER ================= */
+    .election-hero-card {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.95));
+      border: 1px solid rgba(148, 163, 184, 0.18);
+    }
 
-/* ================= CANDIDATES ================= */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(4, 1fr);
-  gap:20px;
-}
+    .hero-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
 
-/* Tablet */
-@media (max-width:1024px){
-  .grid{
-    grid-template-columns:repeat(2, 1fr);
-  }
-}
+    .election-title-group {
+      flex: 1;
+      min-width: 280px;
+    }
 
-/* Mobile */
-@media (max-width:600px){
-  .grid{
-    grid-template-columns:1fr;
-  }
-}
+    .breadcrumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
 
+    .election-heading {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
 
-.candidate{
-  background:linear-gradient(
-    180deg,
-    rgba(15,23,42,.95),
-    rgba(2,6,23,.95)
-  );
-  border:1px solid var(--border);
-  border-radius:var(--radius-lg);
-  padding:18px;
-  transition:.25s ease;
-}
+    .tag-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
 
-.candidate:hover{
-  transform:translateY(-4px);
-  box-shadow:
-    0 20px 50px rgba(0,0,0,.45),
-    0 0 0 1px rgba(56,189,248,.2);
-}
+    .tag-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-.candidate img{
-  width:100%;
-  aspect-ratio:1 / 1;
-  object-fit:cover;
-  border-radius:12px;
-  border:1px solid #334155;
-}
+    .tag-public {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      color: var(--blue);
+    }
 
-.candidate-name{font-size:16px;font-weight:700;margin-top:6px}
-.party{font-size:13px;color:#93c5fd}
-.desc{font-size:12px;color:#cbd5e1;margin-top:4px}
+    .tag-private {
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.28);
+      color: var(--indigo);
+    }
 
-.selected{
-  border:2px solid var(--blue);
-  box-shadow:
-    0 0 0 1px rgba(56,189,248,.3),
-    0 20px 40px rgba(0,0,0,.5);
-}
+    /* Dynamic Status Badges */
+    .status-badge-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
 
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    }
 
+    .badge-live {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.08));
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--green);
+    }
 
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: livePulse 1.8s infinite;
+    }
 
+    @keyframes livePulse {
+      0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
 
-/* ================= BUTTONS ================= */
-button{
-  width:100%;
-  margin-top:10px;
-  padding:12px;
-  border:none;
-  border-radius:12px;
-  font-weight:700;
-  cursor:pointer;
-}
-.btn-green{
-  background:linear-gradient(135deg,var(--blue),var(--indigo));
-  color:#fff;
-}
+    .badge-upcoming {
+      background: rgba(250, 204, 21, 0.15);
+      border: 1px solid rgba(250, 204, 21, 0.35);
+      color: var(--yellow);
+    }
 
-.btn-green:hover{
-  filter:brightness(1.05);
-}
+    .badge-ended {
+      background: rgba(148, 163, 184, 0.15);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      color: var(--muted);
+    }
 
-.btn-gray{
-  background:#1e293b;
-  color:var(--muted);
-  border:1px solid var(--border);
-}
-.btn-disabled{
-  background:#1e293b;
-  color:var(--muted);
-  opacity:.6;
-  cursor:not-allowed;
-}
+    .badge-locked {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+    }
 
-/* ================= MODAL ================= */
-.modal-bg{
-  position:fixed;
-  inset:0;
-  background:rgba(2,6,23,.85);
-  backdrop-filter:blur(14px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  opacity:0;
-  pointer-events:none;
-  transition:.25s ease;
-  z-index:4000;
-}
+    .countdown-ticker {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      background: rgba(0, 0, 0, 0.35);
+      padding: 6px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
 
-.modal-bg.show{
-  opacity:1;
-  pointer-events:auto;
-}
+    /* ================= STATS & TIMELINE SHELF ================= */
+    .hero-stats-shelf {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
 
-.modal{
-  background:linear-gradient(
-    180deg,
-    #111827,
-    #0f172a
-  );
-  border:1px solid var(--border);
-  border-radius:28px;
-  padding:34px;
-  width:92%;
-  max-width:420px;
-  box-shadow:
-    0 30px 80px rgba(0,0,0,.55);
-  transform:scale(.96);
-  transition:.25s ease;
-}
+    .stat-box {
+      background: var(--panel-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.2s ease;
+    }
 
-.modal-bg.show .modal{
-  transform:scale(1);
-}
+    .stat-box:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      background: rgba(30, 41, 59, 0.8);
+    }
 
+    .stat-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
 
-@keyframes scaleIn{
-  from{transform:scale(.94);opacity:0}
-  to{transform:scale(1);opacity:1}
-}
+    .stat-icon-wrap.blue { background: rgba(56, 189, 248, 0.15); color: var(--blue); }
+    .stat-icon-wrap.green { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+    .stat-icon-wrap.yellow { background: rgba(250, 204, 21, 0.15); color: var(--yellow); }
 
-.modal-icon{
-  width:48px;
-  height:48px;
-  margin:0 auto 14px;
-  border-radius:50%;
-  background:rgba(56,189,248,.15);
-  color:#38bdf8;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.back-btn{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  padding:8px 14px;
-  border-radius:14px;
-  background:rgba(56,189,248,.12);
-  border:1px solid rgba(56,189,248,.35);
-  color:var(--blue);
-  font-weight:700;
-  text-decoration:none;
-  transition:.2s ease;
-}
+    .stat-details {
+      display: flex;
+      flex-direction: column;
+    }
 
-.back-btn:hover{
-  background:rgba(56,189,248,.25);
-}
-.reveal-option{
-  margin-top:10px;
-  font-size:13px;
-  color:var(--muted);
-  text-align:left;
-}
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-.reveal-option input{
-  margin-right:3px;
-}
-@media (max-width:600px){
-  .back-btn{
-    padding:6px 8px;
-    font-size:13px;
-    border-radius:12px;
-  }
+    .stat-value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-top: 2px;
+    }
 
-  .back-btn svg{
-    width:14px;
-    height:14px;
-  }
+    .copy-code-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px dashed rgba(56, 189, 248, 0.3);
+      cursor: pointer;
+      font-family: ui-monospace, monospace;
+      color: var(--blue);
+      transition: all 0.2s ease;
+    }
 
-  .title{
-    font-size:18px;
-  }
+    .copy-code-pill:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--blue);
+    }
 
-  .subtitle{
-    font-size:11px;
-  }
-}
+    /* ================= TIME SCHEDULE PANEL ================= */
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
 
-</style>
+    @media (max-width: 640px) {
+      .schedule-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .time-slot-card {
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .time-slot-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .time-slot-data {
+      text-align: right;
+    }
+
+    .time-slot-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .time-slot-clock {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--blue);
+      font-family: ui-monospace, monospace;
+    }
+
+    /* ================= MODIFICATION WINDOW ALERT ================= */
+    .modification-banner {
+      margin-top: 20px;
+      padding: 16px 20px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .mod-status-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mod-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: var(--green);
+    }
+
+    .change-vote-box {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .timer-highlight {
+      font-family: ui-monospace, monospace;
+      color: var(--yellow);
+      background: rgba(250, 204, 21, 0.12);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 800;
+      border: 1px solid rgba(250, 204, 21, 0.25);
+    }
+
+    .btn-change-vote {
+      background: rgba(250, 204, 21, 0.15);
+      border: 1px solid rgba(250, 204, 21, 0.35);
+      color: var(--yellow);
+      padding: 7px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-change-vote:hover {
+      background: rgba(250, 204, 21, 0.25);
+      transform: translateY(-1px);
+    }
+
+    /* ================= SECURITY FOOTER ================= */
+    .security-ribbon {
+      margin-top: 20px;
+      padding: 12px 18px;
+      border-radius: var(--radius-md);
+      background: rgba(2, 6, 23, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .security-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .security-item svg {
+      color: var(--blue);
+      flex-shrink: 0;
+    }
+
+    /* ================= CANDIDATES SECTION ================= */
+    .candidates-section {
+      margin-top: 8px;
+    }
+
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .candidate-count-badge {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--blue);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    /* Candidates Grid */
+    .candidates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 22px;
+    }
+
+    /* ================= CANDIDATE CARD ================= */
+    .candidate-card {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.98));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .candidate-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(56, 189, 248, 0.35);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5), 0 0 25px rgba(56, 189, 248, 0.1);
+    }
+
+    .candidate-card.selected {
+      border: 2px solid var(--blue);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.25), 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+
+    .candidate-photo-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      margin-bottom: 16px;
+    }
+
+    .candidate-photo-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .candidate-card:hover .candidate-photo-wrapper img {
+      transform: scale(1.04);
+    }
+
+    .candidate-avatar-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--blue);
+      text-transform: uppercase;
+    }
+
+    .candidate-meta {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      margin-bottom: 16px;
+    }
+
+    .candidate-party-tag {
+      display: inline-flex;
+      align-self: flex-start;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #93c5fd;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      padding: 3px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .candidate-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    .candidate-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .status-indicator {
+      min-height: 24px;
+      margin-bottom: 8px;
+    }
+
+    .selected-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.15));
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--blue);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    /* Vote Form & Action Buttons */
+    .vote-form {
+      margin-top: auto;
+      width: 100%;
+    }
+
+    .btn-vote-action {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background: linear-gradient(135deg, var(--blue), var(--indigo));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
+    }
+
+    .btn-vote-action:hover:not(:disabled) {
+      filter: brightness(1.08);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-vote-action:disabled {
+      background: #1e293b;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      box-shadow: none;
+      cursor: not-allowed;
+      opacity: 0.6;
+      transform: none;
+    }
+
+    /* ================= MODALS ================= */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 4000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+      padding: 20px;
+    }
+
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: linear-gradient(180deg, #0f172a, #020617);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: var(--radius-2xl);
+      padding: 36px 30px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.03);
+      transform: scale(0.95);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: center;
+    }
+
+    .modal-overlay.show .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-icon-badge {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 18px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-card h3 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.35;
+      margin-bottom: 10px;
+    }
+
+    .modal-card p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .reveal-option {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid var(--border);
+      text-align: left;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .reveal-option label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .reveal-option input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(30, 41, 59, 0.9);
+      color: var(--text);
+    }
+
+    .btn-confirm-vote {
+      flex: 1.3;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      border: none;
+      background: linear-gradient(135deg, var(--blue), var(--indigo));
+      color: #fff;
+      font-size: 0.92rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-confirm-vote:hover {
+      filter: brightness(1.08);
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.45);
+    }
+
+    .btn-confirm-vote:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* ================= FLASH MESSAGES ================= */
+    .flash-container {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .flash-msg {
+      padding: 12px 18px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--blue);
+    }
+
+    /* ================= RESPONSIVENESS ================= */
+    @media (max-width: 768px) {
+      .topbar { padding: 12px 16px; }
+      .container { padding: 16px 14px 80px; gap: 18px; }
+      .glass-card { padding: 20px 16px; border-radius: var(--radius-xl); }
+      .election-heading { font-size: 1.45rem; }
+      .hero-top-row { flex-direction: column; align-items: flex-start; }
+      .status-badge-wrapper { align-items: flex-start; width: 100%; }
+      .candidates-grid { grid-template-columns: 1fr; }
+      .voter-pill { display: none; }
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="topbar">
-  <div>
-    <div class="title">{{ election.name }}</div>
-    <div class="subtitle">{{ election.election_type|upper }} Election — Secure Verified Voting</div>
-  </div>
-  <div class="nav-actions">
-    <a href="/voter/dashboard" class="back-btn">
-  <svg width="16" height="16" viewBox="0 0 24 24"
-       fill="none" stroke="currentColor" stroke-width="2">
-    <line x1="19" y1="12" x2="5" y2="12"/>
-    <polyline points="12 19 5 12 12 5"/>
-  </svg>
-  Dashboard
-</a>
+<!-- ================= TOPBAR ================= -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand-section">
+      <a href="/voter/dashboard" style="text-decoration:none;display:flex;align-items:center;">
+        <img src="/static/uploads/votecentral-logo.svg" alt="VoteCentral" class="brand-logo">
+      </a>
+    </div>
 
-
-  </div>
-</div>
-
-<div class="container">
-
-<div class="card">
-  <div class="section-title">Election Status</div>
-  {% if election.start_time and election.end_time %}
-    <div id="status-badge" class="badge">Checking…</div>
-    <div id="countdown" class="countdown">Syncing…</div>
-  {% else %}
-    <div class="badge badge-locked">No schedule configured</div>
-  {% endif %}
-  <br>
-<div style="margin-top:14px;font-size:14px;">
-  <b>Total Votes:</b> {{ total_votes }}
-</div>
-{% if election.start_time or election.end_time %}
-<div class="time-panel">
-
-  {% if not has_started %}
-  <!-- NOT STARTED -->
-  <div class="time-card">
-    <div class="time-label">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
-    <circle cx="12" cy="12" r="10"/>
-    <polyline points="12 6 12 12 16 14"/>
-  </svg>
-  Starts At
-</div>
-
-    <div class="time-date">{{ election.start_time.strftime("%Y-%m-%d") }}</div>
-    <div class="time-clock">{{ election.start_time.strftime("%H:%M") }}</div>
-  </div>
-  {% endif %}
-
-  {% if has_started and not has_ended %}
-  <!-- RUNNING -->
-  <div class="time-card">
-    <div class="time-label">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
-    <circle cx="12" cy="12" r="10"/>
-    <polyline points="12 6 12 12 16 14"/>
-  </svg>
-  Started At
-</div>
-
-    <div class="time-date">{{ election.start_time.strftime("%Y-%m-%d") }}</div>
-    <div class="time-clock">{{ election.start_time.strftime("%H:%M") }}</div>
-  </div>
-
-  <div class="time-card">
-    <div class="time-label">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
-    <rect x="6" y="6" width="12" height="12"/>
-  </svg>
-  Ends At
-</div>
-
-    <div class="time-date">{{ election.end_time.strftime("%Y-%m-%d") }}</div>
-    <div class="time-clock">{{ election.end_time.strftime("%H:%M") }}</div>
-  </div>
-  {% endif %}
-
-  {% if has_ended %}
-  <!-- ENDED -->
-  <div class="time-card">
-    <div class="time-label">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
-    <rect x="6" y="6" width="12" height="12"/>
-  </svg>
-  Ended At
-</div>
-
-    <div class="time-date">{{ election.end_time.strftime("%Y-%m-%d") }}</div>
-    <div class="time-clock">{{ election.end_time.strftime("%H:%M") }}</div>
-  </div>
-  {% endif %}
-
-</div>
-{% endif %}
-
-
-  {% if voted %}
-  <div id="modificationContainer" style="margin-top:15px; border-top: 1px solid #334155; padding-top: 10px;">
-<div id="editWindow" class="badge badge-locked">
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
-    <rect x="3" y="11" width="18" height="11" rx="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-  </svg>
-  Vote Status: Recorded
-</div>
-
-    
-{% if voted and can_change %}
-<div id="changeVoteBox" style="margin-top:8px;font-size:13px;">
-  You can change your vote within
-  <b class="timer-highlight">
-    <span id="editTimerCountdown">{{ remaining_seconds }}</span>s
-  </b>.
-  <button id="changeVoteBtn">
-    Change vote?
-  </button>
-</div>
-{% endif %}
-
-  </div>
-  {% endif %}
-
-<div class="security-box">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px">
-    <rect x="3" y="11" width="18" height="11" rx="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-  </svg>
-  End-to-end encrypted voting
-  &nbsp;|&nbsp;
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px">
-    <circle cx="12" cy="12" r="10"/>
-    <polyline points="12 6 12 12 16 14"/>
-  </svg>
-  Modification window: {{ lock_seconds }}s
-</div>
-
-</div>
-
-<div class="card">
-  <div class="section-title">Select Your Candidate</div>
-  <div class="grid">
-    {% for c in candidates %}
-<div class="candidate"
-     id="cand-card-{{ c.id }}"
-     data-id="{{ c.id }}">
-      {% if c.photo %}<img src="{{ c.photo }}">{% endif %}
-      <div class="candidate-name">{{ c.name }}</div>
-      {% if c.description %}<div class="desc">{{ c.description }}</div>{% endif %}
-      
-      <div class="status-indicator" id="status-ind-{{ c.id }}">
-        
+    <div class="topbar-right">
+      <div class="voter-pill" title="{{ email }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>{{ email }}</span>
       </div>
 
-      <form method="POST" action="/vote" class="voteForm" data-name="{{ c.name }}" data-id="{{ c.id }}">
-        
-        <input type="hidden" name="email" value="{{ email }}">
-        <input type="hidden" name="election_id" value="{{ election.id }}">
-        <input type="hidden" name="candidate_id" value="{{ c.id }}">
-        <input type="hidden" name="confirm_flag" value="yes">
-        <button type="submit" class="btn-green vote-btn" {% if voted and not change_mode %}disabled style="opacity:0.5"{% endif %}>
-          Vote
-        </button>
-      </form>
+      <a href="/voter/dashboard" class="back-btn" id="dashboardBackBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Dashboard</span>
+      </a>
     </div>
-    {% endfor %}
   </div>
-</div>
+</header>
 
-</div> 
+<!-- ================= MAIN CONTAINER ================= -->
+<main class="container">
 
-<div class="modal-bg" id="modal">
-  <div class="modal">
-    <h3 id="modalName"></h3>
-    <p style="margin-top:12px; font-size: 14px; color: #94a3b8;">
-      Your vote will be recorded securely.<br>
-      The window to change your mind closes soon.
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, msg in messages %}
+          <div class="flash-msg">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ msg }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ================= ELECTION HERO & INFORMATION CARD ================= -->
+  <section class="glass-card election-hero-card">
+    <div class="hero-top-row">
+      <div class="election-title-group">
+        <div class="breadcrumb">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+          <span>Official Ballot</span>
+        </div>
+        <h1 class="election-heading">{{ election.name }}</h1>
+
+        <div class="tag-container">
+          <span class="tag-badge {{ 'tag-public' if election.election_type == 'public' else 'tag-private' }}">
+            {% if election.election_type == 'public' %}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              Public Election
+            {% else %}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              Private Election
+            {% endif %}
+          </span>
+
+          {% if election.election_type == 'public' and election.public_code %}
+            <div class="copy-code-pill" onclick="copyCode('{{ election.public_code }}', this)" title="Click to copy code">
+              <span>Code: <b>{{ election.public_code }}</b></span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Real-Time Status Badge -->
+      <div class="status-badge-wrapper">
+        {% if election.start_time and election.end_time %}
+          <div id="status-badge" class="badge badge-upcoming">Checking Status…</div>
+          <div id="countdown" class="countdown-ticker">Syncing schedule…</div>
+        {% else %}
+          <div class="badge badge-locked">No Schedule Configured</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Key Metrics Shelf -->
+    <div class="hero-stats-shelf">
+      <div class="stat-box">
+        <div class="stat-icon-wrap blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Total Votes Cast</span>
+          <span class="stat-value">{{ total_votes }}</span>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-icon-wrap green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Candidates Registered</span>
+          <span class="stat-value">{{ candidates|length }}</span>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-icon-wrap yellow">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Voter Status</span>
+          <span class="stat-value" style="font-size:0.95rem;">
+            {% if voted %}
+              <span style="color:var(--green)">✓ Ballot Recorded</span>
+            {% else %}
+              <span style="color:var(--blue)">Eligible to Vote</span>
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Schedule Grid -->
+    {% if election.start_time or election.end_time %}
+      <div class="schedule-grid">
+        {% if election.start_time %}
+          <div class="time-slot-card">
+            <div class="time-slot-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Election Start</span>
+            </div>
+            <div class="time-slot-data">
+              <div class="time-slot-date">{{ election.start_time.strftime("%b %d, %Y") }}</div>
+              <div class="time-slot-clock">{{ election.start_time.strftime("%H:%M") }} <small style="font-size:0.7rem;color:var(--muted)">IST</small></div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if election.end_time %}
+          <div class="time-slot-card">
+            <div class="time-slot-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>Election Closes</span>
+            </div>
+            <div class="time-slot-data">
+              <div class="time-slot-date">{{ election.end_time.strftime("%b %d, %Y") }}</div>
+              <div class="time-slot-clock">{{ election.end_time.strftime("%H:%M") }} <small style="font-size:0.7rem;color:var(--muted)">IST</small></div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <!-- 🗳️ Modification Window Banner -->
+    {% if voted %}
+      <div id="modificationContainer" class="modification-banner">
+        <div class="mod-status-group">
+          <div id="editWindow" class="mod-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>Vote Status: Recorded</span>
+          </div>
+        </div>
+
+        {% if can_change %}
+          <div id="changeVoteBox" class="change-vote-box">
+            <span>You may update your vote within <b class="timer-highlight"><span id="editTimerCountdown">{{ remaining_seconds }}</span>s</b></span>
+            <button type="button" id="changeVoteBtn" class="btn-change-vote">
+              Change Selection?
+            </button>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <!-- Security & Verification Bar -->
+    <div class="security-ribbon">
+      <div class="security-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>End-to-End Encrypted</span>
+      </div>
+      <div class="security-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>Modification Window: {{ lock_seconds }}s</span>
+      </div>
+      <div class="security-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>One Verified Vote Per Voter</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CANDIDATES SELECTION SECTION ================= -->
+  <section class="glass-card candidates-section">
+    <div class="section-header-row">
+      <h2 class="section-title">
+        <span>Select Your Candidate</span>
+        <span class="candidate-count-badge">{{ candidates|length }} Candidates</span>
+      </h2>
+    </div>
+
+    <div class="candidates-grid">
+      {% for c in candidates %}
+        <article class="candidate-card" id="cand-card-{{ c.id }}" data-id="{{ c.id }}">
+          <div class="candidate-photo-wrapper">
+            {% if c.photo %}
+              <img src="{{ c.photo }}" alt="{{ c.name }}" loading="lazy">
+            {% else %}
+              <div class="candidate-avatar-fallback">
+                {{ c.name[:2]|upper }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="candidate-meta">
+            {% if c.party %}
+              <span class="candidate-party-tag">{{ c.party }}</span>
+            {% endif %}
+            <h3 class="candidate-name">{{ c.name }}</h3>
+            {% if c.description %}
+              <p class="candidate-desc">{{ c.description }}</p>
+            {% endif %}
+          </div>
+
+          <div class="status-indicator" id="status-ind-{{ c.id }}"></div>
+
+          <form method="POST" action="/vote" class="voteForm vote-form" data-name="{{ c.name }}" data-id="{{ c.id }}">
+            <input type="hidden" name="email" value="{{ email }}">
+            <input type="hidden" name="election_id" value="{{ election.id }}">
+            <input type="hidden" name="candidate_id" value="{{ c.id }}">
+            <input type="hidden" name="confirm_flag" value="yes">
+
+            <button type="submit" class="btn-vote-action vote-btn" {% if voted and not can_change %}disabled{% endif %}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Vote</span>
+            </button>
+          </form>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= CONFIRM VOTE MODAL ================= -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-card">
+    <div class="modal-icon-badge">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <path d="M9 15l2 2 4-4"></path>
+      </svg>
+    </div>
+
+    <h3 id="modalName">Confirm Your Vote</h3>
+    <p id="modalText">
+      Your ballot will be recorded securely and encrypted.<br>
+      The window to modify your choice closes shortly after submission.
     </p>
+
     <div class="reveal-option">
-  <label>
-    <input type="checkbox" id="revealVote">
-    Show my selected candidate after voting
-  </label>
-</div>
+      <label>
+        <input type="checkbox" id="revealVote">
+        <span>Highlight my selected candidate on this device</span>
+      </label>
+    </div>
 
-    <div style="display:flex;justify-content:space-between; margin-top: 20px; gap: 10px;">
-      <button class="btn-gray" onclick="closeModal()">Cancel</button>
-      <button class="btn-green" id="confirmBtn">Confirm Vote</button>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button type="button" class="btn-confirm-vote" id="confirmBtn">Confirm Ballot</button>
     </div>
   </div>
 </div>
-<div class="modal-bg" id="lockedModal">
-  <div class="modal">
-    <h3>Vote permanently recorded</h3>
-    <p style="margin-top:12px;font-size:14px;color:#94a3b8;">
-      Modification window is closed.<br>
-      Your vote is casted for <b id="lockedCandidateName"></b>.
+
+<!-- ================= LOCKED VOTE MODAL ================= -->
+<div class="modal-overlay" id="lockedModal">
+  <div class="modal-card">
+    <div class="modal-icon-badge" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#ef4444;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    </div>
+
+    <h3>Ballot Permanently Sealed</h3>
+    <p style="margin-top:10px;">
+      The 45-second modification window has expired.<br>
+      Your vote for <b id="lockedCandidateName" style="color:var(--text)"></b> is officially locked and recorded in the cryptographic ledger.
     </p>
-    <div style="margin-top:20px;">
-      <button class="btn-green" onclick="closeLockedModal()">OK</button>
+    <div class="modal-actions" style="margin-top:24px;">
+      <button type="button" class="btn-confirm-vote" style="flex:1;" onclick="closeLockedModal()">Understood</button>
     </div>
   </div>
 </div>
 
-
+<!-- ================= CLIENT LOGIC & REAL-TIME TIMERS ================= -->
 <script>
-
 /* =====================================================
-   STATE
+   STATE MANAGEMENT
 ===================================================== */
 const CAN_CHANGE = {{ 'true' if can_change else 'false' }};
 let remaining = {{ remaining_seconds | default(0) }};
@@ -595,19 +1285,19 @@ const REVEAL_VOTE = {{ 'true' if session.get("reveal_vote_" ~ election.id) else 
 const VOTED_ID = {{ session.get("voted_candidate_" ~ election.id) or 'null' }};
 
 /* =====================================================
-   DOM
+   DOM REFERENCES
 ===================================================== */
-const changeBox   = document.getElementById("changeVoteBox");
-const editBadge   = document.getElementById("editWindow");
-const timerSpan   = document.getElementById("editTimerCountdown");
-const voteBtns    = document.querySelectorAll(".vote-btn");
+const changeBox      = document.getElementById("changeVoteBox");
+const editBadge      = document.getElementById("editWindow");
+const timerSpan      = document.getElementById("editTimerCountdown");
+const voteBtns       = document.querySelectorAll(".vote-btn");
 
-const modal       = document.getElementById("modal");
-const modalTitle  = document.getElementById("modalName");
-const modalText   = modal.querySelector("p");
-const confirmBtn  = document.getElementById("confirmBtn");
-const changeBtn   = document.getElementById("changeVoteBtn");
-const revealOption = document.querySelector(".reveal-option");
+const modal          = document.getElementById("modal");
+const modalTitle     = document.getElementById("modalName");
+const modalText      = document.getElementById("modalText");
+const confirmBtn     = document.getElementById("confirmBtn");
+const changeBtn      = document.getElementById("changeVoteBtn");
+const revealOption   = document.querySelector(".reveal-option");
 const revealCheckbox = document.getElementById("revealVote");
 
 /* =====================================================
@@ -619,19 +1309,18 @@ if (REVEAL_VOTE && VOTED_ID) {
     card.classList.add("selected");
     const indicator = card.querySelector(".status-indicator");
     if (indicator) {
-      indicator.innerHTML = '<div class="selected-badge">✔ Vote Recorded</div>';
+      indicator.innerHTML = '<div class="selected-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Selected Ballot</div>';
     }
   }
 }
-/* =====================================================
-   LOCK BUTTONS IF ALREADY VOTED
-===================================================== */
 
+/* =====================================================
+   LOCK BUTTONS IF ALREADY VOTED & EXPIRED
+===================================================== */
 if (VOTED_ID && !CAN_CHANGE) {
   voteBtns.forEach(btn => {
     btn.disabled = true;
-    btn.textContent = "Locked";
-    btn.classList.add("btn-disabled");
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked';
   });
 }
 
@@ -643,7 +1332,7 @@ if (!CAN_CHANGE && changeBox) {
 }
 
 /* =====================================================
-   COUNTDOWN TIMER
+   COUNTDOWN TIMER FOR VOTE MODIFICATION
 ===================================================== */
 if (CAN_CHANGE && remaining > 0 && timerSpan) {
   const countdown = setInterval(() => {
@@ -653,24 +1342,26 @@ if (CAN_CHANGE && remaining > 0 && timerSpan) {
     if (remaining <= 0) {
       clearInterval(countdown);
 
-      changeBox?.remove();
-      editBadge.textContent = "🔒 Vote permanently recorded";
-      editBadge.className = "badge badge-locked";
+      if (changeBox) changeBox.remove();
+      if (editBadge) {
+        editBadge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Vote permanently recorded';
+        editBadge.className = "mod-badge";
+        editBadge.style.borderColor = "rgba(148, 163, 184, 0.3)";
+        editBadge.style.color = "var(--muted)";
+      }
 
       voteBtns.forEach(btn => {
         btn.disabled = true;
-        btn.textContent = "Locked";
-        btn.classList.add("btn-disabled");
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked';
       });
     }
   }, 1000);
 }
 
 /* =====================================================
-   OPEN MODAL (Reusable)
+   OPEN MODAL
 ===================================================== */
 function openModal(title, message, showCheckbox, buttonText) {
-  
   modalTitle.innerHTML = title;
   modalText.innerHTML = message;
 
@@ -691,24 +1382,34 @@ function closeModal() {
   revealCheckbox.checked = false;
 }
 
+/* Close modal on ESC key or clicking outside */
+window.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    closeModal();
+    closeLockedModal();
+  }
+});
+
+modal.addEventListener("click", e => {
+  if (e.target === modal) closeModal();
+});
+
 /* =====================================================
    CHANGE VOTE FLOW
 ===================================================== */
 if (changeBtn) {
   changeBtn.onclick = () => {
-
-openModal(
-  "Update your vote?",
-  "You may change your vote only within the remaining time.<br><b>This action replaces your previous vote.</b>",
-  false,   // ✅ show checkbox also during update
-  "Update Vote"
-);
-
+    openModal(
+      "Update Your Selection?",
+      "You may alter your vote during the active grace period.<br><b>This action replaces your previous ballot.</b>",
+      false,
+      "Proceed with Update"
+    );
 
     confirmBtn.onclick = () => {
       closeModal();
 
-      document.querySelectorAll(".candidate")
+      document.querySelectorAll(".candidate-card")
         .forEach(c => c.classList.remove("selected"));
 
       document.querySelectorAll(".status-indicator")
@@ -716,30 +1417,30 @@ openModal(
 
       voteBtns.forEach(btn => {
         btn.disabled = false;
-        btn.classList.remove("btn-disabled");
-        btn.textContent = "Vote";
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Vote</span>';
       });
     };
   };
 }
 
 /* =====================================================
-   FIRST VOTE FLOW
+   FIRST VOTE SUBMISSION FLOW
 ===================================================== */
 document.querySelectorAll(".voteForm").forEach(form => {
   form.addEventListener("submit", e => {
     e.preventDefault();
     activeForm = form;
 
+    const candidateName = form.dataset.name || "Selected Candidate";
+
     openModal(
-      "Confirm vote for<br><b>" + form.dataset.name + "</b>",
-      "Your vote will be securely recorded.<br>" +
+      "Confirm Vote for<br><span style='color:var(--blue)'>" + candidateName + "</span>",
+      "Your ballot will be encrypted and recorded.<br>" +
       (CAN_CHANGE
-        ? "You may still update it within the remaining time."
-        : "This vote will be permanent."
-      ),
+        ? "You can still change your vote during the 45s grace period."
+        : "Once submitted, this ballot is final."),
       true,
-      "Confirm Vote"
+      "Confirm Ballot"
     );
 
     confirmBtn.onclick = () => {
@@ -753,57 +1454,58 @@ document.querySelectorAll(".voteForm").forEach(form => {
       }
 
       confirmBtn.disabled = true;
-      confirmBtn.textContent = "Recording…";
+      confirmBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin-icon"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg> Recording…';
       activeForm.submit();
     };
   });
 });
 
 /* =====================================================
-   LOCKED MODAL
+   LOCKED MODAL HANDLERS
 ===================================================== */
 function closeLockedModal() {
   document.getElementById("lockedModal").classList.remove("show");
 }
+
 /* =====================================================
-   ELECTION STATUS TIMER
+   ELECTION STATUS REAL-TIME TICKER
 ===================================================== */
+const startTimeStr = "{{ election.start_time }}";
+const endTimeStr   = "{{ election.end_time }}";
 
-const startTime = "{{ election.start_time }}";
-const endTime   = "{{ election.end_time }}";
-
-if (startTime && endTime) {
-
+if (startTimeStr && endTimeStr) {
   const badge = document.getElementById("status-badge");
   const clock = document.getElementById("countdown");
 
-  const start = new Date(startTime).getTime();
-  const end   = new Date(endTime).getTime();
+  const start = new Date(startTimeStr).getTime();
+  const end   = new Date(endTimeStr).getTime();
 
-  function format(ms){
+  function formatTime(ms) {
     let s = Math.floor(ms / 1000);
-    const h = Math.floor(s / 3600); s %= 3600;
-    const m = Math.floor(s / 60);   s %= 60;
-    return h + "h " + m + "m " + s + "s";
+    const d = Math.floor(s / 86400); s %= 86400;
+    const h = Math.floor(s / 3600);  s %= 3600;
+    const m = Math.floor(s / 60);    s %= 60;
+
+    if (d > 0) return d + "d " + h + "h " + m + "m";
+    if (h > 0) return h + "h " + m + "m " + s + "s";
+    return m + "m " + s + "s";
   }
 
-  function updateStatus(){
+  function updateStatus() {
     const now = Date.now();
 
     if (now < start) {
       badge.className = "badge badge-upcoming";
-      badge.textContent = "Upcoming";
-      clock.textContent = "Starts in: " + format(start - now);
-
+      badge.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Upcoming';
+      clock.textContent = "Starts in: " + formatTime(start - now);
     } else if (now < end) {
       badge.className = "badge badge-live";
-      badge.textContent = "Live";
-      clock.textContent = "Ends in: " + format(end - now);
-
+      badge.innerHTML = '<span class="pulse-dot"></span> Live Election';
+      clock.textContent = "Closes in: " + formatTime(end - now);
     } else {
       badge.className = "badge badge-ended";
-      badge.textContent = "Ended";
-      clock.textContent = "Election closed";
+      badge.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/></svg> Ended';
+      clock.textContent = "Voting Closed";
     }
   }
 
@@ -811,9 +1513,21 @@ if (startTime && endTime) {
   setInterval(updateStatus, 1000);
 }
 
+/* =====================================================
+   COPY ACCESS CODE FUNCTION
+===================================================== */
+function copyCode(code, element) {
+  navigator.clipboard.writeText(code).then(() => {
+    const originalText = element.innerHTML;
+    element.innerHTML = '<span style="color:var(--green)">✓ Copied!</span>';
+    setTimeout(() => {
+      element.innerHTML = originalText;
+    }, 2000);
+  }).catch(() => {
+    alert("Code: " + code);
+  });
+}
 </script>
-
-
 
 </body>
 </html>
