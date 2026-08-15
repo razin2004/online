@@ -2264,6 +2264,55 @@ document.getElementById("howModal").style.display="none";
 document.getElementById("openHowModal")?.addEventListener("click",()=>{
 document.getElementById("howModal").style.display="flex";
 });
+
+/* =====================================================
+   PREVENT DOUBLE CLICK / DUPLICATE FORM SUBMISSION
+===================================================== */
+document.addEventListener("DOMContentLoaded", () => {
+  const forms = document.querySelectorAll("form");
+
+  forms.forEach(form => {
+    form.addEventListener("submit", function(e) {
+      if (form.dataset.submitting === "true") {
+        e.preventDefault();
+        return false;
+      }
+
+      form.dataset.submitting = "true";
+
+      const submitBtn = form.querySelector("button[type='submit'], button.btn, button.reset-btn");
+      if (submitBtn) {
+        submitBtn.dataset.originalHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+
+        const action = (form.getAttribute("action") || "").toLowerCase();
+        if (action.includes("register") || action.includes("forgot-password") || action.includes("voter/login")) {
+          submitBtn.innerText = "Sending OTP...";
+        } else if (action.includes("forgot-username")) {
+          submitBtn.innerText = "Sending Username...";
+        } else if (action.includes("login")) {
+          submitBtn.innerText = "Logging in...";
+        } else if (action.includes("reset-password")) {
+          submitBtn.innerText = "Saving Password...";
+        } else {
+          submitBtn.innerText = "Sending...";
+        }
+      }
+    });
+  });
+
+  // Restore button state when navigating back (e.g. browser history back/forward cache)
+  window.addEventListener("pageshow", () => {
+    forms.forEach(form => {
+      form.dataset.submitting = "false";
+      const submitBtn = form.querySelector("button[type='submit'], button.btn, button.reset-btn");
+      if (submitBtn && submitBtn.dataset.originalHtml) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = submitBtn.dataset.originalHtml;
+      }
+    });
+  });
+});
 </script>
 
 </body>

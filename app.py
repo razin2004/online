@@ -5,6 +5,9 @@ import string
 import re
 import secrets
 import traceback
+import time
+import threading
+import uuid
 import requests
 import cloudinary
 import cloudinary.uploader
@@ -65,9 +68,9 @@ Talisman(
     content_security_policy=csp
 )
 cloudinary.config(
-    cloud_name= "durgkn5ib",#os.environ.get("CLOUDINARY_CLOUD_NAME"),
-    api_key="178917242333222",#os.environ.get("CLOUDINARY_API_KEY"),
-    api_secret="MDulCFltiog4UVaXt85wVjRcH0k",#os.environ.get("CLOUDINARY_API_SECRET")
+    cloud_name= os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET")
 )
 database_url = os.environ.get("DATABASE_URL")
 
@@ -102,149 +105,432 @@ app.config.update(
 
 db = SQLAlchemy(app)
 # -------------------------------------------------
-# EMAIL CONFIG
+# EMAIL CONFIGURATION & ROTATION SYSTEM
 # -------------------------------------------------
 
-PROMAIL_API_KEY = "beb8f1ba-09f9-4d8f-9d14-e90f2971b6bc"  # os.environ.get("PROMAIL_API_KEY")
-PROMAIL_URL = "https://mailserver.automationlounge.com/api/v1/messages/send"
+PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
+PROMAIL_URL = os.environ.get("PROMAIL_URL", "https://mailserver.automationlounge.com/api/v1/messages/send")
 
-SMTP_EMAIL = "control.your.voting@gmail.com"  # os.environ.get("SMTP_EMAIL")
-SMTP_PASSWORD = "sydpdtgkauovfiee"  # os.environ.get("SMTP_PASSWORD")
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL") or os.environ.get("SMTP_EMAIL") or "no-reply@votecentral.com"
+BREVO_SENDER_NAME = os.environ.get("BREVO_SENDER_NAME", "VoteCentral")
 
-USE_PROMAIL = os.environ.get("USE_PROMAIL", "true") == "true"  # 🔁 switch here if needed
+MAILJET_API_KEY = os.environ.get("MAILJET_API_KEY")
+MAILJET_SECRET_KEY = os.environ.get("MAILJET_SECRET_KEY")
+MAILJET_SENDER_EMAIL = os.environ.get("MAILJET_SENDER_EMAIL") or os.environ.get("SMTP_EMAIL") or "no-reply@votecentral.com"
+MAILJET_SENDER_NAME = os.environ.get("MAILJET_SENDER_NAME", "VoteCentral")
+
+SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
     default_limits=["10000 per hour"]
 )
 
-# -------------------------------------------------
-# OTP EMAIL (ProMailer preferred, SMTP fallback)
-# -------------------------------------------------
-def send_otp_email(to, subject, html, text=None):
+
+def is_local_env():
     """
-    Used ONLY for OTP emails
+    Detect whether the application is running in local development or production.
+    Checks explicit APP_ENV first ('local' vs 'production').
+    Falls back to detecting Render (RENDER == 'true').
+    Defaults to local if unspecified and not on Render.
     """
-
-    # ---------- ProMailer ----------
-    if USE_PROMAIL and PROMAIL_API_KEY:
-        payload = {
-            "to": to,
-            "subject": subject,
-            "html": html
-        }
-
-        if text:
-            payload["text"] = text
-
-        try:
-            r = requests.post(
-                PROMAIL_URL,
-                headers={
-                    "Authorization": f"Bearer {PROMAIL_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json=payload,
-                timeout=10
-            )
-
-            print("ProMailer OTP:", r.status_code, r.text)
-
-            if 200 <= r.status_code < 300:
-                return True
-
-        except Exception as e:
-            print("ProMailer OTP Exception:", e)
-
-    # ---------- SMTP FALLBACK ----------
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=5) as smtp:
-            smtp.starttls()
-            smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
-
-            msg = MIMEMultipart()
-            msg["From"] = f"VoteCentral <{SMTP_EMAIL}>"
-            msg["To"] = to
-            msg["Subject"] = subject
-
-            msg.attach(MIMEText(text or html, "plain", "utf-8"))
-
-            smtp.sendmail(SMTP_EMAIL, to, msg.as_string())
-            return True
-
-    except Exception as e:
-        print("SMTP OTP ERROR:", e)
+    app_env = os.environ.get("APP_ENV", "").strip().lower()
+    if app_env == "local":
+        return True
+    if app_env == "production":
         return False
 
+    # Check Render environment
+    render_env = os.environ.get("RENDER", "").strip().lower()
+    if render_env == "true":
+        return False
+
+    # Default to local
+    return True
 
 
-# -------------------------------------------------
-# SYSTEM EMAIL (Admin codes, notices)
-# -------------------------------------------------
-def send_vote_central_email(to_email, subject, body):
+def _mask_email(email):
+    """Safely mask email address for privacy in logs."""
+    if not email or "@" not in email:
+        return "***"
+    try:
+        user, domain = email.split("@", 1)
+        if len(user) <= 1:
+            masked_user = user + "***"
+        elif len(user) <= 3:
+            masked_user = user[0] + "***"
+        else:
+            masked_user = user[0] + "***" + user[-1]
+        return f"{masked_user}@{domain}"
+    except Exception:
+        return "***"
+
+
+class EmailProviderManager:
     """
-    Used for NON-OTP emails
+    Thread-safe production email provider rotation and circuit breaker.
+    Manages rotation order: ProMailer -> Brevo -> Mailjet -> ProMailer...
+    Handles temporary cooldowns on 429 / quota exceeded / transient errors.
     """
-
-    html = body.replace("\n", "<br>")
-
-    # ---------- ProMailer ----------
-    if USE_PROMAIL and PROMAIL_API_KEY:
-        payload = {
-            "to": to_email,
-            "subject": subject,
-            "html": f"""
-            <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">
-                {html}
-                <br><br>
-                <hr>
-                <small>VoteCentral · Secure · Verified · One Vote Per User</small>
-            </div>
-            """,
-            "text": body
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.rotation_index = 0
+        self.providers = ["promailer", "brevo", "mailjet"]
+        self.disabled_until = {
+            "promailer": 0.0,
+            "brevo": 0.0,
+            "mailjet": 0.0
         }
 
-        try:
-            r = requests.post(
-                PROMAIL_URL,
-                headers={
-                    "Authorization": f"Bearer {PROMAIL_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json=payload,
-                timeout=10
-            )
+    def is_provider_available(self, name):
+        """Check if provider has required configuration and is not in cooldown."""
+        # Check credentials dynamically from environment
+        if name == "promailer":
+            if not os.environ.get("PROMAIL_API_KEY", "").strip():
+                return False
+        elif name == "brevo":
+            if not os.environ.get("BREVO_API_KEY", "").strip():
+                return False
+        elif name == "mailjet":
+            api_key = os.environ.get("MAILJET_API_KEY", "").strip()
+            secret_key = os.environ.get("MAILJET_SECRET_KEY", "").strip()
+            if not api_key or not secret_key:
+                return False
+        else:
+            return False
 
-            print("ProMailer SYS:", r.status_code, r.text)
+        # Check circuit breaker cooldown
+        now = time.time()
+        with self.lock:
+            return now >= self.disabled_until.get(name, 0.0)
 
-            if 200 <= r.status_code < 300:
-                return True
+    def mark_disabled(self, name, duration_seconds, reason=""):
+        """Temporarily disable a provider for cooldown period."""
+        with self.lock:
+            self.disabled_until[name] = time.time() + duration_seconds
+        print(f"[EMAIL] {name} temporarily disabled for {duration_seconds}s (Reason: {reason})")
 
-        except Exception as e:
-            print("ProMailer SYS Exception:", e)
+    def get_rotation_candidates(self):
+        """
+        Returns ordered candidate list starting from current rotation index,
+        and safely advances the rotation pointer for the next request.
+        """
+        with self.lock:
+            num = len(self.providers)
+            start = self.rotation_index
+            ordered = [self.providers[(start + i) % num] for i in range(num)]
+            self.rotation_index = (self.rotation_index + 1) % num
+            return ordered
 
-    # ---------- SMTP FALLBACK ----------
+
+email_manager = EmailProviderManager()
+
+
+# -------------------------------------------------
+# PROVIDER IMPLEMENTATIONS
+# -------------------------------------------------
+
+def _send_smtp_email(to_email, subject, html_content, text_content=None):
+    """Send email via Gmail SMTP (Local Development Only)."""
+    smtp_email = os.environ.get("SMTP_EMAIL")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+
+    if not smtp_email or not smtp_password:
+        print("[EMAIL] SMTP Error: SMTP_EMAIL or SMTP_PASSWORD not configured.")
+        return False
+
     try:
         with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as smtp:
             smtp.starttls()
-            smtp.login(SMTP_EMAIL, SMTP_PASSWORD)
+            smtp.login(smtp_email, smtp_password)
 
-            msg = MIMEMultipart()
-            msg["From"] = f"VoteCentral <{SMTP_EMAIL}>"
+            msg = MIMEMultipart("alternative")
+            msg["From"] = f"VoteCentral <{smtp_email}>"
             msg["To"] = to_email
             msg["Subject"] = subject
 
-            msg.attach(MIMEText(body, "plain", "utf-8"))
+            # Plain text part
+            plain_text = text_content or (html_content or "")
+            msg.attach(MIMEText(plain_text, "plain", "utf-8"))
 
-            smtp.sendmail(SMTP_EMAIL, to_email, msg.as_string())
+            # HTML part
+            if html_content:
+                msg.attach(MIMEText(html_content, "html", "utf-8"))
+
+            smtp.sendmail(smtp_email, to_email, msg.as_string())
+            print(f"[EMAIL] Gmail SMTP success for {_mask_email(to_email)}")
             return True
-
     except Exception as e:
-        print("SMTP SYS ERROR:", e)
+        print(f"[EMAIL] Gmail SMTP Error for {_mask_email(to_email)}: {e}")
         return False
 
-# 1. Get your API Key from https://www.promailer.xyz/
-# 2. Add PROMAIL_API_KEY to Render Environment Variables
+
+def _send_promailer(to_email, subject, html_content, text_content=None):
+    """Send email via ProMailer API."""
+    api_key = os.environ.get("PROMAIL_API_KEY")
+    url = os.environ.get("PROMAIL_URL", "https://mailserver.automationlounge.com/api/v1/messages/send")
+
+    if not api_key:
+        return False, "PROMAIL_API_KEY not configured", None
+
+    payload = {
+        "to": to_email,
+        "subject": subject,
+        "html": html_content
+    }
+    if text_content:
+        payload["text"] = text_content
+
+    try:
+        r = requests.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json=payload,
+            timeout=5
+        )
+        safe_resp = r.text[:200] if r.text else ""
+        if 200 <= r.status_code < 300:
+            return True, None, r.status_code
+        return False, f"HTTP {r.status_code}: {safe_resp}", r.status_code
+    except requests.exceptions.Timeout:
+        return False, "Request timed out", 408
+    except Exception as e:
+        return False, f"Exception: {str(e)[:200]}", None
+
+
+def _send_brevo(to_email, subject, html_content, text_content=None):
+    """Send email via Brevo HTTPS API."""
+    api_key = os.environ.get("BREVO_API_KEY")
+    if not api_key:
+        return False, "BREVO_API_KEY not configured", None
+
+    sender_email = os.environ.get("BREVO_SENDER_EMAIL") or os.environ.get("SMTP_EMAIL") or "no-reply@votecentral.com"
+    sender_name = os.environ.get("BREVO_SENDER_NAME", "VoteCentral")
+
+    payload = {
+        "sender": {
+            "name": sender_name,
+            "email": sender_email
+        },
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html_content
+    }
+    if text_content:
+        payload["textContent"] = text_content
+
+    try:
+        r = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "api-key": api_key,
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            json=payload,
+            timeout=5
+        )
+        safe_resp = r.text[:200] if r.text else ""
+        if 200 <= r.status_code < 300:
+            return True, None, r.status_code
+        return False, f"HTTP {r.status_code}: {safe_resp}", r.status_code
+    except requests.exceptions.Timeout:
+        return False, "Request timed out", 408
+    except Exception as e:
+        return False, f"Exception: {str(e)[:200]}", None
+
+
+def _send_mailjet(to_email, subject, html_content, text_content=None):
+    """Send email via Mailjet Send API v3.1."""
+    api_key = os.environ.get("MAILJET_API_KEY")
+    secret_key = os.environ.get("MAILJET_SECRET_KEY")
+
+    if not api_key or not secret_key:
+        return False, "MAILJET credentials not configured", None
+
+    sender_email = os.environ.get("MAILJET_SENDER_EMAIL") or os.environ.get("SMTP_EMAIL") or "no-reply@votecentral.com"
+    sender_name = os.environ.get("MAILJET_SENDER_NAME", "VoteCentral")
+
+    msg_obj = {
+        "From": {
+            "Email": sender_email,
+            "Name": sender_name
+        },
+        "To": [
+            {
+                "Email": to_email
+            }
+        ],
+        "Subject": subject,
+        "HTMLPart": html_content
+    }
+    if text_content:
+        msg_obj["TextPart"] = text_content
+
+    payload = {
+        "Messages": [msg_obj]
+    }
+
+    try:
+        r = requests.post(
+            "https://api.mailjet.com/v3.1/send",
+            auth=(api_key, secret_key),
+            headers={
+                "Content-Type": "application/json"
+            },
+            json=payload,
+            timeout=5
+        )
+        safe_resp = r.text[:200] if r.text else ""
+        if 200 <= r.status_code < 300:
+            return True, None, r.status_code
+        return False, f"HTTP {r.status_code}: {safe_resp}", r.status_code
+    except requests.exceptions.Timeout:
+        return False, "Request timed out", 408
+    except Exception as e:
+        return False, f"Exception: {str(e)[:200]}", None
+
+
+def _dispatch_provider_send(provider_name, to_email, subject, html_content, text_content=None):
+    """Dispatch sending to the specified provider handler."""
+    if provider_name == "promailer":
+        return _send_promailer(to_email, subject, html_content, text_content)
+    elif provider_name == "brevo":
+        return _send_brevo(to_email, subject, html_content, text_content)
+    elif provider_name == "mailjet":
+        return _send_mailjet(to_email, subject, html_content, text_content)
+    return False, f"Unknown provider: {provider_name}", None
+
+
+def _handle_provider_failure(provider_name, error_msg, status_code):
+    """Apply cooldown / circuit breaking based on failure error type."""
+    error_lower = (error_msg or "").lower()
+    is_quota_or_rate_limit = (
+        status_code == 429 or
+        "quota" in error_lower or
+        "rate limit" in error_lower or
+        "too many requests" in error_lower
+    )
+    if is_quota_or_rate_limit:
+        # Cooldown: 1 hour (3600 seconds) for rate limit / quota exceeded
+        email_manager.mark_disabled(provider_name, 3600, reason=f"Rate/Quota limit: {error_msg}")
+    elif status_code and 500 <= status_code < 600:
+        # 5xx server error -> short cooldown (60 seconds)
+        email_manager.mark_disabled(provider_name, 60, reason=f"Server error: {error_msg}")
+    elif status_code == 408 or "timed out" in error_lower:
+        # Timeout -> short cooldown (60 seconds)
+        email_manager.mark_disabled(provider_name, 60, reason=f"Timeout: {error_msg}")
+    elif status_code in (401, 403):
+        # Auth error -> 5 minutes cooldown
+        email_manager.mark_disabled(provider_name, 300, reason=f"Auth error: {error_msg}")
+
+
+# -------------------------------------------------
+# CENTRALIZED EMAIL MANAGER
+# -------------------------------------------------
+
+def _send_email_dispatch(to_email, subject, html_content, text_content=None, is_otp=False):
+    """
+    Centralized email delivery engine.
+    - Local mode: Gmail SMTP exclusively.
+    - Production mode: ProMailer -> Brevo -> Mailjet rotation with automatic fallback.
+    - Traces each email operation with a unique internal request_id.
+    """
+    request_id = uuid.uuid4().hex[:10]
+    masked = _mask_email(to_email)
+    email_type = "OTP" if is_otp else "SYS"
+
+    if is_local_env():
+        print(f"[EMAIL] request_id={request_id} recipient={masked} type={email_type} env=local")
+        print(f"[EMAIL] request_id={request_id} provider=Gmail_SMTP action=attempt")
+        success = _send_smtp_email(to_email, subject, html_content, text_content)
+        result_str = "success" if success else "failed"
+        print(f"[EMAIL] request_id={request_id} provider=Gmail_SMTP result={result_str}")
+        return success
+
+    print(f"[EMAIL] request_id={request_id} recipient={masked} type={email_type} env=production")
+    candidates = email_manager.get_rotation_candidates()
+    available_candidates = [p for p in candidates if email_manager.is_provider_available(p)]
+
+    if not available_candidates:
+        print(f"[EMAIL] request_id={request_id} ERROR: No healthy/configured production email providers available for {masked}.")
+        return False
+
+    attempted = 0
+    for provider in available_candidates:
+        if attempted >= 3:
+            break
+        attempted += 1
+
+        print(f"[EMAIL] request_id={request_id} provider={provider} action=attempt")
+        success, error_msg, status_code = _dispatch_provider_send(
+            provider, to_email, subject, html_content, text_content
+        )
+
+        if success:
+            print(f"[EMAIL] request_id={request_id} provider={provider} result=success")
+            return True
+        else:
+            is_timeout = (status_code == 408 or "timed out" in (error_msg or "").lower())
+            if is_timeout:
+                print(f"[EMAIL] request_id={request_id} provider={provider} result=unknown (Provider response unknown / timed out)")
+            else:
+                print(f"[EMAIL] request_id={request_id} provider={provider} result=failed (Reason: {error_msg})")
+            _handle_provider_failure(provider, error_msg, status_code)
+            print(f"[EMAIL] request_id={request_id} falling back to next available provider...")
+
+    print(f"[EMAIL] request_id={request_id} result=all_failed (All attempted providers failed for {masked})")
+    return False
+
+
+# -------------------------------------------------
+# PUBLIC EMAIL FUNCTIONS
+# -------------------------------------------------
+
+def send_otp_email(to, subject, html, text=None):
+    """
+    Public OTP email sender.
+    Compatible with existing application callers.
+    Returns True on success, False on total failure.
+    """
+    return _send_email_dispatch(
+        to_email=to,
+        subject=subject,
+        html_content=html,
+        text_content=text,
+        is_otp=True
+    )
+
+
+def send_vote_central_email(to_email, subject, body):
+    """
+    Public non-OTP / system email sender.
+    Wraps plain body in VoteCentral branded HTML template.
+    Compatible with existing application callers.
+    Returns True on success, False on total failure.
+    """
+    html_body = body.replace("\n", "<br>")
+    html_content = f"""
+    <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">
+        {html_body}
+        <br><br>
+        <hr>
+        <small>VoteCentral · Secure · Verified · One Vote Per User</small>
+    </div>
+    """
+    return _send_email_dispatch(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content,
+        text_content=body,
+        is_otp=False
+    )
 
 def generate_otp():
     return str(secrets.randbelow(1000000)).zfill(6)
@@ -1207,6 +1493,7 @@ def voter_resend_otp():
 
     flash("A new OTP has been sent", "otp_success")
     return redirect("/voter/otp")
+@limiter.limit("3 per minute")
 @app.route("/admin/register-resend")
 def admin_register_resend():
 
@@ -1288,6 +1575,7 @@ def voter_public_login():
 # -------------------------------------------------
 # VOTER LOGIN — PRIVATE
 # -------------------------------------------------
+@limiter.limit("3 per minute")
 @app.route("/voter/login/private", methods=["POST"])
 def voter_private_login():
 

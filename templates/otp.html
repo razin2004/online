@@ -258,8 +258,13 @@ if(otpInput){
 const form = document.getElementById("otpForm");
 const btn = document.getElementById("verifyBtn");
 
-if(form){
-  form.addEventListener("submit",()=>{
+if(form && btn){
+  form.addEventListener("submit",(e)=>{
+    if (form.dataset.submitting === "true") {
+      e.preventDefault();
+      return false;
+    }
+    form.dataset.submitting = "true";
     btn.disabled = true;
     btn.innerText = "Verifying…";
   });
@@ -299,13 +304,35 @@ function updateTimer() {
 
 updateTimer();
 const timerInterval = setInterval(updateTimer, 1000);
+
+let isResending = false;
 if (resendLink) {
-  resendLink.addEventListener("click", () => {
+  resendLink.addEventListener("click", (e) => {
+    if (isResending) {
+      e.preventDefault();
+      return false;
+    }
+    isResending = true;
+    resendLink.style.pointerEvents = "none";
+    resendLink.innerText = "Sending OTP...";
+
     // Reset expiry only when resend is clicked
     const newExpiry = Date.now() + OTP_DURATION * 1000;
     sessionStorage.setItem("otp_expiry", newExpiry);
   });
 }
+
+window.addEventListener("pageshow", () => {
+  isResending = false;
+  if (resendLink) {
+    resendLink.style.pointerEvents = "auto";
+  }
+  if (form && btn) {
+    form.dataset.submitting = "false";
+    btn.disabled = false;
+    btn.innerText = "Verify OTP";
+  }
+});
 
 /* AUTO HIDE OTP FLASH MESSAGES */
 
