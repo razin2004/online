@@ -112,6 +112,7 @@ PROMAIL_API_KEY = os.environ.get("PROMAIL_API_KEY")
 PROMAIL_URL = os.environ.get("PROMAIL_URL", "https://mailserver.automationlounge.com/api/v1/messages/send")
 
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+BREVO_API_KEY_2 = os.environ.get("BREVO_API_KEY_2")
 BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL") or os.environ.get("SMTP_EMAIL") or "no-reply@votecentral.com"
 BREVO_SENDER_NAME = os.environ.get("BREVO_SENDER_NAME", "VoteCentral")
 
@@ -171,28 +172,33 @@ def _mask_email(email):
 
 class EmailProviderManager:
     """
-    Thread-safe production email provider rotation and circuit breaker.
-    Manages rotation order: ProMailer -> Brevo -> Mailjet -> ProMailer...
-    Handles temporary cooldowns on 429 / quota exceeded / transient errors.
+    Thread-safe and DB-persisted email provider management.
+    - Normal emails: Fixed priority fallback [ProMailer -> Brevo #1 -> Brevo #2 -> Mailjet]
+    - OTP emails: Persistent rotation [ProMailer -> Brevo #1 -> Mailjet] (Excludes Brevo #2)
+    - Dynamic circuit breaker cooldowns for rate limits, 429, timeouts, and errors.
     """
     def __init__(self):
         self.lock = threading.Lock()
-        self.rotation_index = 0
-        self.providers = ["promailer", "brevo", "mailjet"]
+        self.otp_rotation_index = 0
+        self.otp_providers = ["promailer", "brevo_1", "mailjet"]
+        self.normal_providers = ["promailer", "brevo_1", "brevo_2", "mailjet"]
         self.disabled_until = {
             "promailer": 0.0,
-            "brevo": 0.0,
+            "brevo_1": 0.0,
+            "brevo_2": 0.0,
             "mailjet": 0.0
         }
 
     def is_provider_available(self, name):
-        """Check if provider has required configuration and is not in cooldown."""
-        # Check credentials dynamically from environment
+        """Check if provider has required credentials configured and is not in cooldown."""
         if name == "promailer":
             if not os.environ.get("PROMAIL_API_KEY", "").strip():
                 return False
-        elif name == "brevo":
+        elif name in ("brevo", "brevo_1"):
             if not os.environ.get("BREVO_API_KEY", "").strip():
+                return False
+        elif name == "brevo_2":
+            if not os.environ.get("BREVO_API_KEY_2", "").strip():
                 return False
         elif name == "mailjet":
             api_key = os.environ.get("MAILJET_API_KEY", "").strip()
@@ -202,28 +208,60 @@ class EmailProviderManager:
         else:
             return False
 
-        # Check circuit breaker cooldown
         now = time.time()
+        canonical_name = "brevo_1" if name == "brevo" else name
         with self.lock:
-            return now >= self.disabled_until.get(name, 0.0)
+            return now >= self.disabled_until.get(canonical_name, 0.0)
 
     def mark_disabled(self, name, duration_seconds, reason=""):
-        """Temporarily disable a provider for cooldown period."""
+        """Temporarily disable a provider for a cooldown period."""
+        canonical_name = "brevo_1" if name == "brevo" else name
         with self.lock:
-            self.disabled_until[name] = time.time() + duration_seconds
-        print(f"[EMAIL] {name} temporarily disabled for {duration_seconds}s (Reason: {reason})")
+            self.disabled_until[canonical_name] = time.time() + duration_seconds
+        print(f"[EMAIL] {canonical_name} temporarily disabled for {duration_seconds}s (Reason: {reason})")
 
-    def get_rotation_candidates(self):
+    def _get_persisted_otp_index(self):
+        """Retrieve persisted rotation index from DB or fallback to memory."""
+        try:
+            state = EmailSystemState.query.filter_by(key="otp_rotation_index").first()
+            if state and state.value is not None:
+                return int(state.value) % len(self.otp_providers)
+        except Exception:
+            pass
+        return self.otp_rotation_index % len(self.otp_providers)
+
+    def _persist_otp_index(self, next_idx):
+        """Save next rotation index to DB and memory."""
+        self.otp_rotation_index = next_idx % len(self.otp_providers)
+        try:
+            state = EmailSystemState.query.filter_by(key="otp_rotation_index").first()
+            if not state:
+                state = EmailSystemState(key="otp_rotation_index", value=str(self.otp_rotation_index))
+                db.session.add(state)
+            else:
+                state.value = str(self.otp_rotation_index)
+            db.session.commit()
+        except Exception:
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
+
+    def get_candidates(self, is_otp=False):
         """
-        Returns ordered candidate list starting from current rotation index,
-        and safely advances the rotation pointer for the next request.
+        Returns ordered candidate list of providers.
+        - For OTP: rotates through [promailer, brevo_1, mailjet] persistently.
+        - For Normal emails: fixed fallback [promailer, brevo_1, brevo_2, mailjet].
         """
-        with self.lock:
-            num = len(self.providers)
-            start = self.rotation_index
-            ordered = [self.providers[(start + i) % num] for i in range(num)]
-            self.rotation_index = (self.rotation_index + 1) % num
-            return ordered
+        if is_otp:
+            with self.lock:
+                start = self._get_persisted_otp_index()
+                num = len(self.otp_providers)
+                ordered = [self.otp_providers[(start + i) % num] for i in range(num)]
+                self._persist_otp_index(start + 1)
+                return ordered
+        else:
+            return list(self.normal_providers)
 
 
 email_manager = EmailProviderManager()
@@ -304,11 +342,11 @@ def _send_promailer(to_email, subject, html_content, text_content=None):
         return False, f"Exception: {str(e)[:200]}", None
 
 
-def _send_brevo(to_email, subject, html_content, text_content=None):
-    """Send email via Brevo HTTPS API."""
-    api_key = os.environ.get("BREVO_API_KEY")
-    if not api_key:
-        return False, "BREVO_API_KEY not configured", None
+def _send_brevo(to_email, subject, html_content, text_content=None, api_key=None, provider_label="brevo_1"):
+    """Send email via Brevo HTTPS API (Supports Brevo 1 and Brevo 2)."""
+    key = api_key or os.environ.get("BREVO_API_KEY")
+    if not key:
+        return False, f"{provider_label.upper()} API key not configured", None
 
     sender_email = os.environ.get("BREVO_SENDER_EMAIL") or os.environ.get("SMTP_EMAIL") or "no-reply@votecentral.com"
     sender_name = os.environ.get("BREVO_SENDER_NAME", "VoteCentral")
@@ -329,7 +367,7 @@ def _send_brevo(to_email, subject, html_content, text_content=None):
         r = requests.post(
             "https://api.brevo.com/v3/smtp/email",
             headers={
-                "api-key": api_key,
+                "api-key": key,
                 "Content-Type": "application/json",
                 "Accept": "application/json"
             },
@@ -401,8 +439,12 @@ def _dispatch_provider_send(provider_name, to_email, subject, html_content, text
     """Dispatch sending to the specified provider handler."""
     if provider_name == "promailer":
         return _send_promailer(to_email, subject, html_content, text_content)
-    elif provider_name == "brevo":
-        return _send_brevo(to_email, subject, html_content, text_content)
+    elif provider_name in ("brevo", "brevo_1"):
+        api_key = os.environ.get("BREVO_API_KEY")
+        return _send_brevo(to_email, subject, html_content, text_content, api_key=api_key, provider_label="brevo_1")
+    elif provider_name == "brevo_2":
+        api_key = os.environ.get("BREVO_API_KEY_2")
+        return _send_brevo(to_email, subject, html_content, text_content, api_key=api_key, provider_label="brevo_2")
     elif provider_name == "mailjet":
         return _send_mailjet(to_email, subject, html_content, text_content)
     return False, f"Unknown provider: {provider_name}", None
@@ -439,8 +481,10 @@ def _send_email_dispatch(to_email, subject, html_content, text_content=None, is_
     """
     Centralized email delivery engine.
     - Local mode: Gmail SMTP exclusively.
-    - Production mode: ProMailer -> Brevo -> Mailjet rotation with automatic fallback.
-    - Traces each email operation with a unique internal request_id.
+    - Production mode:
+        * Normal emails: Fixed priority fallback [ProMailer -> Brevo #1 -> Brevo #2 -> Mailjet]
+        * OTP emails: Persistent rotation [ProMailer -> Brevo #1 -> Mailjet]
+    - Traces each email operation with a single unique request_id.
     """
     request_id = uuid.uuid4().hex[:10]
     masked = _mask_email(to_email)
@@ -455,16 +499,17 @@ def _send_email_dispatch(to_email, subject, html_content, text_content=None, is_
         return success
 
     print(f"[EMAIL] request_id={request_id} recipient={masked} type={email_type} env=production")
-    candidates = email_manager.get_rotation_candidates()
+    candidates = email_manager.get_candidates(is_otp=is_otp)
     available_candidates = [p for p in candidates if email_manager.is_provider_available(p)]
 
     if not available_candidates:
         print(f"[EMAIL] request_id={request_id} ERROR: No healthy/configured production email providers available for {masked}.")
         return False
 
+    max_attempts = len(available_candidates)
     attempted = 0
     for provider in available_candidates:
-        if attempted >= 3:
+        if attempted >= max_attempts:
             break
         attempted += 1
 
@@ -508,13 +553,20 @@ def send_otp_email(to, subject, html, text=None):
     )
 
 
-def send_vote_central_email(to_email, subject, body):
+def send_vote_central_email(to_email, subject, body, is_otp=None):
     """
     Public non-OTP / system email sender.
     Wraps plain body in VoteCentral branded HTML template.
     Compatible with existing application callers.
     Returns True on success, False on total failure.
     """
+    if is_otp is None:
+        sub_lower = (subject or "").lower()
+        if "voting otp" in sub_lower or "admin registration otp" in sub_lower or "verify your admin account" in sub_lower:
+            is_otp = True
+        else:
+            is_otp = False
+
     html_body = body.replace("\n", "<br>")
     html_content = f"""
     <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">
@@ -529,7 +581,7 @@ def send_vote_central_email(to_email, subject, body):
         subject=subject,
         html_content=html_content,
         text_content=body,
-        is_otp=False
+        is_otp=is_otp
     )
 
 def generate_otp():
@@ -889,6 +941,17 @@ class OTPStore(db.Model):
 
     expires_at = db.Column(db.DateTime)
 
+
+class EmailSystemState(db.Model):
+    __tablename__ = "email_system_state"
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(60), unique=True, nullable=False)
+    value = db.Column(db.String(255), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
+    )
 
 
 with app.app_context():
