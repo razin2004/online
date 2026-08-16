@@ -7,6 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/toast.css">
 <style>
 /* ======================================================
    PREMIUM ADMIN DASHBOARD UI
@@ -3017,10 +3018,8 @@ body.modal-open {
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <script>
-  document.addEventListener("DOMContentLoaded",function(){
-    {% for category, message in messages %}
-      showToast({{ message|tojson }}, "{{ category.replace('_','-') }}");
-    {% endfor %}
+  document.addEventListener("DOMContentLoaded", function(){
+    VoteCentralToast.initFlashedMessages({{ messages|tojson }});
   });
 </script>
 {% endif %}
@@ -3811,47 +3810,7 @@ function format(ms){
     s%60
   ].map(v=>String(v).padStart(2,"0")).join(":");
 }
-let toastTimeout = null;
 
-function showToast(message,type="success",duration=4000){
-
-  const container=document.getElementById("toastContainer");
-  if(!container) return;
-
-  const toast=document.createElement("div");
-  toast.className=`toast toast-${type}`;
-
-  toast.innerHTML=`
-    <div class="toast-icon">
-      ${getToastIcon(type)}
-    </div>
-    <div>${message}</div>
-    <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
-  `;
-
-  container.appendChild(toast);
-
-  setTimeout(()=>{
-    toast.remove();
-  },duration);
-}
-
-function getToastIcon(type){
-  if(type==="success"){
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2">
-      <path d="M20 6L9 17l-5-5"/>
-    </svg>`;
-  }
-  if(type==="error"){
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2">
-      <line x1="18" y1="6" x2="6" y2="18"/>
-      <line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>`;
-  }
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2">
-    <circle cx="12" cy="12" r="10"/>
-  </svg>`;
-}
 
 
 function formatDateTime(ts){
@@ -4688,6 +4647,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+
+<script src="/static/js/toast.js"></script>
 
 </body>
 </html>

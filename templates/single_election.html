@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/toast.css">
 
   <style>
     /* ================= DESIGN SYSTEM & TOKENS ================= */
@@ -1520,13 +1521,25 @@ function copyCode(code, element) {
   navigator.clipboard.writeText(code).then(() => {
     const originalText = element.innerHTML;
     element.innerHTML = '<span style="color:var(--green)">✓ Copied!</span>';
+    VoteCentralToast.success("Access code copied to clipboard: " + code, "Copied");
     setTimeout(() => {
       element.innerHTML = originalText;
     }, 2000);
   }).catch(() => {
-    alert("Code: " + code);
+    VoteCentralToast.info("Access Code: " + code, "Election Code");
   });
 }
+</script>
+
+<script src="/static/js/toast.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      VoteCentralToast.initFlashedMessages({{ messages|tojson }});
+    {% endif %}
+  {% endwith %}
+});
 </script>
 
 </body>

@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/toast.css">
 
 <meta charset="UTF-8" />
 <title>VoteCentral — OTP Verification</title>
@@ -114,16 +116,6 @@ h2{text-align:center;margin-bottom:4px;font-weight:700;}
   {% else %}
     <p class="sub">Enter the verification code sent to your email.</p>
   {% endif %}
-
-
-  {% for cat,msg in messages %}
-    {% if cat == "otp_error" %}
-      <div class="msg error">{{ msg }}</div>
-
-    {% elif cat == "otp_success" %}
-      <div class="msg success">{{ msg }}</div>
-    {% endif %}
-  {% endfor %}
 
 
 
@@ -337,19 +329,16 @@ window.addEventListener("pageshow", () => {
     btn.innerText = "Verify OTP";
   }
 });
-
-/* AUTO HIDE OTP FLASH MESSAGES */
-
-setTimeout(() => {
-  document.querySelectorAll(".msg").forEach(el => {
-    el.style.transition = "opacity .35s ease";
-    el.style.opacity = "0";
-
-    setTimeout(() => el.remove(), 350);
-  });
-}, 3500);
 </script>
 
+<script src="/static/js/toast.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  {% if messages %}
+    VoteCentralToast.initFlashedMessages({{ messages|tojson }});
+  {% endif %}
+});
+</script>
 
 </body>
 </html>

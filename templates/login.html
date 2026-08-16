@@ -3,6 +3,7 @@
 <head>
 <link rel="icon" type="image/svg+xml" href="/static/uploads/votecentral-icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/toast.css">
 <meta charset="UTF-8" />
 <title>VoteCentral — Secure Online Voting</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1040,25 +1041,6 @@ VoteCentral implements multiple security layers to maintain election integrity a
     <p class="sub">Sign in to manage elections, candidates, and results securely.
 </p>
 
-    {% if messages %}
-      {% for cat,msg in messages %}
-        {% if cat == "admin_login_error" %}
-          <div style="background:#7f1d1d;border:1px solid #ef4444;
-          padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
-            {{ msg }}
-          </div>
-        {% endif %}
-
-        {% if cat == "admin_login_success" %}
-          <div id="loginSuccess"
-              style="background:#022c22;border:1px solid #22c55e;
-              padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
-            {{ msg }}
-          </div>
-        {% endif %}
-      {% endfor %}
-    {% endif %}
-
 
     <form method="POST" action="/admin/login">
       
@@ -1137,24 +1119,6 @@ VoteCentral implements multiple security layers to maintain election integrity a
     <p class="sub">
       An OTP will be sent to your registered email for verification.
     </p>
-
-    {% if messages %}
-      {% for cat,msg in messages %}
-        {% if cat == "admin_register_error" %}
-          <div style="background:#7f1d1d;border:1px solid #ef4444;padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
-
-            {{ msg }}
-          </div>
-        {% endif %}
-
-        {% if cat == "admin_register_success" %}
-          <div style="background:#022c22;border:1px solid #22c55e;padding:8px;border-radius:8px;font-size:12px;margin-bottom:8px;">
-            {{ msg }}
-          </div>
-        {% endif %}
-
-      {% endfor %}
-    {% endif %}
 
     <form method="POST" action="/admin/register">
       
@@ -1319,28 +1283,6 @@ Private Election — Restricted Access
 
   </div>
   <div class="panel reset-panel">
-
-  {# ================= FLASH MESSAGES ================= #}
-  {% if messages %}
-    {% for cat, msg in messages %}
-      {% if cat in ["otp_error","otp_success","admin_login_success","admin_login_error"] %}
-        <div
-          style="
-            margin-bottom:10px;
-            padding:10px;
-            border-radius:8px;
-            font-size:12px;
-            {% if cat == 'otp_error' %}
-              background:#7f1d1d;border:1px solid #ef4444;
-            {% else %}
-              background:#022c22;border:1px solid #22c55e;
-            {% endif %}
-          ">
-          {{ msg }}
-        </div>
-      {% endif %}
-    {% endfor %}
-  {% endif %}
 
   <!-- =================================================
        STEP 1: RECOVERY CHOICE
@@ -2312,6 +2254,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+});
+</script>
+
+<script src="/static/js/toast.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  {% if messages %}
+    VoteCentralToast.initFlashedMessages({{ messages|tojson }});
+  {% endif %}
 });
 </script>
 

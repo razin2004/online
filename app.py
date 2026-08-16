@@ -76,6 +76,12 @@ database_url = os.environ.get("DATABASE_URL")
 
 is_production = os.environ.get("RENDER") == "true"
 
+# If running locally and DATABASE_URL is Render's internal URL (ends with -a, not .render.com),
+# it cannot resolve on a local PC. Gracefully fallback to SQLite.
+if database_url and not is_production and "@dpg-" in database_url and ".render.com" not in database_url:
+    print("Detected Render internal database URL on local machine. Falling back to local SQLite database.")
+    database_url = None
+
 if database_url:
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
@@ -553,34 +559,270 @@ def send_otp_email(to, subject, html, text=None):
     )
 
 
-def send_vote_central_email(to_email, subject, body, is_otp=None):
+def render_votecentral_email(title, badge_text=None, greeting=None, lead_text=None, paragraphs=None, code=None, code_label=None, code_subtext=None, details=None, security_notice=None, alert_note=None):
     """
-    Public non-OTP / system email sender.
-    Wraps plain body in VoteCentral branded HTML template.
-    Compatible with existing application callers.
+    Renders a premium, responsive, bulletproof HTML email aligned with VoteCentral branding.
+    Includes fallback plain text version for optimal email deliverability.
+    """
+    paragraphs = paragraphs or []
+    details = details or []
+
+    # Format plain text
+    text_lines = []
+    text_lines.append(f"VoteCentral — {title}")
+    text_lines.append("=" * len(text_lines[0]))
+    text_lines.append("")
+
+    if greeting:
+        text_lines.append(greeting)
+        text_lines.append("")
+
+    if lead_text:
+        text_lines.append(lead_text)
+        text_lines.append("")
+
+    for p in paragraphs:
+        text_lines.append(p)
+        text_lines.append("")
+
+    if details:
+        for k, v in details:
+            text_lines.append(f"{k}: {v}")
+        text_lines.append("")
+
+    if code:
+        lbl = code_label or "Code"
+        text_lines.append(f"{lbl}: {code}")
+        if code_subtext:
+            text_lines.append(f"({code_subtext})")
+        text_lines.append("")
+
+    if alert_note:
+        text_lines.append(f"Notice: {alert_note}")
+        text_lines.append("")
+
+    if security_notice:
+        text_lines.append(f"Security: {security_notice}")
+        text_lines.append("")
+
+    text_lines.append("Regards,")
+    text_lines.append("VoteCentral Security Team")
+    text_lines.append("Secure • Verified • One Vote Per Voter")
+    plain_text = "\n".join(text_lines)
+
+    # Build HTML components
+    badge_html = ""
+    if badge_text:
+        badge_html = f"""
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 14px;">
+          <tr>
+            <td style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 4px 14px; font-size: 11px; font-weight: 800; color: #2563eb; letter-spacing: 0.8px; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+              {badge_text}
+            </td>
+          </tr>
+        </table>
+        """
+
+    greeting_html = f'<p style="margin: 0 0 14px 0; font-size: 16px; font-weight: 700; color: #0f172a;">{greeting}</p>' if greeting else ''
+    lead_html = f'<p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #334155;">{lead_text}</p>' if lead_text else ''
+
+    paragraphs_html = ""
+    for p in paragraphs:
+        paragraphs_html += f'<p style="margin: 0 0 14px 0; font-size: 14px; line-height: 1.6; color: #475569;">{p}</p>'
+
+    details_html = ""
+    if details:
+        rows_html = ""
+        for k, v in details:
+            rows_html += f"""
+            <tr>
+              <td style="padding: 8px 12px; font-size: 13px; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; width: 38%;">{k}</td>
+              <td style="padding: 8px 12px; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0;">{v}</td>
+            </tr>
+            """
+        details_html = f"""
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin: 16px 0 20px 0; border-collapse: collapse;">
+          {rows_html}
+        </table>
+        """
+
+    code_html = ""
+    if code:
+        code_label_str = code_label or "Verification Code"
+        subtext_str = f'<div style="margin-top: 8px; font-size: 12px; color: #64748b; font-weight: 500;">{code_subtext}</div>' if code_subtext else ''
+        code_html = f"""
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0 24px 0;">
+          <tr>
+            <td align="center" style="background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); border: 2px dashed #cbd5e1; border-radius: 14px; padding: 22px 18px; text-align: center;">
+              <div style="font-size: 11.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">{code_label_str}</div>
+              <div style="display: inline-block; font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #1e3a8a; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                {code}
+              </div>
+              {subtext_str}
+            </td>
+          </tr>
+        </table>
+        """
+
+    alert_html = ""
+    if alert_note:
+        alert_html = f"""
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #fefce8; border-left: 4px solid #eab308; border-radius: 6px;">
+          <tr>
+            <td style="padding: 12px 16px; font-size: 13px; color: #713f12; line-height: 1.5;">
+              <strong>Note:</strong> {alert_note}
+            </td>
+          </tr>
+        </table>
+        """
+
+    security_html = ""
+    if security_notice:
+        security_html = f"""
+        <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top: 20px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+          <tr>
+            <td style="padding: 12px 14px; font-size: 12.5px; color: #64748b; line-height: 1.5;">
+              <span style="font-weight: 700; color: #334155;">🔒 Security Notice:</span> {security_notice}
+            </td>
+          </tr>
+        </table>
+        """
+
+    html_output = f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{title}</title>
+  <style type="text/css">
+    body, table, td, a {{ -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }}
+    table, td {{ mso-table-lspace: 0pt; mso-table-rspace: 0pt; }}
+    img {{ -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }}
+    @media only screen and (max-width: 600px) {{
+      .email-container {{ width: 100% !important; max-width: 100% !important; }}
+      .email-card {{ padding: 24px 18px !important; border-radius: 12px !important; }}
+      .brand-header {{ padding: 20px 14px !important; }}
+    }}
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0b1329; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0b1329; table-layout: fixed;">
+    <tr>
+      <td align="center" style="padding: 32px 12px;">
+        <!-- Email Shell -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="max-width: 580px; margin: 0 auto;">
+          
+          <!-- BRAND HEADER -->
+          <tr>
+            <td align="center" class="brand-header" style="padding: 0 0 24px 0; text-align: center;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center">
+                <tr>
+                  <!-- Ballot box icon -->
+                  <td valign="middle" style="padding-right: 10px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="32" height="32" style="background-color: #2563eb; border-radius: 7px; text-align: center;">
+                      <tr>
+                        <td align="center" valign="middle" style="color: #ffffff; font-size: 18px; font-weight: 800; line-height: 1;">
+                          ✓
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <!-- Wordmark -->
+                  <td valign="middle">
+                    <span style="font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: 0.3px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                      Vote<span style="color: #38bdf8;">Central</span>
+                    </span>
+                  </td>
+                </tr>
+              </table>
+              <div style="margin-top: 6px; font-size: 11.5px; font-weight: 600; color: #94a3b8; letter-spacing: 0.4px;">
+                Secure • Verified • One Vote Per Voter
+              </div>
+            </td>
+          </tr>
+
+          <!-- MAIN CARD -->
+          <tr>
+            <td>
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-card" style="background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.25); padding: 34px 30px; text-align: left;">
+                <tr>
+                  <td>
+                    {badge_html}
+                    <h1 style="margin: 0 0 16px 0; font-size: 21px; font-weight: 800; color: #0f172a; line-height: 1.35; letter-spacing: -0.2px;">
+                      {title}
+                    </h1>
+
+                    {greeting_html}
+                    {lead_html}
+                    {details_html}
+                    {code_html}
+                    {paragraphs_html}
+                    {alert_html}
+                    {security_html}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td align="center" style="padding: 24px 16px 12px 16px; text-align: center;">
+              <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: #94a3b8;">
+                VoteCentral · Secure · Verified · One Vote Per User
+              </p>
+              <p style="margin: 0 0 10px 0; font-size: 11.5px; color: #64748b; line-height: 1.5;">
+                This automated verification message was issued for your protection. If you did not initiate this request, you can safely ignore this email.
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #475569;">
+                © 2026 VoteCentral Voting Platform. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+    return {
+        "html": html_output,
+        "body": plain_text
+    }
+
+
+def send_vote_central_email(to_email, subject, body=None, html=None, is_otp=None):
+    """
+    Public email sender with rich HTML formatting and plain-text fallback.
+    Compatible with all application callers.
     Returns True on success, False on total failure.
     """
     if is_otp is None:
         sub_lower = (subject or "").lower()
-        if "voting otp" in sub_lower or "admin registration otp" in sub_lower or "verify your admin account" in sub_lower:
+        if "otp" in sub_lower or "verify your admin account" in sub_lower or "voting" in sub_lower:
             is_otp = True
         else:
             is_otp = False
 
-    html_body = body.replace("\n", "<br>")
-    html_content = f"""
-    <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">
-        {html_body}
-        <br><br>
-        <hr>
-        <small>VoteCentral · Secure · Verified · One Vote Per User</small>
-    </div>
-    """
+    if not html:
+        # Generate rich branded fallback HTML from plain text body
+        rendered = render_votecentral_email(
+            title=subject,
+            badge_text="NOTIFICATION",
+            greeting=None,
+            lead_text=None,
+            paragraphs=[p.strip() for p in (body or "").split("\n\n") if p.strip()]
+        )
+        html = rendered["html"]
+
     return _send_email_dispatch(
         to_email=to_email,
         subject=subject,
-        html_content=html_content,
-        text_content=body,
+        html_content=html,
+        text_content=body or "",
         is_otp=is_otp
     )
 
@@ -708,139 +950,127 @@ def parse_local_datetime(dt_string):
 
 
 def admin_register_otp_email(name, username, otp):
+    subject = "VoteCentral – Verify Your Admin Account"
+    rendered = render_votecentral_email(
+        title="Verify Your Administrator Account",
+        badge_text="ADMIN REGISTRATION",
+        greeting=f"Hello {name},",
+        lead_text="Your administrator account registration was initiated on VoteCentral. Please use the verification code below to confirm your identity and complete registration:",
+        details=[
+            ("Registered Username", username),
+            ("Account Role", "System Administrator")
+        ],
+        code=otp,
+        code_label="ADMIN VERIFICATION OTP",
+        code_subtext="⏱ Valid for 5 minutes · Single-use verification code",
+        security_notice="Never share this OTP with anyone. VoteCentral representatives will never ask for your code."
+    )
     return {
-        "subject": "VoteCentral – Verify Your Admin Account",
-        "body": f"""
-Hello {name},
-
-Your administrator account registration was initiated on VoteCentral.
-
-Username: {username}
-
-To complete your registration, please verify your email using the OTP below:
-
-Verification OTP: {otp}
-
-This OTP is valid for 5 minutes.
-Do not share this code with anyone.
-
-If you did not initiate this registration, please ignore this email.
-
-Regards,
-VoteCentral Security Team
-Secure • Verified • One Vote Per User
-"""
+        "subject": subject,
+        "html": rendered["html"],
+        "body": rendered["body"]
     }
 
 def admin_reset_otp_email(name, username, otp):
+    subject = "VoteCentral – Password Reset Verification"
+    rendered = render_votecentral_email(
+        title="Admin Password Reset Verification",
+        badge_text="SECURITY VERIFICATION",
+        greeting=f"Hello {name},",
+        lead_text="A password reset request was initiated for your VoteCentral administrator account. Use the one-time code below to proceed:",
+        details=[
+            ("Account Username", username)
+        ],
+        code=otp,
+        code_label="PASSWORD RESET OTP",
+        code_subtext="⏱ Valid for 5 minutes · Single-use code",
+        alert_note="If you did not request a password reset, please ignore this email. Your current credentials remain secure.",
+        security_notice="For your safety, do not share this reset code with anyone."
+    )
     return {
-        "subject": "VoteCentral – Password Reset Verification",
-        "body": f"""
-Hello {name},
-
-A password reset was requested for your VoteCentral admin account.
-
-Username: {username}
-
-Please use the OTP below to proceed:
-
-Password Reset OTP: {otp}
-
-This OTP is valid for 5 minutes.
-If you did not request this reset, please ignore this email.
-
-Regards,
-VoteCentral Support Team
-Secure • Verified • One Vote Per User
-"""
+        "subject": subject,
+        "html": rendered["html"],
+        "body": rendered["body"]
     }
 
 
 def private_admin_code_email(admin_name, admin_code):
+    subject = "VoteCentral – Your Admin Account Is Ready"
+    rendered = render_votecentral_email(
+        title="Your Admin Account Is Ready",
+        badge_text="ACCOUNT ACTIVATED",
+        greeting=f"Hello {admin_name},",
+        lead_text="Your administrator account has been successfully created and verified on VoteCentral.",
+        paragraphs=[
+            "As an administrator, you can now host, configure, and manage digital elections with verified voter participation.",
+            "For conducting <strong>Private Elections</strong>, voters will require your unique Admin Access Code to enter the election room."
+        ],
+        code=admin_code,
+        code_label="YOUR PRIVATE ADMIN CODE",
+        code_subtext="🔑 Share this code only with authorized voters for private elections",
+        security_notice="Keep this Admin Code secure. Anyone with this code can attempt to access private elections created under your account."
+    )
     return {
-        "subject": "VoteCentral – Your Admin Account Is Ready",
-        "body": f"""
-Hello {admin_name},
-
-Your admin account has been successfully created on VoteCentral.
-
-As an administrator, you can now create and manage elections on the platform.
-For conducting private elections, you will use the Admin Code provided below.
-
-Admin Code: {admin_code}
-
-This Admin Code is required for voters to access your private elections.
-You may share this code only with trusted participants.
-
-Please keep this code secure. Anyone with this code can attempt to access
-private elections created under your account.
-
-If you did not create this admin account, please contact support immediately.
-
-Best regards,
-VoteCentral Team
-Secure • Verified • One Vote Per User
-"""
+        "subject": subject,
+        "html": rendered["html"],
+        "body": rendered["body"]
     }
 
 def voter_otp_email(otp):
+    subject = "VoteCentral – Voting OTP Verification"
+    rendered = render_votecentral_email(
+        title="Voting Access Verification",
+        badge_text="VOTER VERIFICATION",
+        greeting="Hello Voter,",
+        lead_text="You are accessing an official digital election on the VoteCentral platform. Use the verification code below to verify your email and access the ballot:",
+        code=otp,
+        code_label="VOTING ACCESS OTP",
+        code_subtext="⏱ Valid for 5 minutes · Single-use verification code",
+        security_notice="VoteCentral enforces one verified vote per participant. Never forward or share this code with anyone."
+    )
     return {
-        "subject": "VoteCentral – Voting OTP Verification",
-        "body": f"""
-Hello,
-
-You are attempting to access a VoteCentral election.
-
-Please use the One-Time Password (OTP) below to continue:
-
-Voting OTP: {otp}
-
-This OTP is valid for 5 minutes.
-Do not share this code with anyone.
-
-If you did not request this, you can safely ignore this email.
-
-Regards,
-VoteCentral Voting System
-Secure • Verified • One Vote Per User
-"""
+        "subject": subject,
+        "html": rendered["html"],
+        "body": rendered["body"]
     }
+
 def resend_otp_email(otp, purpose):
+    subject = f"VoteCentral – {purpose} OTP"
+    rendered = render_votecentral_email(
+        title=f"New {purpose} Verification Code",
+        badge_text="UPDATED OTP",
+        greeting="Hello,",
+        lead_text=f"You requested a new verification code for <strong>{purpose}</strong>. Please use the updated OTP below to continue:",
+        code=otp,
+        code_label="NEW VERIFICATION OTP",
+        code_subtext="⏱ Valid for 5 minutes · Replaces any previous code",
+        security_notice="For your protection, never share this code with anyone."
+    )
     return {
-        "subject": f"VoteCentral – {purpose} OTP",
-        "body": f"""
-Hello,
-
-You requested a new OTP for {purpose.lower()}.
-
-OTP Code: {otp}
-
-This OTP is valid for 5 minutes.
-For security reasons, never share this code.
-
-Regards,
-VoteCentral Security Team
-Secure • Verified • One Vote Per User
-"""
+        "subject": subject,
+        "html": rendered["html"],
+        "body": rendered["body"]
     }
+
 def admin_username_recovery_email(name, username):
+    subject = "VoteCentral – Your Admin Username"
+    rendered = render_votecentral_email(
+        title="Admin Username Recovery",
+        badge_text="ACCOUNT RECOVERY",
+        greeting=f"Hello {name},",
+        lead_text="You requested a reminder of your VoteCentral administrator username. Your registered username is provided below:",
+        code=username,
+        code_label="REGISTERED ADMIN USERNAME",
+        code_subtext="Use this username to sign in to the Admin Portal",
+        paragraphs=[
+            "No changes have been made to your account. If you did not request this reminder, you can safely disregard this email."
+        ],
+        security_notice="Keep your login credentials confidential at all times."
+    )
     return {
-        "subject": "VoteCentral – Your Admin Username",
-        "body": f"""
-Hello {name},
-
-You requested a reminder of your VoteCentral admin username.
-
-Your username:
-{username}
-
-If you did not request this email, you can safely ignore it.
-No changes were made to your account.
-
-Regards,
-VoteCentral Support Team
-Secure • Verified • One Vote Per User
-"""
+        "subject": subject,
+        "html": rendered["html"],
+        "body": rendered["body"]
     }
 
 # -------------------------------------------------
@@ -1085,7 +1315,8 @@ def admin_register():
     success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
-        body=email_data["body"]
+        body=email_data["body"],
+        html=email_data.get("html")
     )
 
     if not success:
@@ -1202,25 +1433,32 @@ def verify_otp():
     db.session.commit()
 
     email_data = private_admin_code_email(
-    pending["name"],
-    admin_code
-)
+        pending["name"],
+        admin_code
+    )
 
-    send_vote_central_email(
+    email_sent = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
-        body=email_data["body"]
+        body=email_data["body"],
+        html=email_data.get("html")
     )
 
     # cleanup
     session.pop("pending_admin", None)
     session.pop("otp_context", None)
-    session.pop("register_form", None)   # <-- add this line
+    session.pop("register_form", None)
 
-    flash(
-        "Account created successfully. Please login to continue.",
-        "admin_login_success"
-    )
+    if email_sent:
+        flash(
+            "Verification successful. Your private code has been sent to your email.",
+            "admin_login_success"
+        )
+    else:
+        flash(
+            "Account created, but we could not deliver your private code email. Please contact support.",
+            "admin_login_error"
+        )
 
     return redirect(url_for("index", panel="login"))
 
@@ -1236,28 +1474,13 @@ def admin_forgot_username():
 
     # 🔒 Do not reveal existence
     if admin:
-        email_data = {
-            "subject": "VoteCentral – Your Admin Username",
-            "body": f"""
-Hello {admin.name},
-
-You requested a reminder of your VoteCentral admin username.
-
-Your username:
-{admin.username}
-
-If you did not request this email, you can safely ignore it.
-
-Regards,
-VoteCentral Support Team
-Secure • Verified • One Vote Per User
-"""
-        }
+        email_data = admin_username_recovery_email(admin.name, admin.username)
 
         send_vote_central_email(
             to_email=admin.email,
             subject=email_data["subject"],
-            body=email_data["body"]
+            body=email_data["body"],
+            html=email_data.get("html")
         )
 
     flash(
@@ -1293,7 +1516,8 @@ def admin_forgot_password():
         success = send_vote_central_email(
             to_email=admin.email,
             subject=email_data["subject"],
-            body=email_data["body"]
+            body=email_data["body"],
+            html=email_data.get("html")
         )
 
         if not success:
@@ -1489,7 +1713,8 @@ def admin_reset_resend():
     success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
-        body=email_data["body"]
+        body=email_data["body"],
+        html=email_data.get("html")
     )
 
     if not success:
@@ -1539,7 +1764,8 @@ def voter_resend_otp():
     success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
-        body=email_data["body"]
+        body=email_data["body"],
+        html=email_data.get("html")
     )
 
     if not success:
@@ -1574,7 +1800,8 @@ def admin_register_resend():
     success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
-        body=email_data["body"]
+        body=email_data["body"],
+        html=email_data.get("html")
     )
 
     if not success:
@@ -1613,7 +1840,8 @@ def voter_public_login():
     success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
-        body=email_data["body"]
+        body=email_data["body"],
+        html=email_data.get("html")
     )
 
     if not success:
@@ -1663,7 +1891,8 @@ def voter_private_login():
     success = send_vote_central_email(
         to_email=email,
         subject=email_data["subject"],
-        body=email_data["body"]
+        body=email_data["body"],
+        html=email_data.get("html")
     )
 
     if not success:

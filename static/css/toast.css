@@ -1,0 +1,244 @@
+/* ==========================================================
+   VoteCentral Premium Toast Notification System
+   ========================================================== */
+
+#vc-toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+  max-width: 440px;
+  width: calc(100% - 48px);
+}
+
+.vc-toast {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow:
+    0 20px 45px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+  color: #f8fafc;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: vcToastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.vc-toast-hiding {
+  animation: vcToastSlideOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+/* Accent types */
+.vc-toast-success {
+  border-left: 4px solid #10b981;
+  box-shadow:
+    0 12px 35px rgba(16, 185, 129, 0.15),
+    0 20px 45px rgba(0, 0, 0, 0.6);
+}
+
+.vc-toast-error {
+  border-left: 4px solid #ef4444;
+  box-shadow:
+    0 12px 35px rgba(239, 68, 68, 0.15),
+    0 20px 45px rgba(0, 0, 0, 0.6);
+}
+
+.vc-toast-warning {
+  border-left: 4px solid #facc15;
+  box-shadow:
+    0 12px 35px rgba(250, 204, 21, 0.15),
+    0 20px 45px rgba(0, 0, 0, 0.6);
+}
+
+.vc-toast-info,
+.vc-toast-otp,
+.vc-toast-email,
+.vc-toast-vote {
+  border-left: 4px solid #38bdf8;
+  box-shadow:
+    0 12px 35px rgba(56, 189, 248, 0.15),
+    0 20px 45px rgba(0, 0, 0, 0.6);
+}
+
+/* Icon Box */
+.vc-toast-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.vc-toast-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.2;
+}
+
+.vc-toast-success .vc-toast-icon {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.vc-toast-error .vc-toast-icon {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.vc-toast-warning .vc-toast-icon {
+  background: rgba(250, 204, 21, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.vc-toast-info .vc-toast-icon,
+.vc-toast-otp .vc-toast-icon,
+.vc-toast-email .vc-toast-icon,
+.vc-toast-vote .vc-toast-icon {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+/* Content */
+.vc-toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.vc-toast-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.3;
+  margin-bottom: 3px;
+  letter-spacing: 0.2px;
+}
+
+.vc-toast-message {
+  font-size: 0.81rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+/* Close button */
+.vc-toast-close {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.vc-toast-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.vc-toast-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Progress bar */
+.vc-toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  transform-origin: left;
+  opacity: 0.6;
+}
+
+.vc-toast-success .vc-toast-progress { background: #10b981; }
+.vc-toast-error .vc-toast-progress { background: #ef4444; }
+.vc-toast-warning .vc-toast-progress { background: #facc15; }
+.vc-toast-info .vc-toast-progress,
+.vc-toast-otp .vc-toast-progress,
+.vc-toast-email .vc-toast-progress,
+.vc-toast-vote .vc-toast-progress { background: #38bdf8; }
+
+/* Animations */
+@keyframes vcToastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes vcToastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.94);
+  }
+}
+
+@keyframes vcToastProgressBar {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  #vc-toast-container {
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    width: auto;
+    max-width: 100%;
+  }
+
+  .vc-toast {
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+
+  .vc-toast-title {
+    font-size: 0.85rem;
+  }
+
+  .vc-toast-message {
+    font-size: 0.78rem;
+  }
+}

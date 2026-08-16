@@ -5,6 +5,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VoteCentral — {{ election.name }} Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/toast.css">
     <style>
         :root {
             --bg: #020617;
@@ -476,6 +478,17 @@
         link.click();
     });
 }
+</script>
+
+<script src="/static/js/toast.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      VoteCentralToast.initFlashedMessages({{ messages|tojson }});
+    {% endif %}
+  {% endwith %}
+});
 </script>
 
 </body>
